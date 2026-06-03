@@ -42,13 +42,18 @@ User (1) ──< (N) Collection (1) ──< (N) Coin (1) ──< (N) Valuation
 | id | uuid (pk) | |
 | collection_id | uuid (fk → Collection) | indexed |
 | name | text | |
-| year | integer | nullable |
-| country | text | nullable |
-| denomination | text | nullable |
-| mint | text | nullable |
+| issuing_authority | text | nullable; specific issuer, e.g. "Alexander III", "Athens", "Roman Republic" |
+| category | text | nullable; broad grouping, e.g. "Seleucids", "Romans", "Indo-Greek" |
+| year | integer | nullable; negative values = BC (see open questions) |
+| denomination | text | nullable; e.g. tetradrachm, denarius |
+| mint | text | nullable; place struck (distinct from the issuing authority) |
 | metal | text | nullable |
 | grade | text | nullable (grading scale TBD) |
 | created_at | timestamptz | default now() |
+
+> **Note:** ancient coinage is issued by an *authority*, not a modern country.
+> `issuing_authority` is the specific issuer; `category` is a broader grouping
+> (civilization / dynasty / cultural sphere) useful for browsing and grouping.
 
 ### Valuation
 | Column | Type | Notes |
@@ -72,6 +77,12 @@ User (1) ──< (N) Collection (1) ──< (N) Coin (1) ──< (N) Valuation
 - Grading scale: free text vs. enum (Sheldon 1–70)?
 - Multi-currency: store original currency + convert on read, or normalize?
 - Soft deletes vs. hard deletes?
+- Ancient dating: a single integer `year` (negative = BC) is coarse. Do we need
+  date *ranges* (e.g. "336–323 BC") and/or a textual period label? Revisit if
+  precise dating matters for the MVP.
+- `issuing_authority` and `category` are currently free-text fields. If naming
+  consistency or analytics-by-issuer/category becomes important, graduate them to
+  dedicated lookup tables (the repository pattern keeps that migration localized).
 
 ## Migrations Workflow
 
