@@ -24,7 +24,9 @@
 
 ## Phase 2 — MVP features *(current)*
 
-- [ ] **Auth / Users** — sign up, sign in, session.
+- [x] **Auth / Users** — Auth.js v5 + Google OAuth, DB sessions via the Drizzle
+      adapter (`users`/`accounts`/`sessions`/`verification_tokens`). Sign in/out
+      UI; `auth.service` resolves session → domain user (unit-tested).
 - [ ] **Collections** — create, list, rename, delete.
 - [ ] **Coins / Inventory** — add coin to collection, edit, list, delete.
 - [ ] **Valuations** — record a valuation, view value history per coin.

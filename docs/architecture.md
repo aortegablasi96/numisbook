@@ -57,7 +57,11 @@ Later (post-MVP): Auction monitoring, AI-assisted research, Portfolio analytics.
 
 ## Cross-Cutting Concerns
 
-- **Authentication & authorization** — TODO (decide provider/approach).
+- **Authentication & authorization** — Auth.js v5 (NextAuth) with the Drizzle
+  adapter and Google OAuth; database session strategy. Config in `src/auth.ts`,
+  route handler at `src/app/api/auth/[...nextauth]/route.ts`. Server Components /
+  routes call `auth()` and pass the session to `auth.service` to resolve the
+  domain user (keeping services framework-agnostic).
 - **Validation** — Zod schemas in `src/lib` / at the route boundary.
 - **Error handling** — typed errors in `src/lib`, mapped to HTTP at the boundary.
 - **Logging / observability** — TODO.
