@@ -21,10 +21,28 @@ Core features:
 * **Drizzle ORM** over **PostgreSQL** (migrations via `drizzle-kit` → `drizzle/`)
 * **Zod** for input validation at the API boundary
 
-> Status: scaffold (folders + docs + skills) is in place; application code is
-> **not yet implemented**. There is no `package.json` yet, so build/lint/test
-> commands are defined in `docs/roadmap.md` Phase 1, not here. Update this
-> section with the real commands once the project is initialized.
+## Commands
+
+```bash
+npm install            # install dependencies
+npm run dev            # start the dev server (http://localhost:3000)
+npm run build          # production build
+npm start              # run the production build
+npm run lint           # eslint (next/core-web-vitals)
+npm test               # run unit tests once (Vitest)
+npm run test:watch     # tests in watch mode
+
+# Database (Drizzle + PostgreSQL); requires DATABASE_URL in .env
+npm run db:generate    # generate a SQL migration from src/db/schema into drizzle/
+npm run db:migrate     # apply pending migrations
+npm run db:push        # push schema directly to the DB (dev convenience)
+npm run db:studio      # open Drizzle Studio
+```
+
+Run a single test file: `npx vitest run path/to/file.test.ts`.
+
+Local setup: copy `.env.example` to `.env`, set `DATABASE_URL`, then
+`npm install` → `npm run db:generate` → `npm run db:migrate` → `npm run dev`.
 
 ## Architecture Rules
 
@@ -46,6 +64,11 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   import repositories; data comes via props, Server Components, or the API.
 * **Drizzle schema** lives in `src/db/schema`; migrations are generated into
   `drizzle/` and are **not** hand-edited.
+* **Imports use the `@/*` alias** (`@/* → ./src/*`, see `tsconfig.json`), e.g.
+  `import { db } from "@/db"`. `src/db/index.ts` exports the singleton Drizzle
+  client and throws at import time if `DATABASE_URL` is unset.
+* **Cross-cutting helpers** (Zod validation schemas, typed errors, formatting)
+  live in `src/lib`.
 
 A new feature is built as a vertical slice:
 `schema → repository → service (+ tests) → API route → UI`.
@@ -58,6 +81,8 @@ A new feature is built as a vertical slice:
 * Keep files under 300 lines when practical.
 * Generate tests for all business logic (services are the primary test target;
   mock repositories).
+* Vitest runs with `globals: true` (see `vitest.config.ts`), so `describe`,
+  `it`, and `expect` are available in test files without importing them.
 
 ## Before Implementing Any Feature
 
