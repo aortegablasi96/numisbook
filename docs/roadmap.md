@@ -3,23 +3,26 @@
 > Guiding principle (from `CLAUDE.md`): **Build the MVP before introducing
 > advanced automation or optimization.**
 
-## Phase 0 — Foundation *(current)*
+## Phase 0 — Foundation
 
 - [x] Define stack (Next.js + Drizzle + PostgreSQL).
 - [x] Define folder structure and layering rules.
 - [x] Write architecture, database, and product docs.
 - [x] Add initial Claude Code skills.
-- [ ] **Review checkpoint** — approve scaffold before writing app code.
+- [x] **Review checkpoint** — scaffold approved; cleared to write app code.
 
 ## Phase 1 — Project setup
 
-- [ ] Initialize Next.js + TypeScript project (`package.json`, configs).
-- [ ] Add Drizzle, drizzle-kit, `drizzle.config.ts`, `src/db/index.ts`.
-- [ ] Add tooling: linting, formatting, test runner.
-- [ ] Local Postgres (Docker or hosted) + `.env` handling.
-- [ ] First migration: `User`, `Collection`, `Coin`, `Valuation`.
+- [x] Initialize Next.js + TypeScript project (`package.json`, configs).
+- [x] Add Drizzle, drizzle-kit, `drizzle.config.ts`, `src/db/index.ts`.
+- [x] Add tooling: linting (ESLint) and test runner (Vitest).
+- [x] Define schema: `User`, `Collection`, `Coin`, `Valuation`.
+- [x] `.env.example` + env handling.
+- [x] **Run locally**: `npm install` (385 pkgs), Postgres via Docker
+      (`numisbook-pg`, `postgres:16` on `localhost:5432`), `npm run db:generate`
+      (→ `drizzle/0000_clammy_lily_hollister.sql`) + `npm run db:migrate` applied.
 
-## Phase 2 — MVP features
+## Phase 2 — MVP features *(current)*
 
 - [ ] **Auth / Users** — sign up, sign in, session.
 - [ ] **Collections** — create, list, rename, delete.
