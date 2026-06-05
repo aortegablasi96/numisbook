@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { getCollection } from "@/services/collection.service";
-import { listCoins } from "@/services/coin.service";
+import { searchCoins } from "@/services/coin.service";
 import { NotFoundError } from "@/lib/errors";
 import { CoinsManager } from "@/components/coins/CoinsManager";
 
@@ -45,7 +45,7 @@ export default async function CollectionDetailPage({
   });
   if (!collection) notFound();
 
-  const coins = await listCoins(user.id, id);
+  const initial = await searchCoins(user.id, id, {});
 
   return (
     <main className="stack">
@@ -53,7 +53,7 @@ export default async function CollectionDetailPage({
         <Link href="/collections">← Collections</Link>
       </p>
       <h1>{collection.name}</h1>
-      <CoinsManager collectionId={id} initialCoins={coins} />
+      <CoinsManager collectionId={id} initial={initial} />
     </main>
   );
 }

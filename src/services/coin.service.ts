@@ -7,6 +7,23 @@ import { collectionRepository } from "@/repositories/collection.repository";
 import { createCoinSchema, updateCoinSchema } from "@/lib/validation/coin";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 
+export const COINS_PAGE_SIZE = 20;
+
+export type CoinSearch = {
+  q?: string;
+  metal?: string;
+  category?: string;
+  year?: number;
+  page?: number;
+};
+
+export type CoinSearchResult = {
+  coins: Coin[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 // Business logic for coins. A coin's tenant is the owner of its collection, so
 // every use case is gated on the acting user owning the relevant collection.
 // Framework-agnostic: data access goes through repositories only.
@@ -25,6 +42,25 @@ export async function listCoins(
 ): Promise<Coin[]> {
   await assertOwnsCollection(userId, collectionId);
   return coinRepository.listByCollection(collectionId);
+}
+
+export async function searchCoins(
+  userId: string,
+  collectionId: string,
+  search: CoinSearch,
+): Promise<CoinSearchResult> {
+  await assertOwnsCollection(userId, collectionId);
+  const page = Math.max(1, Math.floor(search.page ?? 1));
+  const pageSize = COINS_PAGE_SIZE;
+  const { coins, total } = await coinRepository.searchInCollection(collectionId, {
+    q: search.q?.trim() || undefined,
+    metal: search.metal?.trim() || undefined,
+    category: search.category?.trim() || undefined,
+    year: Number.isFinite(search.year) ? search.year : undefined,
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
+  });
+  return { coins, total, page, pageSize };
 }
 
 export async function getCoin(userId: string, coinId: string): Promise<Coin> {

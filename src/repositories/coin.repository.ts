@@ -1,10 +1,19 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { coins, collections } from "@/db/schema";
 
 export type Coin = typeof coins.$inferSelect;
 export type NewCoin = typeof coins.$inferInsert;
 export type CoinPatch = Partial<Omit<NewCoin, "id" | "collectionId" | "createdAt">>;
+
+export type CoinFilters = {
+  q?: string;
+  metal?: string;
+  category?: string;
+  year?: number;
+  limit: number;
+  offset: number;
+};
 
 // Subquery of collection ids owned by a user. Coin writes are scoped through it
 // so a user can only touch coins inside their own collections (tenant isolation).
@@ -25,6 +34,40 @@ export const coinRepository = {
       .from(coins)
       .where(eq(coins.collectionId, collectionId))
       .orderBy(desc(coins.createdAt));
+  },
+
+  /**
+   * Search/filter coins within a collection, with pagination. Text fields use
+   * case-insensitive partial matching; `year` is exact. Returns the page plus
+   * the total count for the same filters.
+   */
+  async searchInCollection(
+    collectionId: string,
+    filters: CoinFilters,
+  ): Promise<{ coins: Coin[]; total: number }> {
+    const conditions: SQL[] = [eq(coins.collectionId, collectionId)];
+    if (filters.q) conditions.push(ilike(coins.name, `%${filters.q}%`));
+    if (filters.metal) conditions.push(ilike(coins.metal, `%${filters.metal}%`));
+    if (filters.category)
+      conditions.push(ilike(coins.category, `%${filters.category}%`));
+    if (filters.year !== undefined)
+      conditions.push(eq(coins.year, filters.year));
+    const where = and(...conditions);
+
+    const rows = await db
+      .select()
+      .from(coins)
+      .where(where)
+      .orderBy(desc(coins.createdAt))
+      .limit(filters.limit)
+      .offset(filters.offset);
+
+    const [counted] = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(coins)
+      .where(where);
+
+    return { coins: rows, total: counted?.total ?? 0 };
   },
 
   /** Find a coin only if it lives in one of the user's collections. */

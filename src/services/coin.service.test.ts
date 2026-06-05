@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ZodError } from "zod";
-import { listCoins, getCoin, addCoin, editCoin, deleteCoin } from "./coin.service";
+import {
+  listCoins,
+  searchCoins,
+  getCoin,
+  addCoin,
+  editCoin,
+  deleteCoin,
+  COINS_PAGE_SIZE,
+} from "./coin.service";
 import { coinRepository, type Coin } from "@/repositories/coin.repository";
 import { collectionRepository } from "@/repositories/collection.repository";
 import { NotFoundError, ValidationError } from "@/lib/errors";
@@ -8,6 +16,7 @@ import { NotFoundError, ValidationError } from "@/lib/errors";
 vi.mock("@/repositories/coin.repository", () => ({
   coinRepository: {
     listByCollection: vi.fn(),
+    searchInCollection: vi.fn(),
     findByIdForUser: vi.fn(),
     create: vi.fn(),
     updateForUser: vi.fn(),
@@ -62,6 +71,56 @@ describe("coin.service", () => {
         NotFoundError,
       );
       expect(coins.listByCollection).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("searchCoins", () => {
+    it("throws NotFound when the user does not own the collection", async () => {
+      collections.findByIdForUser.mockResolvedValue(null);
+      await expect(searchCoins("user-1", "col-x", {})).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+      expect(coins.searchInCollection).not.toHaveBeenCalled();
+    });
+
+    it("forwards trimmed filters and computes pagination offset", async () => {
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.searchInCollection.mockResolvedValue({ coins: [fakeCoin], total: 25 });
+
+      const result = await searchCoins("user-1", "col-1", {
+        q: "  den ",
+        metal: " silver ",
+        category: "",
+        year: -44,
+        page: 2,
+      });
+
+      expect(coins.searchInCollection).toHaveBeenCalledWith("col-1", {
+        q: "den",
+        metal: "silver",
+        category: undefined, // empty string dropped
+        year: -44,
+        limit: COINS_PAGE_SIZE,
+        offset: COINS_PAGE_SIZE, // page 2 → offset = pageSize
+      });
+      expect(result).toEqual({
+        coins: [fakeCoin],
+        total: 25,
+        page: 2,
+        pageSize: COINS_PAGE_SIZE,
+      });
+    });
+
+    it("defaults to page 1 and ignores a non-finite year", async () => {
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.searchInCollection.mockResolvedValue({ coins: [], total: 0 });
+
+      await searchCoins("user-1", "col-1", { year: Number.NaN });
+
+      expect(coins.searchInCollection).toHaveBeenCalledWith(
+        "col-1",
+        expect.objectContaining({ year: undefined, offset: 0, limit: COINS_PAGE_SIZE }),
+      );
     });
   });
 
