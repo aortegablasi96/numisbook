@@ -48,7 +48,12 @@ Each feature follows the same vertical slice:
 
 ## Phase 3 — Post-MVP *(current)*
 
-- [ ] Portfolio analytics (aggregate value, trends, allocation).
+- [x] Portfolio analytics (aggregate value, trends, allocation). Read-model
+      slice: `analytics.repository` (user-scoped joins) → `analytics.service`
+      (+ tests; latest-valuation-per-coin, totals per currency, allocation by
+      metal/collection, value-over-time trend) → `/api/portfolio` → `/portfolio`
+      UI. Totals are per-currency; allocation/trend use the primary (largest)
+      currency. Verified against real Postgres incl. tenant isolation.
 - [ ] Auction monitoring.
 - [ ] AI-assisted research / coin identification.
 

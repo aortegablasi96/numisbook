@@ -17,6 +17,9 @@ export default async function Home() {
           <p>
             <Link href="/collections">Manage your collections →</Link>
           </p>
+          <p>
+            <Link href="/portfolio">View portfolio analytics →</Link>
+          </p>
           <form
             action={async () => {
               "use server";
