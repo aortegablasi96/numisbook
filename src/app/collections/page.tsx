@@ -32,7 +32,8 @@ export default async function CollectionsPage() {
   return (
     <main>
       <p>
-        <Link href="/">← Home</Link> · <Link href="/portfolio">Portfolio</Link>
+        <Link href="/">← Home</Link> · <Link href="/portfolio">Portfolio</Link>{" "}
+        · <Link href="/assistant">Assistant</Link>
       </p>
       <h1>Collections</h1>
       <CollectionsManager initialCollections={collections} />

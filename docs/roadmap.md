@@ -54,8 +54,14 @@ Each feature follows the same vertical slice:
       metal/collection, value-over-time trend) → `/api/portfolio` → `/portfolio`
       UI. Totals are per-currency; allocation/trend use the primary (largest)
       currency. Verified against real Postgres incl. tenant isolation.
-- [ ] Auction monitoring.
-- [ ] AI-assisted research / coin identification.
+- [x] Collection assistant (chatbot). OpenAI gpt-4o-mini with function calling
+      over the domain services via a manual agentic loop: `assistant.service`
+      (+ tests) → `/api/assistant` → `/assistant` chat UI. Full management
+      (read + write + delete); the acting user's id is injected into every tool
+      handler so the model can only touch the signed-in user's data. Needs
+      `OPENAI_API_KEY`.
+- [ ] Auction monitoring. *(deferred — out of scope for now)*
+- [ ] AI-assisted research / coin identification. *(deferred — later AI phase)*
 
 ## Out of Scope (for now)
 
