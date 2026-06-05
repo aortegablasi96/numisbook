@@ -6,6 +6,7 @@ import { getCoin } from "@/services/coin.service";
 import { listValuations } from "@/services/valuation.service";
 import { NotFoundError } from "@/lib/errors";
 import { ValuationsManager } from "@/components/valuations/ValuationsManager";
+import { CoinImage } from "@/components/coins/CoinImage";
 
 // Server Component for a single coin: guards on auth + ownership, lists its
 // valuation history, and hosts the record-valuation form.
@@ -56,6 +57,7 @@ export default async function CoinDetailPage({
         <Link href={`/collections/${coin.collectionId}`}>← Collection</Link>
       </p>
       <h1>{coin.name}</h1>
+      <CoinImage coinId={id} />
       <ValuationsManager coinId={id} initialValuations={valuationViews} />
     </main>
   );

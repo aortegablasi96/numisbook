@@ -60,6 +60,12 @@ Each feature follows the same vertical slice:
       (read + write + delete); the acting user's id is injected into every tool
       handler so the model can only touch the signed-in user's data. Needs
       `OPENAI_API_KEY`.
+- [x] Coin images. One image per coin stored in Postgres (`coin_images`, bytea)
+      behind `coinImage.repository` → `coinImage.service` (+ tests; type/size
+      validation, owner-scoped) → `GET/POST/DELETE /api/coins/[id]/image` →
+      upload/display/remove on the coin page + list thumbnails. bytea round-trip
+      and tenant isolation verified against real Postgres. Storage is abstracted
+      behind the repository so it can move to S3/R2 later.
 - [ ] Auction monitoring. *(deferred — out of scope for now)*
 - [ ] AI-assisted research / coin identification. *(deferred — later AI phase)*
 

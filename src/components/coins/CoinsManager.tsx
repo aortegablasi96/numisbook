@@ -198,6 +198,7 @@ export function CoinsManager({
         <ul>
           {coins.map((coin) => (
             <li key={coin.id}>
+              <CoinThumb coinId={coin.id} />
               <Link href={`/coins/${coin.id}`}>
                 <strong>{coin.name}</strong>
               </Link>
@@ -220,5 +221,28 @@ export function CoinsManager({
         </ul>
       )}
     </section>
+  );
+}
+
+// A small coin thumbnail that hides itself when the coin has no image (the
+// owner-scoped endpoint 404s, firing onError).
+function CoinThumb({ coinId }: { coinId: string }) {
+  const [show, setShow] = useState(true);
+  if (!show) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`/api/coins/${coinId}/image`}
+      alt=""
+      style={{
+        width: 32,
+        height: 32,
+        objectFit: "cover",
+        verticalAlign: "middle",
+        marginRight: 8,
+        borderRadius: 3,
+      }}
+      onError={() => setShow(false)}
+    />
   );
 }
