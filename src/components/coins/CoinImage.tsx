@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ALLOWED_IMAGE_TYPES } from "@/lib/images";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 async function readError(response: Response): Promise<string> {
   try {
@@ -49,7 +50,6 @@ export function CoinImage({ coinId }: { coinId: string }) {
   }
 
   async function handleRemove() {
-    if (!window.confirm("Remove this coin's image?")) return;
     setError(null);
     setBusy(true);
     try {
@@ -93,14 +93,15 @@ export function CoinImage({ coinId }: { coinId: string }) {
           aria-label="Coin image"
         />
         {hasImage && (
-          <button
-            type="button"
+          <ConfirmButton
             className="btn-sm btn-danger"
-            onClick={handleRemove}
             disabled={busy}
+            message="Remove this coin's image?"
+            confirmLabel="Remove"
+            onConfirm={handleRemove}
           >
             Remove image
-          </button>
+          </ConfirmButton>
         )}
       </div>
 

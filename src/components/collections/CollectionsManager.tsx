@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 // Client-side shape: the server passes domain rows whose dates are serialized.
 export type CollectionView = {
@@ -26,8 +27,15 @@ export function CollectionsManager({
   const [collections, setCollections] =
     useState<CollectionView[]>(initialCollections);
   const [newName, setNewName] = useState("");
+  const [filter, setFilter] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const visible = collections.filter((c) =>
+    c.name.toLowerCase().includes(filter.trim().toLowerCase()),
+  );
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
@@ -53,16 +61,22 @@ export function CollectionsManager({
     }
   }
 
-  async function handleRename(id: string, current: string) {
-    const next = window.prompt("Rename collection", current);
-    if (next === null || next.trim() === current) return;
+  function startRename(collection: CollectionView) {
+    setEditingId(collection.id);
+    setEditingName(collection.name);
+    setError(null);
+  }
+
+  async function saveRename(event: React.FormEvent) {
+    event.preventDefault();
+    if (!editingId) return;
     setError(null);
     setBusy(true);
     try {
-      const response = await fetch(`/api/collections/${id}`, {
+      const response = await fetch(`/api/collections/${editingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: next }),
+        body: JSON.stringify({ name: editingName }),
       });
       if (!response.ok) {
         setError(await readError(response));
@@ -72,15 +86,16 @@ export function CollectionsManager({
         collection: CollectionView;
       };
       setCollections((prev) =>
-        prev.map((c) => (c.id === id ? collection : c)),
+        prev.map((c) => (c.id === collection.id ? collection : c)),
       );
+      setEditingId(null);
+      setEditingName("");
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  async function handleDelete(id: string) {
     setError(null);
     setBusy(true);
     try {
@@ -118,31 +133,73 @@ export function CollectionsManager({
 
       {error && <p className="alert">{error}</p>}
 
+      {collections.length > 1 && (
+        <input
+          type="text"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filter collections…"
+          aria-label="Filter collections"
+        />
+      )}
+
       {collections.length === 0 ? (
         <p className="empty">No collections yet. Create your first one above.</p>
+      ) : visible.length === 0 ? (
+        <p className="empty">No collections match “{filter}”.</p>
       ) : (
         <ul className="rows">
-          {collections.map((collection) => (
+          {visible.map((collection) => (
             <li key={collection.id}>
-              <Link href={`/collections/${collection.id}`} className="grow">
-                {collection.name}
-              </Link>
-              <button
-                type="button"
-                className="btn-sm"
-                onClick={() => handleRename(collection.id, collection.name)}
-                disabled={busy}
-              >
-                Rename
-              </button>
-              <button
-                type="button"
-                className="btn-sm btn-danger"
-                onClick={() => handleDelete(collection.id, collection.name)}
-                disabled={busy}
-              >
-                Delete
-              </button>
+              {editingId === collection.id ? (
+                <form onSubmit={saveRename} className="row grow">
+                  <input
+                    type="text"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    aria-label="Collection name"
+                    autoFocus
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="submit"
+                    className="btn-sm btn-primary"
+                    disabled={busy || editingName.trim() === ""}
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-sm"
+                    onClick={() => setEditingId(null)}
+                    disabled={busy}
+                  >
+                    Cancel
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <Link href={`/collections/${collection.id}`} className="grow">
+                    {collection.name}
+                  </Link>
+                  <button
+                    type="button"
+                    className="btn-sm"
+                    onClick={() => startRename(collection)}
+                    disabled={busy}
+                  >
+                    Rename
+                  </button>
+                  <ConfirmButton
+                    className="btn-sm btn-danger"
+                    disabled={busy}
+                    message={`Delete "${collection.name}" and all of its coins? This cannot be undone.`}
+                    onConfirm={() => handleDelete(collection.id)}
+                  >
+                    Delete
+                  </ConfirmButton>
+                </>
+              )}
             </li>
           ))}
         </ul>

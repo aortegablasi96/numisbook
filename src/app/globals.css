@@ -405,3 +405,38 @@ button:disabled {
   font-size: 0.85rem;
   color: var(--ok);
 }
+
+/* ---- Dialog ------------------------------------------------------------- */
+
+dialog.modal {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  padding: 1.2rem;
+  max-width: 420px;
+  width: calc(100% - 2rem);
+  box-shadow: var(--shadow);
+}
+dialog.modal::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* ---- Filter bar --------------------------------------------------------- */
+
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.filters input {
+  min-width: 0;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
