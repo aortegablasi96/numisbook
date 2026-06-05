@@ -153,12 +153,12 @@ export function CoinsManager({
   }
 
   return (
-    <section>
-      <h2>{editingId ? "Edit coin" : "Add a coin"}</h2>
-      <form onSubmit={handleSubmit}>
-        {TEXT_FIELDS.map(([key, label]) => (
-          <div key={key}>
-            <label>
+    <section className="stack">
+      <form onSubmit={handleSubmit} className="card stack">
+        <h2>{editingId ? "Edit coin" : "Add a coin"}</h2>
+        <div className="row" style={{ alignItems: "flex-end" }}>
+          {TEXT_FIELDS.map(([key, label]) => (
+            <label key={key}>
               {label}
               {key === "name" ? " *" : ""}
               <input
@@ -167,11 +167,9 @@ export function CoinsManager({
                 onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
               />
             </label>
-          </div>
-        ))}
-        <div>
+          ))}
           <label>
-            Year (negative for BC)
+            Year (− for BC)
             <input
               type="number"
               value={form.year}
@@ -179,32 +177,43 @@ export function CoinsManager({
             />
           </label>
         </div>
-        <button type="submit" disabled={busy || form.name.trim() === ""}>
-          {editingId ? "Save changes" : "Add coin"}
-        </button>
-        {editingId && (
-          <button type="button" onClick={resetForm} disabled={busy}>
-            Cancel
+        <div className="row">
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={busy || form.name.trim() === ""}
+          >
+            {editingId ? "Save changes" : "Add coin"}
           </button>
-        )}
+          {editingId && (
+            <button type="button" onClick={resetForm} disabled={busy}>
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
-      {error && <p role="alert">{error}</p>}
+      {error && <p className="alert">{error}</p>}
 
       <h2>Coins ({coins.length})</h2>
       {coins.length === 0 ? (
-        <p>No coins yet. Add your first one above.</p>
+        <p className="empty">No coins yet. Add your first one above.</p>
       ) : (
-        <ul>
+        <ul className="rows">
           {coins.map((coin) => (
             <li key={coin.id}>
               <CoinThumb coinId={coin.id} />
-              <Link href={`/coins/${coin.id}`}>
-                <strong>{coin.name}</strong>
-              </Link>
-              {summary(coin) && <span> — {summary(coin)}</span>}{" "}
+              <span className="grow">
+                <Link href={`/coins/${coin.id}`}>
+                  <strong>{coin.name}</strong>
+                </Link>
+                {summary(coin) && (
+                  <span className="muted"> — {summary(coin)}</span>
+                )}
+              </span>
               <button
                 type="button"
+                className="btn-sm"
                 onClick={() => {
                   setForm(toForm(coin));
                   setEditingId(coin.id);
@@ -212,8 +221,13 @@ export function CoinsManager({
                 disabled={busy}
               >
                 Edit
-              </button>{" "}
-              <button type="button" onClick={() => handleDelete(coin)} disabled={busy}>
+              </button>
+              <button
+                type="button"
+                className="btn-sm btn-danger"
+                onClick={() => handleDelete(coin)}
+                disabled={busy}
+              >
                 Delete
               </button>
             </li>
@@ -234,14 +248,7 @@ function CoinThumb({ coinId }: { coinId: string }) {
     <img
       src={`/api/coins/${coinId}/image`}
       alt=""
-      style={{
-        width: 32,
-        height: 32,
-        objectFit: "cover",
-        verticalAlign: "middle",
-        marginRight: 8,
-        borderRadius: 3,
-      }}
+      className="thumb"
       onError={() => setShow(false)}
     />
   );

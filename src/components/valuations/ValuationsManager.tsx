@@ -91,16 +91,19 @@ export function ValuationsManager({
   }
 
   return (
-    <section>
-      <h2>Valuations</h2>
-      {latest && (
-        <p>
-          Latest: <strong>{formatAmount(latest.amount, latest.currency)}</strong>{" "}
-          (as of {latest.valuedAt.slice(0, 10)})
-        </p>
-      )}
+    <section className="card stack">
+      <div className="spread">
+        <h2 style={{ margin: 0 }}>Valuations</h2>
+        {latest && (
+          <span>
+            Latest{" "}
+            <strong>{formatAmount(latest.amount, latest.currency)}</strong>{" "}
+            <span className="muted">as of {latest.valuedAt.slice(0, 10)}</span>
+          </span>
+        )}
+      </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="row" style={{ alignItems: "flex-end" }}>
         <label>
           Amount *
           <input
@@ -110,16 +113,17 @@ export function ValuationsManager({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
-        </label>{" "}
+        </label>
         <label>
           Currency *
           <input
             type="text"
             maxLength={3}
+            style={{ width: "5rem" }}
             value={currency}
             onChange={(e) => setCurrency(e.target.value.toUpperCase())}
           />
-        </label>{" "}
+        </label>
         <label>
           Date *
           <input
@@ -128,7 +132,7 @@ export function ValuationsManager({
             value={valuedAt}
             onChange={(e) => setValuedAt(e.target.value)}
           />
-        </label>{" "}
+        </label>
         <label>
           Source
           <input
@@ -137,25 +141,29 @@ export function ValuationsManager({
             onChange={(e) => setSource(e.target.value)}
             placeholder="auction, estimate…"
           />
-        </label>{" "}
+        </label>
         <button
           type="submit"
+          className="btn-primary"
           disabled={busy || amount.trim() === "" || currency.trim().length !== 3}
         >
-          Record valuation
+          Record
         </button>
       </form>
 
-      {error && <p role="alert">{error}</p>}
+      {error && <p className="alert">{error}</p>}
 
       {valuations.length === 0 ? (
-        <p>No valuations yet. Record the first one above.</p>
+        <p className="empty">No valuations yet. Record the first one above.</p>
       ) : (
-        <ul>
+        <ul className="rows">
           {valuations.map((v) => (
             <li key={v.id}>
-              {v.valuedAt.slice(0, 10)} — {formatAmount(v.amount, v.currency)}
-              {v.source && <span> ({v.source})</span>}
+              <span className="muted">{v.valuedAt.slice(0, 10)}</span>
+              <span className="grow">
+                <strong>{formatAmount(v.amount, v.currency)}</strong>
+                {v.source && <span className="muted"> · {v.source}</span>}
+              </span>
             </li>
           ))}
         </ul>

@@ -98,8 +98,8 @@ export function CollectionsManager({
   }
 
   return (
-    <section>
-      <form onSubmit={handleCreate}>
+    <section className="stack">
+      <form onSubmit={handleCreate} className="toolbar">
         <input
           type="text"
           value={newName}
@@ -107,31 +107,37 @@ export function CollectionsManager({
           placeholder="New collection name"
           aria-label="New collection name"
         />
-        <button type="submit" disabled={busy || newName.trim() === ""}>
+        <button
+          type="submit"
+          className="btn-primary"
+          disabled={busy || newName.trim() === ""}
+        >
           Add
         </button>
       </form>
 
-      {error && <p role="alert">{error}</p>}
+      {error && <p className="alert">{error}</p>}
 
       {collections.length === 0 ? (
-        <p>No collections yet. Create your first one above.</p>
+        <p className="empty">No collections yet. Create your first one above.</p>
       ) : (
-        <ul>
+        <ul className="rows">
           {collections.map((collection) => (
             <li key={collection.id}>
-              <Link href={`/collections/${collection.id}`}>
+              <Link href={`/collections/${collection.id}`} className="grow">
                 {collection.name}
-              </Link>{" "}
+              </Link>
               <button
                 type="button"
+                className="btn-sm"
                 onClick={() => handleRename(collection.id, collection.name)}
                 disabled={busy}
               >
                 Rename
-              </button>{" "}
+              </button>
               <button
                 type="button"
+                className="btn-sm btn-danger"
                 onClick={() => handleDelete(collection.id, collection.name)}
                 disabled={busy}
               >

@@ -20,17 +20,21 @@ export default async function CollectionDetailPage({
 
   if (!user) {
     return (
-      <main>
+      <main className="stack">
         <h1>Collection</h1>
-        <p>Sign in to view this collection.</p>
-        <form
-          action={async () => {
-            "use server";
-            await signIn("google", { redirectTo: `/collections/${id}` });
-          }}
-        >
-          <button type="submit">Sign in with Google</button>
-        </form>
+        <div className="card stack">
+          <p>Sign in to view this collection.</p>
+          <form
+            action={async () => {
+              "use server";
+              await signIn("google", { redirectTo: `/collections/${id}` });
+            }}
+          >
+            <button type="submit" className="btn-primary">
+              Sign in with Google
+            </button>
+          </form>
+        </div>
       </main>
     );
   }
@@ -44,8 +48,8 @@ export default async function CollectionDetailPage({
   const coins = await listCoins(user.id, id);
 
   return (
-    <main>
-      <p>
+    <main className="stack">
+      <p className="crumbs">
         <Link href="/collections">← Collections</Link>
       </p>
       <h1>{collection.name}</h1>

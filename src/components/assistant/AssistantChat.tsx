@@ -60,52 +60,59 @@ export function AssistantChat() {
   }
 
   return (
-    <section>
+    <section className="card stack">
       {turns.length === 0 && (
-        <p>
+        <p className="muted">
           Ask me to organize your collection — e.g. &ldquo;Create a collection
           called Ancient Rome and add a silver Denarius&rdquo;, or &ldquo;What is
           my most valuable coin?&rdquo;
         </p>
       )}
 
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {turns.map((turn, i) => (
-          <li key={i} style={{ margin: "0.75rem 0" }}>
-            <strong>{turn.role === "user" ? "You" : "Assistant"}:</strong>{" "}
-            <span style={{ whiteSpace: "pre-wrap" }}>{turn.content}</span>
-            {turn.actions && turn.actions.length > 0 && (
-              <ul>
-                {turn.actions.map((action, j) => (
-                  <li key={j}>
-                    <em>✓ {action}</em>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
-        ))}
-        {busy && (
-          <li>
-            <em>Assistant is thinking…</em>
-          </li>
-        )}
-      </ul>
+      {turns.length > 0 && (
+        <ul className="chat">
+          {turns.map((turn, i) => (
+            <li
+              key={i}
+              className={`msg ${turn.role === "user" ? "msg-user" : "msg-assistant"}`}
+            >
+              <span className="who">
+                {turn.role === "user" ? "You" : "Assistant"}
+              </span>
+              {turn.content}
+              {turn.actions && turn.actions.length > 0 && (
+                <ul className="actions">
+                  {turn.actions.map((action, j) => (
+                    <li key={j}>✓ {action}</li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+          {busy && (
+            <li className="msg msg-assistant muted">Assistant is thinking…</li>
+          )}
+        </ul>
+      )}
       <div ref={endRef} />
 
-      {error && <p role="alert">{error}</p>}
+      {error && <p className="alert">{error}</p>}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="row">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask the assistant…"
           aria-label="Message"
-          style={{ width: "70%" }}
+          style={{ flex: 1 }}
           disabled={busy}
-        />{" "}
-        <button type="submit" disabled={busy || input.trim() === ""}>
+        />
+        <button
+          type="submit"
+          className="btn-primary"
+          disabled={busy || input.trim() === ""}
+        >
           Send
         </button>
       </form>

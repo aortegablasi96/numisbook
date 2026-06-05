@@ -21,17 +21,21 @@ export default async function CoinDetailPage({
 
   if (!user) {
     return (
-      <main>
+      <main className="stack">
         <h1>Coin</h1>
-        <p>Sign in to view this coin.</p>
-        <form
-          action={async () => {
-            "use server";
-            await signIn("google", { redirectTo: `/coins/${id}` });
-          }}
-        >
-          <button type="submit">Sign in with Google</button>
-        </form>
+        <div className="card stack">
+          <p>Sign in to view this coin.</p>
+          <form
+            action={async () => {
+              "use server";
+              await signIn("google", { redirectTo: `/coins/${id}` });
+            }}
+          >
+            <button type="submit" className="btn-primary">
+              Sign in with Google
+            </button>
+          </form>
+        </div>
       </main>
     );
   }
@@ -52,8 +56,8 @@ export default async function CoinDetailPage({
   }));
 
   return (
-    <main>
-      <p>
+    <main className="stack">
+      <p className="crumbs">
         <Link href={`/collections/${coin.collectionId}`}>← Collection</Link>
       </p>
       <h1>{coin.name}</h1>

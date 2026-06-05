@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { AssistantChat } from "@/components/assistant/AssistantChat";
@@ -11,28 +10,27 @@ export default async function AssistantPage() {
 
   if (!user) {
     return (
-      <main>
+      <main className="stack">
         <h1>Assistant</h1>
-        <p>Sign in to chat with your collection assistant.</p>
-        <form
-          action={async () => {
-            "use server";
-            await signIn("google", { redirectTo: "/assistant" });
-          }}
-        >
-          <button type="submit">Sign in with Google</button>
-        </form>
+        <div className="card stack">
+          <p>Sign in to chat with your collection assistant.</p>
+          <form
+            action={async () => {
+              "use server";
+              await signIn("google", { redirectTo: "/assistant" });
+            }}
+          >
+            <button type="submit" className="btn-primary">
+              Sign in with Google
+            </button>
+          </form>
+        </div>
       </main>
     );
   }
 
   return (
-    <main>
-      <p>
-        <Link href="/">← Home</Link> ·{" "}
-        <Link href="/collections">Collections</Link> ·{" "}
-        <Link href="/portfolio">Portfolio</Link>
-      </p>
+    <main className="stack">
       <h1>Collection assistant</h1>
       <AssistantChat />
     </main>

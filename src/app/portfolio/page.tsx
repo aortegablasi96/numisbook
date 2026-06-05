@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import {
@@ -18,70 +17,62 @@ function money(amount: number, currency: string): string {
   }
 }
 
-// Simple dependency-free horizontal bar (width relative to the largest slice).
+// Dependency-free horizontal bar (width relative to the largest slice).
 function Bar({ fraction }: { fraction: number }) {
   return (
-    <span
-      aria-hidden
-      style={{
-        display: "inline-block",
-        height: "0.7em",
-        width: `${Math.max(2, Math.round(fraction * 100))}%`,
-        background: "#5b8def",
-        borderRadius: 2,
-        verticalAlign: "middle",
-      }}
-    />
+    <span className="bar-track" aria-hidden>
+      <span
+        className="bar-fill"
+        style={{ width: `${Math.max(2, Math.round(fraction * 100))}%` }}
+      />
+    </span>
   );
 }
 
-function Allocation({
+function MetricRows({
   title,
-  slices,
+  rows,
   currency,
 }: {
+  title: string;
+  rows: { label: string; total: number }[];
+  currency: string;
+}) {
+  if (rows.length === 0) return null;
+  const max = Math.max(...rows.map((r) => r.total));
+  return (
+    <section className="card stack">
+      <h3>{title}</h3>
+      <ul className="rows">
+        {rows.map((row) => (
+          <li key={row.label}>
+            <span className="grow">{row.label}</span>
+            <Bar fraction={max > 0 ? row.total / max : 0} />
+            <strong>{money(row.total, currency)}</strong>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function Allocation(props: {
   title: string;
   slices: AllocationSlice[];
   currency: string;
 }) {
-  if (slices.length === 0) return null;
-  const max = Math.max(...slices.map((s) => s.total));
   return (
-    <section>
-      <h3>{title}</h3>
-      <ul>
-        {slices.map((slice) => (
-          <li key={slice.label}>
-            {slice.label} — {money(slice.total, currency)}{" "}
-            <Bar fraction={max > 0 ? slice.total / max : 0} />
-          </li>
-        ))}
-      </ul>
-    </section>
+    <MetricRows title={props.title} rows={props.slices} currency={props.currency} />
   );
 }
 
-function Trend({
-  points,
-  currency,
-}: {
-  points: TrendPoint[];
-  currency: string;
-}) {
-  if (points.length === 0) return null;
-  const max = Math.max(...points.map((p) => p.total));
+function Trend({ points, currency }: { points: TrendPoint[]; currency: string }) {
   return (
-    <section>
-      <h3>Value over time</h3>
-      <ul>
-        {points.map((point) => (
-          <li key={point.date}>
-            {point.date} — {money(point.total, currency)}{" "}
-            <Bar fraction={max > 0 ? point.total / max : 0} />
-          </li>
-        ))}
-      </ul>
-    </section>
+    <MetricRows
+      title="Value over time"
+      rows={points.map((p) => ({ label: p.date, total: p.total }))}
+      currency={currency}
+    />
   );
 }
 
@@ -91,17 +82,21 @@ export default async function PortfolioPage() {
 
   if (!user) {
     return (
-      <main>
+      <main className="stack">
         <h1>Portfolio</h1>
-        <p>Sign in to view your portfolio analytics.</p>
-        <form
-          action={async () => {
-            "use server";
-            await signIn("google", { redirectTo: "/portfolio" });
-          }}
-        >
-          <button type="submit">Sign in with Google</button>
-        </form>
+        <div className="card stack">
+          <p>Sign in to view your portfolio analytics.</p>
+          <form
+            action={async () => {
+              "use server";
+              await signIn("google", { redirectTo: "/portfolio" });
+            }}
+          >
+            <button type="submit" className="btn-primary">
+              Sign in with Google
+            </button>
+          </form>
+        </div>
       </main>
     );
   }
@@ -110,31 +105,31 @@ export default async function PortfolioPage() {
   const { primaryCurrency } = summary;
 
   return (
-    <main>
-      <p>
-        <Link href="/collections">← Collections</Link>
-      </p>
-      <h1>Portfolio</h1>
-
-      <p>
-        {summary.valuedCoins} of {summary.totalCoins} coin
-        {summary.totalCoins === 1 ? "" : "s"} valued.
-      </p>
+    <main className="stack">
+      <div className="spread">
+        <h1 style={{ margin: 0 }}>Portfolio</h1>
+        <span className="muted">
+          {summary.valuedCoins} of {summary.totalCoins} coin
+          {summary.totalCoins === 1 ? "" : "s"} valued
+        </span>
+      </div>
 
       {summary.totalsByCurrency.length === 0 ? (
-        <p>
+        <p className="empty">
           No valuations yet. Add coins and record valuations to see your
           portfolio value, allocation, and trend.
         </p>
       ) : (
         <>
-          <section>
-            <h2>Total value</h2>
-            <ul>
+          <section className="card stack">
+            <h2 style={{ margin: 0 }}>Total value</h2>
+            <ul className="rows">
               {summary.totalsByCurrency.map((t) => (
                 <li key={t.currency}>
-                  <strong>{money(t.total, t.currency)}</strong> across{" "}
-                  {t.coinCount} coin{t.coinCount === 1 ? "" : "s"}
+                  <strong className="grow">{money(t.total, t.currency)}</strong>
+                  <span className="muted">
+                    {t.coinCount} coin{t.coinCount === 1 ? "" : "s"}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -142,11 +137,10 @@ export default async function PortfolioPage() {
 
           {primaryCurrency && (
             <>
-              <p>
-                <em>
-                  Allocation and trend shown for {primaryCurrency} (your largest
-                  holding).
-                </em>
+              <p className="muted">
+                Allocation and trend shown for{" "}
+                <span className="badge">{primaryCurrency}</span> (your largest
+                holding).
               </p>
               <Allocation
                 title="Allocation by metal"

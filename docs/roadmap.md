@@ -66,6 +66,14 @@ Each feature follows the same vertical slice:
       upload/display/remove on the coin page + list thumbnails. bytea round-trip
       and tenant isolation verified against real Postgres. Storage is abstracted
       behind the repository so it can move to S3/R2 later.
+- [x] UI/UX polish. Dependency-free design system in `globals.css` (theme tokens
+      with light/dark, typography, themed buttons/inputs/tables, component
+      classes: cards, rows, badges, alerts, analytics bars, chat bubbles). App
+      shell via `SiteHeader` (brand + global nav + sign in/out) in the root
+      layout, replacing the scattered per-page nav links. Home is now a dashboard
+      of feature cards; collections/coins/valuations use cards + bordered rows;
+      portfolio uses themed bars; the assistant uses chat bubbles; coin photos
+      are framed and thumbnails are styled. No new dependencies.
 - [ ] Auction monitoring. *(deferred — out of scope for now)*
 - [ ] AI-assisted research / coin identification. *(deferred — later AI phase)*
 

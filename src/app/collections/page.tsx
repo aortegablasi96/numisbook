@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { listCollections } from "@/services/collection.service";
@@ -12,17 +11,21 @@ export default async function CollectionsPage() {
 
   if (!user) {
     return (
-      <main>
+      <main className="stack">
         <h1>Collections</h1>
-        <p>Sign in to manage your collections.</p>
-        <form
-          action={async () => {
-            "use server";
-            await signIn("google", { redirectTo: "/collections" });
-          }}
-        >
-          <button type="submit">Sign in with Google</button>
-        </form>
+        <div className="card stack">
+          <p>Sign in to manage your collections.</p>
+          <form
+            action={async () => {
+              "use server";
+              await signIn("google", { redirectTo: "/collections" });
+            }}
+          >
+            <button type="submit" className="btn-primary">
+              Sign in with Google
+            </button>
+          </form>
+        </div>
       </main>
     );
   }
@@ -30,11 +33,7 @@ export default async function CollectionsPage() {
   const collections = await listCollections(user.id);
 
   return (
-    <main>
-      <p>
-        <Link href="/">← Home</Link> · <Link href="/portfolio">Portfolio</Link>{" "}
-        · <Link href="/assistant">Assistant</Link>
-      </p>
+    <main className="stack">
       <h1>Collections</h1>
       <CollectionsManager initialCollections={collections} />
     </main>

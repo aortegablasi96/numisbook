@@ -68,20 +68,22 @@ export function CoinImage({ coinId }: { coinId: string }) {
   }
 
   return (
-    <section>
+    <section className="card stack">
       {hasImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={src}
           alt="Coin"
-          style={{ maxWidth: 320, maxHeight: 320, display: "block" }}
+          className="coin-photo"
           onError={() => setHasImage(false)}
         />
       ) : (
-        <p>No image yet.</p>
+        <p className="muted" style={{ margin: 0 }}>
+          No image yet.
+        </p>
       )}
 
-      <p>
+      <div className="row">
         <input
           ref={inputRef}
           type="file"
@@ -89,15 +91,20 @@ export function CoinImage({ coinId }: { coinId: string }) {
           onChange={handleUpload}
           disabled={busy}
           aria-label="Coin image"
-        />{" "}
+        />
         {hasImage && (
-          <button type="button" onClick={handleRemove} disabled={busy}>
+          <button
+            type="button"
+            className="btn-sm btn-danger"
+            onClick={handleRemove}
+            disabled={busy}
+          >
             Remove image
           </button>
         )}
-      </p>
+      </div>
 
-      {error && <p role="alert">{error}</p>}
+      {error && <p className="alert">{error}</p>}
     </section>
   );
 }
