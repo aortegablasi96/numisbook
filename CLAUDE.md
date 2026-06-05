@@ -41,7 +41,8 @@ npm run db:studio      # open Drizzle Studio
 
 Run a single test file: `npx vitest run path/to/file.test.ts`.
 
-Local setup: copy `.env.example` to `.env`, set `DATABASE_URL`, then
+Local setup: copy `.env.example` to `.env`, set `DATABASE_URL` (and the Auth.js
+vars below to enable sign-in), then
 `npm install` → `npm run db:generate` → `npm run db:migrate` → `npm run dev`.
 
 ## Architecture Rules
@@ -59,7 +60,16 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   through repositories.
 * **Database access belongs in repositories** (`src/repositories`) — the only
   layer that imports `src/db` / runs Drizzle queries. Repositories expose
-  intention-revealing methods and return domain-shaped data.
+  intention-revealing methods and return domain-shaped data. This is enforced by
+  an ESLint `no-restricted-imports` guard: importing `@/db` / `@/db/**` outside
+  `src/repositories` (plus `src/db` itself and `src/auth.ts`, the Auth.js
+  adapter) fails `npm run lint`.
+* **Tenant isolation.** Every user is a tenant; data must never leak across
+  users. Repository methods for user-owned entities take the owner's `userId`
+  and scope every read/write by it (`WHERE … AND user_id = userId`). The
+  `userId` always comes from the authenticated session (`currentUser()` in
+  `src/app/api/_lib.ts`), never from client input. Mutations that match no row
+  raise `NotFoundError` (404) rather than revealing another tenant's data.
 * **React components** (`src/components`) must not contain database queries or
   import repositories; data comes via props, Server Components, or the API.
 * **Drizzle schema** lives in `src/db/schema`; migrations are generated into
@@ -72,6 +82,23 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
 
 A new feature is built as a vertical slice:
 `schema → repository → service (+ tests) → API route → UI`.
+
+## Authentication
+
+Auth.js v5 (`next-auth@5`) with the Drizzle adapter and **database** sessions
+(no JWTs). Google is the only provider.
+
+* Config lives in `src/auth.ts`, which exports `handlers`, `auth`, `signIn`,
+  and `signOut`. The catch-all route `src/app/api/auth/[...nextauth]/route.ts`
+  re-exports `handlers` as `GET`/`POST`.
+* Auth.js reads `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` from
+  the environment automatically (generate the secret with `npx auth secret`).
+* Auth tables (`users`, `accounts`, `sessions`, `verificationTokens`) live in
+  `src/db/schema/auth.ts` and `users.ts`.
+* The architecture rules still apply: call the Next-specific `auth()` in a route
+  or Server Component, then pass the plain session into a service. Services stay
+  framework-agnostic — `src/services/auth.service.ts` (`resolveCurrentUser`)
+  takes an `AuthSession` shape rather than touching `auth()` or Drizzle directly.
 
 ## Development Principles
 
