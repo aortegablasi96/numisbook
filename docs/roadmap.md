@@ -46,7 +46,7 @@
 Each feature follows the same vertical slice:
 `schema → repository → service (+ tests) → API route → UI`.
 
-## Phase 3 — Post-MVP *(current)*
+## Phase 3 — Post-MVP *(complete)*
 
 - [x] Portfolio analytics (aggregate value, trends, allocation). Read-model
       slice: `analytics.repository` (user-scoped joins) → `analytics.service`
@@ -74,12 +74,15 @@ Each feature follows the same vertical slice:
       of feature cards; collections/coins/valuations use cards + bordered rows;
       portfolio uses themed bars; the assistant uses chat bubbles; coin photos
       are framed and thumbnails are styled. No new dependencies.
-- [ ] Auction monitoring. *(deferred — out of scope for now)*
-- [ ] AI-assisted research / coin identification. *(deferred — later AI phase)*
+## Phase 4 — Improvements 1 *(current)*
+
+_Items to be defined._
 
 ## Out of Scope (for now)
 
 - Marketplace / user-to-user trading.
 - Mobile apps.
+- Auction monitoring.
+- AI-assisted research / coin identification.
 
 See also: [`product.md`](./product.md), [`architecture.md`](./architecture.md).
