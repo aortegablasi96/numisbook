@@ -22,20 +22,31 @@
       (`numisbook-pg`, `postgres:16` on `localhost:5432`), `npm run db:generate`
       (→ `drizzle/0000_clammy_lily_hollister.sql`) + `npm run db:migrate` applied.
 
-## Phase 2 — MVP features *(current)*
+## Phase 2 — MVP features *(complete)*
 
 - [x] **Auth / Users** — Auth.js v5 + Google OAuth, DB sessions via the Drizzle
       adapter (`users`/`accounts`/`sessions`/`verification_tokens`). Sign in/out
       UI; `auth.service` resolves session → domain user (unit-tested).
-- [ ] **Collections** — create, list, rename, delete.
-- [ ] **Coins / Inventory** — add coin to collection, edit, list, delete.
-- [ ] **Valuations** — record a valuation, view value history per coin.
-- [ ] Basic UI for the above.
+- [x] **Collections** — create, list, rename, delete. Vertical slice:
+      `collection.repository` → `collection.service` (+ tests, ownership-scoped)
+      → `/api/collections` (+ `/[id]`) → `/collections` UI.
+- [x] **Coins / Inventory** — add coin to collection, edit, list, delete.
+      Vertical slice: `coin.repository` (writes scoped to the owner via the
+      collection) → `coin.service` (+ tests) → `/api/collections/[id]/coins`
+      and `/api/coins/[id]` → `/collections/[id]` UI. Tenant isolation verified
+      against real Postgres with two users.
+- [x] **Valuations** — record a valuation, view value history per coin.
+      Vertical slice: `valuation.repository` → `valuation.service` (+ tests,
+      ownership via the coin) → `/api/coins/[id]/valuations` → `/coins/[id]` UI
+      (history + record form, latest-value summary). Tenant isolation verified
+      against real Postgres.
+- [x] Basic UI for the above — `/collections`, `/collections/[id]` (coins),
+      `/coins/[id]` (valuations), linked together and from the home page.
 
 Each feature follows the same vertical slice:
 `schema → repository → service (+ tests) → API route → UI`.
 
-## Phase 3 — Post-MVP
+## Phase 3 — Post-MVP *(current)*
 
 - [ ] Portfolio analytics (aggregate value, trends, allocation).
 - [ ] Auction monitoring.
