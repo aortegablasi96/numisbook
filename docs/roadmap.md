@@ -76,7 +76,67 @@ Each feature follows the same vertical slice:
       are framed and thumbnails are styled. No new dependencies.
 ## Phase 4 — Improvements 1 *(current)*
 
-_Items to be defined._
+- [x] Search & filtering — search coins by name and filter by metal/category/year
+      with pagination (server-side: `coin.repository.searchInCollection` →
+      `coin.service.searchCoins` (+ tests) → `/api/collections/[id]/coins` query
+      params → query-driven `CoinsManager` UI); plus a client-side name filter on
+      the collections list. Search SQL verified against real Postgres.
+- [x] Replace `window.prompt`/`confirm` with inline UI — reusable `ConfirmButton`
+      (styled `<dialog>`) for deletes (collections, coins, coin images) and
+      inline rename editing for collections.
+- [x] API route / integration tests — handler tests for `/api/collections` and
+      `/api/collections/[id]` covering auth guards (401), real validation → 400,
+      success status codes (200/201/204), and typed-error → status mapping (404).
+
+## TODO — backlog
+
+Candidate improvements, not yet scheduled. Each notes the problem and the
+proposed fix; promote items into a phase when picked up.
+
+- **Deploy to production**
+  - _Problem:_ the app only runs locally against Docker Postgres; it isn't
+    reachable by real users.
+  - _Fix:_ host on Vercel with a managed Postgres (Neon/Supabase), set
+    production Google OAuth redirect URIs and secrets, and run migrations on
+    deploy.
+- **CI pipeline**
+  - _Problem:_ there are no automated checks, so regressions can land unnoticed.
+  - _Fix:_ GitHub Actions running `npm run lint`, `tsc --noEmit`, and `vitest`
+    on every pull request and push to `main`.
+- **Harden the assistant**
+  - _Problem:_ the chat assistant doesn't stream (replies appear all at once)
+    and has no rate limit or cost cap on the OpenAI calls — open to abuse and
+    runaway cost.
+  - _Fix:_ stream responses, add a per-user rate limit and a per-turn/per-
+    conversation cost cap, and bound conversation length.
+- **Coin images → object storage + thumbnails**
+  - _Problem:_ images are stored as Postgres `bytea`, and the full-size image is
+    served even for the 36px list thumbnail — wasteful and won't scale.
+  - _Fix:_ move bytes to S3/R2 (already abstracted behind `coinImage.repository`)
+    and generate/serve resized thumbnails.
+- **Observability**
+  - _Problem:_ no structured logging or error monitoring (`architecture.md`
+    still lists logging as TODO); production issues would be invisible.
+  - _Fix:_ add structured request/error logging and an error monitor (e.g.
+    Sentry).
+- **Multi-currency portfolio (+ account / base-currency preference)**
+  - _Problem:_ portfolio totals are per-currency and allocation/trend only cover
+    the primary currency, so a mixed-currency collection has no single total.
+  - _Fix:_ add FX conversion to a user-selected base currency, stored on an
+    account/profile page.
+- **Collection CSV export / import**
+  - _Problem:_ no way to bulk export or import collection data — a common
+    collector need and a hedge against lock-in.
+  - _Fix:_ CSV export of a collection's coins (and valuations), plus an import
+    flow with validation.
+- **Fill in `product.md`**
+  - _Problem:_ `product.md` is still a stub (target users, pricing tiers, open
+    questions unanswered).
+  - _Fix:_ flesh out the product requirements as decisions are made.
+- **Migrate off deprecated `next lint`**
+  - _Problem:_ `next lint` is deprecated and removed in Next.js 16, so the lint
+    step will eventually break.
+  - _Fix:_ migrate to the ESLint CLI (the `next-lint-to-eslint-cli` codemod).
 
 ## Out of Scope (for now)
 
