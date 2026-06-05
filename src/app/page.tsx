@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth, signIn, signOut } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 
@@ -13,6 +14,9 @@ export default async function Home() {
       {user ? (
         <section>
           <p>Signed in as {user.name ?? user.email}.</p>
+          <p>
+            <Link href="/collections">Manage your collections →</Link>
+          </p>
           <form
             action={async () => {
               "use server";
