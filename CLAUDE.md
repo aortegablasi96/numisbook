@@ -6,20 +6,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NumisBook is a SaaS platform for coin collectors.
 
-Core features:
+Built features (see `docs/roadmap.md` for status):
 
 * Collection management
-* Coin inventory
-* Valuation tracking
-* Auction monitoring (post-MVP)
-* AI-assisted research (post-MVP)
-* Portfolio analytics (post-MVP)
+* Coin inventory (with per-coin images stored in Postgres)
+* Valuation tracking (value history per coin)
+* Portfolio analytics (aggregate value, allocation, trend)
+* Collection assistant — an OpenAI-backed chatbot over the domain services
+
+Out of scope for now: marketplace/trading, mobile apps, auction monitoring,
+AI-assisted coin identification.
 
 ## Stack
 
 * **TypeScript** + **Next.js** (App Router) + **React**
 * **Drizzle ORM** over **PostgreSQL** (migrations via `drizzle-kit` → `drizzle/`)
 * **Zod** for input validation at the API boundary
+* **OpenAI** (`openai`, gpt-4o-mini) for the collection assistant only
 
 ## Commands
 
@@ -100,6 +103,16 @@ Auth.js v5 (`next-auth@5`) with the Drizzle adapter and **database** sessions
   framework-agnostic — `src/services/auth.service.ts` (`resolveCurrentUser`)
   takes an `AuthSession` shape rather than touching `auth()` or Drizzle directly.
 
+## Collection Assistant
+
+The `/assistant` chatbot (`src/services/assistant.service.ts` → `/api/assistant`)
+runs a manual agentic loop: OpenAI `gpt-4o-mini` with function calling over the
+domain services (read + write + delete). **Tenant-isolation invariant:** the
+acting `userId` comes from the session and is injected server-side into every
+tool handler — it is never a model-supplied argument — so the model can only
+touch the signed-in user's data. Requires `OPENAI_API_KEY`; without it the route
+returns 503 and the rest of the app works.
+
 ## Development Principles
 
 * Simplicity over complexity.
@@ -135,5 +148,6 @@ Project-specific Claude Code skills live in `.claude/skills/`:
 
 ## Current Priority
 
-Build the MVP before introducing advanced automation or optimization.
-See `docs/roadmap.md`.
+The MVP and post-MVP features (Phases 0–3) are complete. Work is now on Phase 4
+"Improvements" and the backlog in `docs/roadmap.md` — check it for the current
+focus before starting new work.

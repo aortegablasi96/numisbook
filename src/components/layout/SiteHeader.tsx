@@ -20,7 +20,6 @@ export async function SiteHeader() {
             <>
               <Link href="/collections">Collections</Link>
               <Link href="/portfolio">Portfolio</Link>
-              <Link href="/assistant">Assistant</Link>
             </>
           )}
           {user ? (

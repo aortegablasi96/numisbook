@@ -15,8 +15,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const { messages } = assistantRequestSchema.parse(await request.json());
-    const result = await chat(user.id, messages);
+    const { messages, attachedImage } = assistantRequestSchema.parse(await request.json());
+    const result = await chat(user.id, messages, attachedImage);
     return NextResponse.json(result);
   } catch (error) {
     return errorResponse(error);

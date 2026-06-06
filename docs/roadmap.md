@@ -74,7 +74,7 @@ Each feature follows the same vertical slice:
       of feature cards; collections/coins/valuations use cards + bordered rows;
       portfolio uses themed bars; the assistant uses chat bubbles; coin photos
       are framed and thumbnails are styled. No new dependencies.
-## Phase 4 — Improvements 1 *(current)*
+## Phase 4 — Improvements 1 *(complete)*
 
 - [x] Search & filtering — search coins by name and filter by metal/category/year
       with pagination (server-side: `coin.repository.searchInCollection` →
@@ -87,12 +87,26 @@ Each feature follows the same vertical slice:
 - [x] API route / integration tests — handler tests for `/api/collections` and
       `/api/collections/[id]` covering auth guards (401), real validation → 400,
       success status codes (200/201/204), and typed-error → status mapping (404).
+- [x] Assistant as floating widget — collection chatbot moved from a dedicated
+      `/assistant` page + nav link to a fixed bottom-right floating button
+      (`AssistantWidget`). Toggling opens a compact chat panel overlaid on any
+      page. Auth-gated server wrapper (`FloatingAssistant`) in the root layout
+      keeps the widget invisible to signed-out users. Old `AssistantChat`
+      component and `/assistant` route removed.
 
 ## TODO — backlog
 
 Candidate improvements, not yet scheduled. Each notes the problem and the
 proposed fix; promote items into a phase when picked up.
 
+- **Graceful auth error page during DB outage**
+  - _Problem:_ if Postgres is unavailable when a Google OAuth callback lands,
+    Auth.js maps the DB error to `error=Configuration` and the `/api/auth/error`
+    page itself returns 500 (it also tries to hit the DB). Users see a raw error
+    instead of a friendly message.
+  - _Fix:_ add a custom `src/app/api/auth/error/page.tsx` that renders a
+    static "sign-in is temporarily unavailable" page without calling `auth()` or
+    touching the DB.
 - **Deploy to production**
   - _Problem:_ the app only runs locally against Docker Postgres; it isn't
     reachable by real users.

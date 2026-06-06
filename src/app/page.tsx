@@ -13,11 +13,6 @@ const FEATURES = [
     title: "Portfolio",
     body: "Aggregate value, allocation by metal and collection, and trends.",
   },
-  {
-    href: "/assistant",
-    title: "Assistant",
-    body: "Chat to manage your collection — add coins, record valuations, ask questions.",
-  },
 ];
 
 export default async function Home() {

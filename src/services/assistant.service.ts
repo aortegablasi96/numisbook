@@ -3,6 +3,7 @@ import * as collectionService from "@/services/collection.service";
 import * as coinService from "@/services/coin.service";
 import * as valuationService from "@/services/valuation.service";
 import { getPortfolioSummary } from "@/services/analytics.service";
+import { setCoinImage } from "@/services/coinImage.service";
 
 // NumisBook's collection assistant: OpenAI gpt-4o-mini with function calling over
 // the domain services, driven by a manual agentic loop. Tenant isolation is
@@ -24,12 +25,17 @@ Guidelines:
 - Coins belong to collections; valuations belong to coins. Amounts use a 3-letter ISO currency code (e.g. USD).
 - Before deleting a collection or coin, confirm with the user, unless they have already clearly confirmed the deletion in this conversation. Deletions cannot be undone.
 - Be concise. After taking an action, briefly confirm what you did.
-- You only ever see and act on the current user's own data.`;
+- You only ever see and act on the current user's own data.
+- When the user asks to add a coin and has attached a photo, let them know the photo will be saved automatically.`;
 
 // The security boundary: each handler closes over `userId` and forwards it to a
 // domain service, which enforces ownership. `actions` accumulates a human-readable
 // log of mutations for display in the UI.
-export function buildHandlers(userId: string, actions: string[]) {
+export function buildHandlers(
+  userId: string,
+  actions: string[],
+  imageDataUrl?: string | null,
+) {
   return {
     list_collections: () => collectionService.listCollections(userId),
 
@@ -73,6 +79,17 @@ export function buildHandlers(userId: string, actions: string[]) {
     }) => {
       const coin = await coinService.addCoin(userId, collectionId, attributes);
       actions.push(`Added coin "${coin.name}"`);
+      if (imageDataUrl) {
+        try {
+          const [meta, b64] = imageDataUrl.split(",");
+          const mimeType = meta.split(":")[1].split(";")[0];
+          await setCoinImage(userId, coin.id, mimeType, Buffer.from(b64, "base64"));
+          actions.push("Saved coin photo");
+        } catch (err) {
+          console.error("[assistant] setCoinImage failed:", err);
+          actions.push(`⚠ Photo not saved: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
       return coin;
     },
 
@@ -285,10 +302,11 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
 export async function chat(
   userId: string,
   messages: ChatMessage[],
+  imageDataUrl?: string | null,
 ): Promise<ChatResult> {
   const client = new OpenAI();
   const actions: string[] = [];
-  const handlers = buildHandlers(userId, actions) as unknown as Record<
+  const handlers = buildHandlers(userId, actions, imageDataUrl) as unknown as Record<
     string,
     (input: Record<string, unknown>) => Promise<unknown> | unknown
   >;
