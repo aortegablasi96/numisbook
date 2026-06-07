@@ -3,163 +3,74 @@
 > Guiding principle (from `CLAUDE.md`): **Build the MVP before introducing
 > advanced automation or optimization.**
 
-## Phase 0 — Foundation
+Phases 0–4 are **complete**. Each feature was built as a vertical slice —
+`schema → repository → service (+ tests) → API route → UI` — and tenant
+isolation was verified against real Postgres. The entries below are condensed;
+the detailed implementation history lives in git. Current work is the
+[backlog](#todo--backlog).
 
-- [x] Define stack (Next.js + Drizzle + PostgreSQL).
-- [x] Define folder structure and layering rules.
-- [x] Write architecture, database, and product docs.
-- [x] Add initial Claude Code skills.
-- [x] **Review checkpoint** — scaffold approved; cleared to write app code.
+## Phase 0 — Foundation *(complete)*
 
-## Phase 1 — Project setup
+- [x] Stack (Next.js + Drizzle + PostgreSQL), folder/layering rules,
+      architecture/database/product docs, initial Claude Code skills; scaffold
+      review checkpoint passed.
 
-- [x] Initialize Next.js + TypeScript project (`package.json`, configs).
-- [x] Add Drizzle, drizzle-kit, `drizzle.config.ts`, `src/db/index.ts`.
-- [x] Add tooling: linting (ESLint) and test runner (Vitest).
-- [x] Define schema: `User`, `Collection`, `Coin`, `Valuation`.
-- [x] `.env.example` + env handling.
-- [x] **Run locally**: `npm install` (385 pkgs), Postgres via Docker
-      (`numisbook-pg`, `postgres:16` on `localhost:5432`), `npm run db:generate`
-      (→ `drizzle/0000_clammy_lily_hollister.sql`) + `npm run db:migrate` applied.
+## Phase 1 — Project setup *(complete)*
+
+- [x] Next.js + TypeScript project; Drizzle + drizzle-kit; ESLint + Vitest;
+      initial schema (`User`/`Collection`/`Coin`/`Valuation`); `.env.example`;
+      first migration applied against Docker Postgres (`numisbook-pg`).
 
 ## Phase 2 — MVP features *(complete)*
 
 - [x] **Auth / Users** — Auth.js v5 + Google OAuth, DB sessions via the Drizzle
-      adapter (`users`/`accounts`/`sessions`/`verification_tokens`). Sign in/out
-      UI; `auth.service` resolves session → domain user (unit-tested).
-- [x] **Collections** — create, list, rename, delete. Vertical slice:
-      `collection.repository` → `collection.service` (+ tests, ownership-scoped)
-      → `/api/collections` (+ `/[id]`) → `/collections` UI.
-- [x] **Coins / Inventory** — add coin to collection, edit, list, delete.
-      Vertical slice: `coin.repository` (writes scoped to the owner via the
-      collection) → `coin.service` (+ tests) → `/api/collections/[id]/coins`
-      and `/api/coins/[id]` → `/collections/[id]` UI. Tenant isolation verified
-      against real Postgres with two users.
-- [x] **Valuations** — record a valuation, view value history per coin.
-      Vertical slice: `valuation.repository` → `valuation.service` (+ tests,
-      ownership via the coin) → `/api/coins/[id]/valuations` → `/coins/[id]` UI
-      (history + record form, latest-value summary). Tenant isolation verified
-      against real Postgres.
-- [x] Basic UI for the above — `/collections`, `/collections/[id]` (coins),
-      `/coins/[id]` (valuations), linked together and from the home page.
-
-Each feature follows the same vertical slice:
-`schema → repository → service (+ tests) → API route → UI`.
+      adapter; `auth.service` resolves session → domain user (framework-agnostic).
+- [x] **Collections** — create / list / rename / delete, ownership-scoped.
+- [x] **Coins / Inventory** — add / edit / list / delete; writes scoped to the
+      owner via the collection (coins have no `user_id`).
+- [x] **Valuations** — record a valuation and view per-coin value history.
+- [x] Basic UI linking `/collections`, `/collections/[id]`, `/coins/[id]`.
 
 ## Phase 3 — Post-MVP *(complete)*
 
-- [x] Portfolio analytics (aggregate value, trends, allocation). Read-model
-      slice: `analytics.repository` (user-scoped joins) → `analytics.service`
-      (+ tests; latest-valuation-per-coin, totals per currency, allocation by
-      metal/collection, value-over-time trend) → `/api/portfolio` → `/portfolio`
-      UI. Totals are per-currency; allocation/trend use the primary (largest)
-      currency. Verified against real Postgres incl. tenant isolation.
-- [x] Collection assistant (chatbot). OpenAI gpt-4o-mini with function calling
-      over the domain services via a manual agentic loop: `assistant.service`
-      (+ tests) → `/api/assistant` → `/assistant` chat UI. Full management
-      (read + write + delete); the acting user's id is injected into every tool
-      handler so the model can only touch the signed-in user's data. Needs
+- [x] **Portfolio analytics** — read-model over valuations: totals per currency,
+      allocation by metal/collection, value-over-time trend (computed for the
+      primary/largest currency). `/portfolio`.
+- [x] **Collection assistant** — OpenAI gpt-4o-mini with function calling over
+      the domain services via a manual agentic loop; the acting user's id is
+      injected server-side into every tool handler (tenant isolation). Needs
       `OPENAI_API_KEY`.
-- [x] Coin images. One image per coin stored in Postgres (`coin_images`, bytea)
-      behind `coinImage.repository` → `coinImage.service` (+ tests; type/size
-      validation, owner-scoped) → `GET/POST/DELETE /api/coins/[id]/image` →
-      upload/display/remove on the coin page + list thumbnails. bytea round-trip
-      and tenant isolation verified against real Postgres. Storage is abstracted
-      behind the repository so it can move to S3/R2 later.
-- [x] UI/UX polish. Dependency-free design system in `globals.css` (theme tokens
-      with light/dark, typography, themed buttons/inputs/tables, component
-      classes: cards, rows, badges, alerts, analytics bars, chat bubbles). App
-      shell via `SiteHeader` (brand + global nav + sign in/out) in the root
-      layout, replacing the scattered per-page nav links. Home is now a dashboard
-      of feature cards; collections/coins/valuations use cards + bordered rows;
-      portfolio uses themed bars; the assistant uses chat bubbles; coin photos
-      are framed and thumbnails are styled. No new dependencies.
+- [x] **Coin images** — stored in Postgres (`coin_images`, bytea); storage
+      abstracted behind `coinImage.repository` so the bytes can move to S3/R2
+      later.
+- [x] **UI/UX polish** — dependency-free design system in `globals.css`;
+      `SiteHeader` app shell; dashboard home.
 
-## Phase 4 — Improvements 1
+## Phase 4 — Improvements 1 *(complete)*
 
-- [x] Search & filtering — search coins by name and filter by metal/category/year
-      with pagination (server-side: `coin.repository.searchInCollection` →
-      `coin.service.searchCoins` (+ tests) → `/api/collections/[id]/coins` query
-      params → query-driven `CoinsManager` UI); plus a client-side name filter on
-      the collections list. Search SQL verified against real Postgres.
-- [x] Replace `window.prompt`/`confirm` with inline UI — reusable `ConfirmButton`
-      (styled `<dialog>`) for deletes (collections, coins, coin images) and
-      inline rename editing for collections.
-- [x] API route / integration tests — handler tests for `/api/collections` and
-      `/api/collections/[id]` covering auth guards (401), real validation → 400,
-      success status codes (200/201/204), and typed-error → status mapping (404).
-- [x] Assistant as floating widget — collection chatbot moved from a dedicated
-      `/assistant` page + nav link to a fixed bottom-right floating button
-      (`AssistantWidget`). Toggling opens a compact chat panel overlaid on any
-      page. Auth-gated server wrapper (`FloatingAssistant`) in the root layout
-      keeps the widget invisible to signed-out users. Old `AssistantChat`
-      component and `/assistant` route removed.
-- [x] Coin detail page — display all coin attributes (metal, denomination, year
-      with BC/AD, mint, grade, category, issuing authority, added date) in a
-      details card; null fields are omitted. Coin photo is clickable and opens
-      in a fullscreen `<dialog>` lightbox; clicking the backdrop closes it.
-- [x] Assistant image persistence fix — attached photo was lost if the model
-      asked for more details before calling `add_coin`. Image is now held in
-      client state and re-sent silently on every subsequent turn until the
-      assistant confirms "Saved coin photo" in its actions.
-- [x] UI layout polish — full-width layout (removed max-width cap; container
-      uses responsive horizontal padding only); nav bar horizontal padding
-      restored (specificity fix on `.site-header .bar`); coin detail page
-      redesigned as two matched-height cards (`2fr 1fr` grid): left card holds
-      coin name + attributes + valuations in a single border, right card holds
-      the photo filling the full card height via `flex: 1`; photo expand button
-      is a fixed-size `2rem × 2rem` overlay in the bottom-right corner; file
-      input replaced with a styled dashed "Add photo / Replace photo" button
-      with accent-gold hover.
-- [x] Table layout for collections and coin lists — collections page and
-      collection detail page both replaced from card-lists to styled
-      `data-table` components. Collections table shows name + rename/delete
-      actions. Coins table shows thumbnail, name, metal, denomination, and
-      edit/delete actions. Add forms for both are hidden behind a toggleable
-      "+ New collection" / "+ Add coin" button; clicking it reveals the form
-      inline without a page navigation.
-- [x] Inline coin editing — Edit button on the coin detail page toggles the
-      left card into a 2-column form (name, metal, year, denomination, mint,
-      grade, category, issuing authority). Save PATCHes `/api/coins/[id]` and
-      updates the view in place; Cancel discards. No new API routes needed.
-- [x] Coin list table enhancements — thumbnail size raised to 160 px;
-      `CoinThumb` fetches `/api/coins/[id]/images` and renders the first two
-      photos side by side so coins are recognisable at a glance. Column headers
-      (Name, Metal, Denomination) are clickable: first click sorts ascending (↑),
-      second click descending (↓); inactive columns show a faint ⇅ indicator.
-      Sort is applied server-side through the full vertical slice
-      (`CoinSortBy`/`CoinSortDir` types → repository `searchInCollection` →
-      service → route query params → UI state).
-- [x] Thumbnail generation — `GET /api/coins/[id]/images/[imageId]?w=<px>`
-      resizes on the fly with `sharp` and returns WebP at the requested width
-      (capped at 2000px). Response carries `Cache-Control: immutable` so the
-      browser never re-fetches the same thumbnail. `CoinThumb` now requests
-      `?w=320` (2× the 160 CSS px for Retina sharpness) instead of the full
-      image. The coin detail card continues to fetch the original full-resolution
-      image with no `?w=` param.
-- [x] Multi-image per coin — `coin_images` schema migrated: `id` UUID PK,
-      `created_at`; old `coin_id`-as-PK row replaced with a proper FK so
-      multiple images can be stored per coin. Repository rewritten with
-      `insert`/`listByCoinId`/`getById`/`getFirstByCoinId`/`deleteById`;
-      service exposes `addCoinImage`, `listCoinImages`, `getCoinImage`,
-      `getFirstCoinImage`, `removeCoinImage`, plus a backward-compat
-      `setCoinImage` wrapper for the assistant. Two new API routes:
-      `GET/POST /api/coins/[id]/images` (list + upload) and
-      `GET/DELETE /api/coins/[id]/images/[imageId]` (serve + remove).
-      Old `GET /api/coins/[id]/image` kept as a thumbnail alias. `CoinImage`
-      component rewritten as a carousel: prev/next arrows only visible when
-      >1 photo, `1 / N` counter, upload and per-image remove controls.
-
-- [x] Customisable coin list columns with drag-and-drop reordering — a
-      "Columns (N/8) ▾" picker button opens a dropdown for all available
-      columns (Name · Metal · Denomination · Year · Category · Issuing
-      authority · Grade · Mint). Check/uncheck to show or hide; Name is always
-      on. Column order and visibility are stored together as an ordered
-      `ColState[]` in `localStorage` (`numisbook:coin-columns-v2`).
-      Reordering works in two places: drag a ⠿ handle in the picker to
-      rearrange while in the dropdown, or drag a visible column header directly
-      in the table (drop target highlighted with a left accent border).
-      Sortable-header indicators (↑/↓/⇅) follow the visible set.
+- [x] **Coin search / filter / sort + pagination** — server-side through the
+      full slice (`searchInCollection` → `searchCoins` → query params →
+      `CoinsManager`); plus a client-side name filter on the collections list.
+- [x] **Inline UI for destructive actions** — reusable `ConfirmButton` (styled
+      `<dialog>`) replaces `window.prompt`/`confirm`; inline collection rename.
+- [x] **API route tests** — `/api/collections` (+ `/[id]`): auth guards, real
+      Zod validation → 400, success codes, typed-error → status mapping.
+- [x] **Assistant as a floating widget** — `AssistantWidget` overlaid on every
+      page, auth-gated by `FloatingAssistant` in the root layout.
+- [x] **Coin detail page + inline editing** — all attributes (year rendered
+      BC/AD), clickable photo lightbox; Edit toggles a form that PATCHes
+      `/api/coins/[id]` in place.
+- [x] **Assistant image persistence fix** — an attached photo was lost if the
+      model asked for more details before calling `add_coin`. The image is now
+      held in client state and re-sent each turn until saved, so it survives
+      multi-turn add flows.
+- [x] **Multi-image per coin** — `coin_images` migrated to UUID PK + FK;
+      carousel UI; on-the-fly WebP thumbnails via `sharp`
+      (`GET …/images/[imageId]?w=<px>`, immutable cache).
+- [x] **Table layouts + customisable columns** — collections and coin lists use
+      `data-table`; the coin list has a column picker with drag-and-drop reorder,
+      persisted as an ordered `ColState[]` in `localStorage`
+      (`numisbook:coin-columns-v2`).
 
 ## TODO — backlog
 

@@ -1,8 +1,8 @@
 # NumisBook — Database Design
 
-> Status: **Proposed model — not yet implemented.** This describes the intended
-> schema; actual Drizzle definitions live in `src/db/schema` (created during
-> implementation).
+> Status: **Implemented.** This documents the live schema. The Drizzle
+> definitions in `src/db/schema` are the source of truth; migrations are
+> generated into `drizzle/`. Update this doc when the schema changes.
 
 ## Engine & Tooling
 
@@ -15,18 +15,31 @@
 The database is reached **only** through repositories
 (`src/repositories`). Services and routes never query it directly.
 
-## Core Entities (proposed)
+## Core Entities
 
 ```
-User (1) ──< (N) Collection (1) ──< (N) Coin (1) ──< (N) Valuation
+User (1) ──< (N) Collection (1) ──< (N) Coin ──< (N) Valuation
+                                          └─< (N) CoinImage
 ```
+
+`coins` has no `user_id`; a coin's tenant is the owner of its collection, so
+coin-scoped queries filter through a subquery of the user's `collection_id`s.
 
 ### User
+Owned by the Auth.js Drizzle adapter (it populates the identity fields on OAuth
+login). Application code reads but does not write these.
+
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid (pk) | |
-| email | text | unique |
+| name | text | nullable |
+| email | text | unique, not null |
+| email_verified | timestamptz | nullable |
+| image | text | nullable; avatar URL |
 | created_at | timestamptz | default now() |
+
+The adapter also owns `accounts`, `sessions`, and `verification_tokens`
+(see `src/db/schema/auth.ts`) — standard Auth.js tables, not detailed here.
 
 ### Collection
 | Column | Type | Notes |
@@ -55,6 +68,19 @@ User (1) ──< (N) Collection (1) ──< (N) Coin (1) ──< (N) Valuation
 > `issuing_authority` is the specific issuer; `category` is a broader grouping
 > (civilization / dynasty / cultural sphere) useful for browsing and grouping.
 
+### CoinImage
+One or more images per coin. Bytes live here (not on `coins`) so coin listings
+stay lean; cascades on coin delete. Storage is abstracted behind
+`coinImage.repository` so the bytes could later move to S3/R2.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid (pk) | |
+| coin_id | uuid (fk → Coin) | not null; cascade delete |
+| mime_type | text | not null; PNG/JPEG/WebP/GIF |
+| data | bytea | not null; raw image bytes |
+| created_at | timestamptz | default now(); also the display order |
+
 ### Valuation
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -72,17 +98,24 @@ User (1) ──< (N) Collection (1) ──< (N) Coin (1) ──< (N) Valuation
 - `coin.collection_id`
 - `valuation.coin_id`, and `(coin_id, valued_at)` for latest-value lookups.
 
-## Open Questions
+## Decisions & Open Questions
 
-- Grading scale: free text vs. enum (Sheldon 1–70)?
-- Multi-currency: store original currency + convert on read, or normalize?
-- Soft deletes vs. hard deletes?
-- Ancient dating: a single integer `year` (negative = BC) is coarse. Do we need
-  date *ranges* (e.g. "336–323 BC") and/or a textual period label? Revisit if
-  precise dating matters for the MVP.
-- `issuing_authority` and `category` are currently free-text fields. If naming
-  consistency or analytics-by-issuer/category becomes important, graduate them to
-  dedicated lookup tables (the repository pattern keeps that migration localized).
+Resolved during implementation:
+
+- **Deletes are hard.** Every owned table cascades on parent delete; there is no
+  soft-delete column.
+- **Year is a single integer** (negative = BC); the UI renders BC/AD. Date
+  *ranges* and textual period labels remain a possible future refinement.
+- **Currency is stored as-entered, never normalized.** Portfolio totals are
+  reported per currency; allocation/trend use the primary (largest) currency. A
+  user-selected base currency + FX conversion is on the roadmap backlog.
+
+Still open:
+
+- Grading scale: free text vs. enum (Sheldon 1–70)? Currently free text.
+- `issuing_authority` and `category` are free-text fields. If naming consistency
+  or analytics-by-issuer/category becomes important, graduate them to dedicated
+  lookup tables (the repository pattern keeps that migration localized).
 
 ## Migrations Workflow
 

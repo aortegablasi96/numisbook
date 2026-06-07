@@ -1,6 +1,9 @@
 # NumisBook — Architecture
 
-> Status: **Scaffold defined; application code not yet implemented.**
+> Status: **Implemented.** Phases 0–4 of the [roadmap](./roadmap.md) are
+> complete. The layering and conventions below are enforced in code (the
+> repository/DB boundary is also enforced by an ESLint `no-restricted-imports`
+> guard).
 
 ## Stack
 
@@ -46,14 +49,22 @@ Request
 - **Components never query the database.** Data arrives via props, Server
   Components, or API calls.
 
-## Domains (planned)
+## Domains (built)
 
 - **Users / Auth** — accounts, ownership, sessions.
 - **Collections** — named groupings of coins owned by a user.
-- **Coins / Inventory** — individual coins and their attributes.
+- **Coins / Inventory** — individual coins and their attributes, with
+  search/filter/sort/pagination.
+- **Coin images** — one or more images per coin (stored in Postgres; on-the-fly
+  WebP thumbnails via `sharp`).
 - **Valuations** — point-in-time values for a coin.
+- **Portfolio analytics** — a read-model over valuations (totals per currency,
+  allocation, value-over-time trend).
+- **Collection assistant** — an OpenAI-backed chatbot with function calling over
+  the domain services (see `CLAUDE.md`).
 
-Later (post-MVP): Auction monitoring, AI-assisted research, Portfolio analytics.
+Out of scope (for now): auction monitoring, AI-assisted research / coin
+identification, marketplace/trading, mobile apps.
 
 ## Cross-Cutting Concerns
 
@@ -64,7 +75,10 @@ Later (post-MVP): Auction monitoring, AI-assisted research, Portfolio analytics.
   domain user (keeping services framework-agnostic).
 - **Validation** — Zod schemas in `src/lib` / at the route boundary.
 - **Error handling** — typed errors in `src/lib`, mapped to HTTP at the boundary.
-- **Logging / observability** — TODO.
+- **AI assistant** — `src/services/assistant.service.ts` runs a manual agentic
+  loop (OpenAI `gpt-4o-mini`); the acting `userId` is injected server-side into
+  every tool handler, never model-supplied, preserving tenant isolation.
+- **Logging / observability** — TODO (see roadmap backlog).
 
 ## Folder Map
 
