@@ -454,7 +454,7 @@ const CoinThumb = memo(function CoinThumb({ coinId }: { coinId: string }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img
           key={id}
-          src={`/api/coins/${coinId}/images/${id}`}
+          src={`/api/coins/${coinId}/images/${id}?w=320`}
           alt=""
           className="thumb"
         />

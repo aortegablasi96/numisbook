@@ -121,6 +121,13 @@ Each feature follows the same vertical slice:
       left card into a 2-column form (name, metal, year, denomination, mint,
       grade, category, issuing authority). Save PATCHes `/api/coins/[id]` and
       updates the view in place; Cancel discards. No new API routes needed.
+- [x] Thumbnail generation — `GET /api/coins/[id]/images/[imageId]?w=<px>`
+      resizes on the fly with `sharp` and returns WebP at the requested width
+      (capped at 2000px). Response carries `Cache-Control: immutable` so the
+      browser never re-fetches the same thumbnail. `CoinThumb` now requests
+      `?w=320` (2× the 160 CSS px for Retina sharpness) instead of the full
+      image. The coin detail card continues to fetch the original full-resolution
+      image with no `?w=` param.
 - [x] Multi-image per coin — `coin_images` schema migrated: `id` UUID PK,
       `created_at`; old `coin_id`-as-PK row replaced with a proper FK so
       multiple images can be stored per coin. Repository rewritten with
@@ -163,11 +170,13 @@ proposed fix; promote items into a phase when picked up.
     runaway cost.
   - _Fix:_ stream responses, add a per-user rate limit and a per-turn/per-
     conversation cost cap, and bound conversation length.
-- **Coin images → object storage + thumbnails**
-  - _Problem:_ images are stored as Postgres `bytea`, and the full-size image is
-    served even for the 36px list thumbnail — wasteful and won't scale.
-  - _Fix:_ move bytes to S3/R2 (already abstracted behind `coinImage.repository`)
-    and generate/serve resized thumbnails.
+- **Coin images → object storage**
+  - _Problem:_ images are stored as Postgres `bytea`; large collections will
+    bloat the DB and increase backup times. Thumbnails are now generated on the
+    fly (see Phase 4), but the source bytes still live in Postgres.
+  - _Fix:_ move bytes to S3/R2 — `coinImage.repository` is already the only
+    layer that touches storage, so swapping the backend only requires changing
+    that file and adding the SDK + env vars.
 - **Observability**
   - _Problem:_ no structured logging or error monitoring (`architecture.md`
     still lists logging as TODO); production issues would be invisible.
