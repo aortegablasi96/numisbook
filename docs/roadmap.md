@@ -74,7 +74,7 @@ Each feature follows the same vertical slice:
       of feature cards; collections/coins/valuations use cards + bordered rows;
       portfolio uses themed bars; the assistant uses chat bubbles; coin photos
       are framed and thumbnails are styled. No new dependencies.
-## Phase 4 — Improvements 1 *(complete)*
+## Phase 4 — Improvements 1
 
 - [x] Search & filtering — search coins by name and filter by metal/category/year
       with pagination (server-side: `coin.repository.searchInCollection` →
@@ -93,6 +93,10 @@ Each feature follows the same vertical slice:
       page. Auth-gated server wrapper (`FloatingAssistant`) in the root layout
       keeps the widget invisible to signed-out users. Old `AssistantChat`
       component and `/assistant` route removed.
+- [x] Coin detail page — display all coin attributes (metal, denomination, year
+      with BC/AD, mint, grade, category, issuing authority, added date) in a
+      details card; null fields are omitted. Coin photo is clickable and opens
+      in a fullscreen `<dialog>` lightbox; clicking the backdrop closes it.
 
 ## TODO — backlog
 
