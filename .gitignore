@@ -24,6 +24,9 @@ pnpm-debug.log*
 # Testing
 coverage/
 
+# Local object storage (FsStorage dev fallback for coin images)
+.storage/
+
 # OS / editor
 .DS_Store
 Thumbs.db

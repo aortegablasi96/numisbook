@@ -55,8 +55,9 @@ Request
 - **Collections** — named groupings of coins owned by a user.
 - **Coins / Inventory** — individual coins and their attributes, with
   search/filter/sort/pagination.
-- **Coin images** — one or more images per coin (stored in Postgres; on-the-fly
-  WebP thumbnails via `sharp`).
+- **Coin images** — one or more images per coin (bytes in S3-compatible object
+  storage behind `src/lib/storage`; metadata in Postgres; on-the-fly WebP
+  thumbnails via `sharp`).
 - **Valuations** — point-in-time values for a coin.
 - **Portfolio analytics** — a read-model over valuations (totals per currency,
   allocation, value-over-time trend).

@@ -69,16 +69,19 @@ The adapter also owns `accounts`, `sessions`, and `verification_tokens`
 > (civilization / dynasty / cultural sphere) useful for browsing and grouping.
 
 ### CoinImage
-One or more images per coin. Bytes live here (not on `coins`) so coin listings
-stay lean; cascades on coin delete. Storage is abstracted behind
-`coinImage.repository` so the bytes could later move to S3/R2.
+One or more images per coin. Only **metadata** lives here — the bytes are kept
+in object storage (`src/lib/storage`, S3-compatible / Cloudflare R2, with a
+local-filesystem fallback for dev) and referenced by `storage_key`. Keeping the
+bytes out of Postgres keeps the DB small and backups fast. Cascades on coin
+delete; the `coinImage.repository` removes the stored object alongside the row.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid (pk) | |
 | coin_id | uuid (fk → Coin) | not null; cascade delete |
 | mime_type | text | not null; PNG/JPEG/WebP/GIF |
-| data | bytea | not null; raw image bytes |
+| storage_key | text | not null; object-storage key (e.g. `coins/<coinId>/<uuid>`), not a public URL |
+| size_bytes | integer | not null; size of the stored object |
 | created_at | timestamptz | default now(); also the display order |
 
 ### Valuation

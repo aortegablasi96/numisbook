@@ -71,6 +71,10 @@ the detailed implementation history lives in git. Current work is the
       `data-table`; the coin list has a column picker with drag-and-drop reorder,
       persisted as an ordered `ColState[]` in `localStorage`
       (`numisbook:coin-columns-v2`).
+- [x] **Coin images → object storage** — image bytes moved out of Postgres into
+      an S3-compatible store (`src/lib/storage`, targets Cloudflare R2; local-FS
+      fallback for dev). `coin_images` now holds only metadata + a `storage_key`,
+      keeping the DB small and backups fast. Backend is swappable in one file.
 
 ## TODO — backlog
 
@@ -101,13 +105,6 @@ proposed fix; promote items into a phase when picked up.
     runaway cost.
   - _Fix:_ stream responses, add a per-user rate limit and a per-turn/per-
     conversation cost cap, and bound conversation length.
-- **Coin images → object storage**
-  - _Problem:_ images are stored as Postgres `bytea`; large collections will
-    bloat the DB and increase backup times. Thumbnails are now generated on the
-    fly (see Phase 4), but the source bytes still live in Postgres.
-  - _Fix:_ move bytes to S3/R2 — `coinImage.repository` is already the only
-    layer that touches storage, so swapping the backend only requires changing
-    that file and adding the SDK + env vars.
 - **Observability**
   - _Problem:_ no structured logging or error monitoring (`architecture.md`
     still lists logging as TODO); production issues would be invisible.

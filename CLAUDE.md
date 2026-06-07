@@ -153,10 +153,20 @@ the root layout, auth-gated by a Server Component wrapper (`FloatingAssistant`).
 
 ## Coin images
 
-Images are stored as Postgres `bytea` in `coin_images` (separate table so coin
-listings stay lean; cascades on coin delete). Multiple images per coin; the UI
-shows a carousel. The `coinImage.repository` is the **only** layer that touches
-image storage — swapping to S3/R2 only requires changing that file.
+Image **bytes live in object storage**, not Postgres. The `coin_images` table
+holds only metadata — `mime_type`, `size_bytes`, and a `storage_key` reference
+(separate table so coin listings stay lean; cascades on coin delete). Multiple
+images per coin; the UI shows a carousel.
+
+The object-storage backend is an abstraction in `src/lib/storage` (an
+`ObjectStorage` interface with `put`/`get`/`delete`). `objectStorage`
+auto-selects the backend from the environment: an **S3-compatible** client
+(`S3Storage`, AWS SDK; targets Cloudflare R2) when the `R2_*` vars are set,
+otherwise a local-filesystem fallback (`FsStorage`, under `./.storage`,
+gitignored) so dev/test run with no cloud credentials. Swapping providers is a
+one-file change in `src/lib/storage`. The `coinImage.repository` is the only
+layer that composes the DB row with the stored object; it deletes the object on
+row delete and cleans up on a failed insert so no orphans are left.
 
 Image API routes:
 
