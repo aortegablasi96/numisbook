@@ -445,6 +445,30 @@ button:disabled {
   border-bottom: none;
 }
 
+/* ---- Coin edit form ----------------------------------------------------- */
+
+.coin-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem 1rem;
+}
+@media (max-width: 480px) {
+  .coin-edit-grid { grid-template-columns: 1fr; }
+}
+.coin-edit-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.coin-edit-label input {
+  font-weight: 400;
+  font-size: 0.92rem;
+  color: var(--fg);
+}
+
 /* ---- Coin image --------------------------------------------------------- */
 
 .coin-photo {
