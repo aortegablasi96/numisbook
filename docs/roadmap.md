@@ -110,6 +110,10 @@ Each feature follows the same vertical slice:
       is a fixed-size `2rem × 2rem` overlay in the bottom-right corner; file
       input replaced with a styled dashed "Add photo / Replace photo" button
       with accent-gold hover.
+- [x] Inline coin editing — Edit button on the coin detail page toggles the
+      left card into a 2-column form (name, metal, year, denomination, mint,
+      grade, category, issuing authority). Save PATCHes `/api/coins/[id]` and
+      updates the view in place; Cancel discards. No new API routes needed.
 - [x] Multi-image per coin — `coin_images` schema migrated: `id` UUID PK,
       `created_at`; old `coin_id`-as-PK row replaced with a proper FK so
       multiple images can be stored per coin. Repository rewritten with
