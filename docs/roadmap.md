@@ -97,6 +97,10 @@ Each feature follows the same vertical slice:
       with BC/AD, mint, grade, category, issuing authority, added date) in a
       details card; null fields are omitted. Coin photo is clickable and opens
       in a fullscreen `<dialog>` lightbox; clicking the backdrop closes it.
+- [x] Assistant image persistence fix — attached photo was lost if the model
+      asked for more details before calling `add_coin`. Image is now held in
+      client state and re-sent silently on every subsequent turn until the
+      assistant confirms "Saved coin photo" in its actions.
 
 ## TODO — backlog
 
