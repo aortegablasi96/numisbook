@@ -27,6 +27,67 @@ type Filters = { q: string; metal: string; category: string; year: string; sortB
 
 const EMPTY_FILTERS: Filters = { q: "", metal: "", category: "", year: "", sortBy: "createdAt", sortDir: "desc" };
 
+// ---- Column configuration ------------------------------------------------
+
+type ColumnKey = "name" | "metal" | "denomination" | "year" | "category" | "issuingAuthority" | "grade" | "mint";
+
+const COLUMN_DEFS: {
+  key: ColumnKey;
+  label: string;
+  sortable: boolean;
+  required: boolean;
+  defaultVisible: boolean;
+}[] = [
+  { key: "name",             label: "Name",              sortable: true,  required: true,  defaultVisible: true  },
+  { key: "metal",            label: "Metal",             sortable: true,  required: false, defaultVisible: true  },
+  { key: "denomination",     label: "Denomination",      sortable: true,  required: false, defaultVisible: true  },
+  { key: "year",             label: "Year",              sortable: true,  required: false, defaultVisible: false },
+  { key: "category",         label: "Category",          sortable: true,  required: false, defaultVisible: false },
+  { key: "issuingAuthority", label: "Issuing authority", sortable: false, required: false, defaultVisible: false },
+  { key: "grade",            label: "Grade",             sortable: false, required: false, defaultVisible: false },
+  { key: "mint",             label: "Mint",              sortable: false, required: false, defaultVisible: false },
+];
+
+const DEFAULT_COLS = new Set<ColumnKey>(COLUMN_DEFS.filter((c) => c.defaultVisible).map((c) => c.key));
+const LS_KEY = "numisbook:coin-columns";
+
+function loadVisibleCols(): Set<ColumnKey> {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as string[];
+      const valid = parsed.filter((k) => COLUMN_DEFS.some((c) => c.key === k)) as ColumnKey[];
+      const required = COLUMN_DEFS.filter((c) => c.required).map((c) => c.key);
+      return new Set([...required, ...valid]);
+    }
+  } catch { /* ignore */ }
+  return new Set(DEFAULT_COLS);
+}
+
+function saveVisibleCols(cols: Set<ColumnKey>) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify([...cols]));
+  } catch { /* ignore */ }
+}
+
+function renderCell(coin: CoinView, key: ColumnKey): React.ReactNode {
+  switch (key) {
+    case "name":
+      return <Link href={`/coins/${coin.id}`}><strong>{coin.name}</strong></Link>;
+    case "metal":            return coin.metal ?? "—";
+    case "denomination":     return coin.denomination ?? "—";
+    case "year":
+      if (coin.year === null) return "—";
+      return coin.year < 0 ? `${Math.abs(coin.year)} BC` : String(coin.year);
+    case "category":         return coin.category ?? "—";
+    case "issuingAuthority": return coin.issuingAuthority ?? "—";
+    case "grade":            return coin.grade ?? "—";
+    case "mint":             return coin.mint ?? "—";
+  }
+}
+
+// ---- Form helpers --------------------------------------------------------
+
 const TEXT_FIELDS = [
   ["name", "Name"],
   ["category", "Category"],
@@ -40,14 +101,8 @@ const TEXT_FIELDS = [
 type FormState = Record<string, string>;
 
 const EMPTY_FORM: FormState = {
-  name: "",
-  category: "",
-  issuingAuthority: "",
-  denomination: "",
-  mint: "",
-  metal: "",
-  grade: "",
-  year: "",
+  name: "", category: "", issuingAuthority: "", denomination: "",
+  mint: "", metal: "", grade: "", year: "",
 };
 
 function toForm(coin: CoinView): FormState {
@@ -84,6 +139,8 @@ async function readError(response: Response): Promise<string> {
   }
 }
 
+// ---- Main component ------------------------------------------------------
+
 export function CoinsManager({
   collectionId,
   initial,
@@ -104,7 +161,21 @@ export function CoinsManager({
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Column visibility — default to server-safe defaults, hydrate from localStorage
+  const [visibleCols, setVisibleCols] = useState<Set<ColumnKey>>(DEFAULT_COLS);
+  useEffect(() => { setVisibleCols(loadVisibleCols()); }, []);
+
+  const visibleColDefs = COLUMN_DEFS.filter((c) => visibleCols.has(c.key));
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  function toggleCol(key: ColumnKey, checked: boolean) {
+    setVisibleCols((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(key); else next.delete(key);
+      saveVisibleCols(next);
+      return next;
+    });
+  }
 
   const load = useCallback(
     async (p: number, f: Filters) => {
@@ -120,10 +191,7 @@ export function CoinsManager({
         sp.set("sortDir", f.sortDir);
         sp.set("page", String(p));
         const res = await fetch(`/api/collections/${collectionId}/coins?${sp.toString()}`);
-        if (!res.ok) {
-          setError(await readError(res));
-          return;
-        }
+        if (!res.ok) { setError(await readError(res)); return; }
         const data = (await res.json()) as SearchResult;
         setCoins(data.coins);
         setTotal(data.total);
@@ -138,10 +206,7 @@ export function CoinsManager({
 
   const firstRender = useRef(true);
   useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
+    if (firstRender.current) { firstRender.current = false; return; }
     const t = setTimeout(() => void load(1, filters), 300);
     return () => clearTimeout(t);
   }, [filters, load]);
@@ -180,10 +245,7 @@ export function CoinsManager({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(toPayload(form)),
       });
-      if (!response.ok) {
-        setError(await readError(response));
-        return;
-      }
+      if (!response.ok) { setError(await readError(response)); return; }
       const wasEditing = editingId !== null;
       resetForm();
       await load(wasEditing ? page : 1, filters);
@@ -197,10 +259,7 @@ export function CoinsManager({
     setBusy(true);
     try {
       const response = await fetch(`/api/coins/${coin.id}`, { method: "DELETE" });
-      if (!response.ok) {
-        setError(await readError(response));
-        return;
-      }
+      if (!response.ok) { setError(await readError(response)); return; }
       if (editingId === coin.id) resetForm();
       await load(page, filters);
     } finally {
@@ -210,7 +269,7 @@ export function CoinsManager({
 
   return (
     <section className="stack">
-      {/* Toolbar: filters + add button */}
+      {/* Toolbar: filters | column picker + add button */}
       <div className="filters" style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
         <div className="row" style={{ flexWrap: "wrap", gap: "0.5rem", flex: 1, alignItems: "flex-end" }}>
           <label>
@@ -262,23 +321,19 @@ export function CoinsManager({
             Clear
           </button>
         </div>
-        <button
-          type="button"
-          className="btn-primary btn-sm"
-          style={{ flexShrink: 0 }}
-          onClick={() => {
-            if (showForm && !editingId) {
-              resetForm();
-            } else {
-              setForm(EMPTY_FORM);
-              setEditingId(null);
-              setShowForm(true);
-              setError(null);
-            }
-          }}
-        >
-          {showForm && !editingId ? "Cancel" : "+ Add coin"}
-        </button>
+        <div className="row" style={{ gap: "0.5rem", flexShrink: 0 }}>
+          <ColumnPicker visibleCols={visibleCols} onToggle={toggleCol} />
+          <button
+            type="button"
+            className="btn-primary btn-sm"
+            onClick={() => {
+              if (showForm && !editingId) { resetForm(); }
+              else { setForm(EMPTY_FORM); setEditingId(null); setShowForm(true); setError(null); }
+            }}
+          >
+            {showForm && !editingId ? "Cancel" : "+ Add coin"}
+          </button>
+        </div>
       </div>
 
       {/* Add / edit form */}
@@ -308,16 +363,10 @@ export function CoinsManager({
             </label>
           </div>
           <div className="row">
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={busy || form.name.trim() === ""}
-            >
+            <button type="submit" className="btn-primary" disabled={busy || form.name.trim() === ""}>
               {editingId ? "Save changes" : "Add coin"}
             </button>
-            <button type="button" onClick={resetForm} disabled={busy}>
-              Cancel
-            </button>
+            <button type="button" onClick={resetForm} disabled={busy}>Cancel</button>
           </div>
         </form>
       )}
@@ -340,9 +389,13 @@ export function CoinsManager({
           <thead>
             <tr>
               <th className="td-thumb" />
-              <SortableTh col="name" label="Name" filters={filters} onSort={handleSort} />
-              <SortableTh col="metal" label="Metal" filters={filters} onSort={handleSort} />
-              <SortableTh col="denomination" label="Denomination" filters={filters} onSort={handleSort} />
+              {visibleColDefs.map((col) =>
+                col.sortable ? (
+                  <SortableTh key={col.key} col={col.key} label={col.label} filters={filters} onSort={handleSort} />
+                ) : (
+                  <th key={col.key}>{col.label}</th>
+                )
+              )}
               <th />
             </tr>
           </thead>
@@ -352,21 +405,14 @@ export function CoinsManager({
                 <td className="td-thumb">
                   <CoinThumb coinId={coin.id} />
                 </td>
-                <td>
-                  <Link href={`/coins/${coin.id}`}>
-                    <strong>{coin.name}</strong>
-                  </Link>
-                </td>
-                <td className="muted">{coin.metal ?? "—"}</td>
-                <td className="muted">{coin.denomination ?? "—"}</td>
+                {visibleColDefs.map((col) => (
+                  <td key={col.key} className={col.key !== "name" ? "muted" : undefined}>
+                    {renderCell(coin, col.key)}
+                  </td>
+                ))}
                 <td className="td-actions">
                   <span className="row" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
-                    <button
-                      type="button"
-                      className="btn-sm"
-                      onClick={() => startEdit(coin)}
-                      disabled={busy}
-                    >
+                    <button type="button" className="btn-sm" onClick={() => startEdit(coin)} disabled={busy}>
                       Edit
                     </button>
                     <ConfirmButton
@@ -387,19 +433,11 @@ export function CoinsManager({
 
       {totalPages > 1 && (
         <div className="pager">
-          <button
-            type="button"
-            onClick={() => load(page - 1, filters)}
-            disabled={loading || page <= 1}
-          >
+          <button type="button" onClick={() => load(page - 1, filters)} disabled={loading || page <= 1}>
             ← Prev
           </button>
           <span className="muted">Page {page} of {totalPages}</span>
-          <button
-            type="button"
-            onClick={() => load(page + 1, filters)}
-            disabled={loading || page >= totalPages}
-          >
+          <button type="button" onClick={() => load(page + 1, filters)} disabled={loading || page >= totalPages}>
             Next →
           </button>
         </div>
@@ -408,23 +446,59 @@ export function CoinsManager({
   );
 }
 
-function SortableTh({
-  col,
-  label,
-  filters,
-  onSort,
+// ---- Sub-components ------------------------------------------------------
+
+function ColumnPicker({
+  visibleCols,
+  onToggle,
 }: {
-  col: string;
-  label: string;
-  filters: Filters;
-  onSort: (col: string) => void;
+  visibleCols: Set<ColumnKey>;
+  onToggle: (key: ColumnKey, checked: boolean) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onMouseDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button type="button" className="btn-sm" onClick={() => setOpen((v) => !v)}>
+        Columns {open ? "▴" : "▾"}
+      </button>
+      {open && (
+        <div className="col-picker">
+          {COLUMN_DEFS.map((col) => (
+            <label key={col.key} className="col-picker-item">
+              <input
+                type="checkbox"
+                checked={visibleCols.has(col.key)}
+                disabled={col.required}
+                onChange={(e) => onToggle(col.key, e.target.checked)}
+              />
+              {col.label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SortableTh({
+  col, label, filters, onSort,
+}: {
+  col: string; label: string; filters: Filters; onSort: (col: string) => void;
 }) {
   const active = filters.sortBy === col;
   return (
-    <th
-      onClick={() => onSort(col)}
-      style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
-    >
+    <th onClick={() => onSort(col)} style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
       {label}
       <span style={{ marginLeft: "0.3rem", opacity: active ? 1 : 0.3, fontSize: "0.8em" }}>
         {active ? (filters.sortDir === "asc" ? "↑" : "↓") : "⇅"}
@@ -452,12 +526,7 @@ const CoinThumb = memo(function CoinThumb({ coinId }: { coinId: string }) {
     <span style={{ display: "flex", gap: "0.4rem" }}>
       {imageIds.map((id) => (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={id}
-          src={`/api/coins/${coinId}/images/${id}?w=320`}
-          alt=""
-          className="thumb"
-        />
+        <img key={id} src={`/api/coins/${coinId}/images/${id}?w=320`} alt="" className="thumb" />
       ))}
     </span>
   );

@@ -150,11 +150,12 @@ Each feature follows the same vertical slice:
       component rewritten as a carousel: prev/next arrows only visible when
       >1 photo, `1 / N` counter, upload and per-image remove controls.
 
-- [ ] Customisable coin list columns — let the user choose which columns are
-      visible in the collection coins table (e.g. show/hide Year, Category,
-      Issuing authority, Grade, Mint alongside the defaults Name / Metal /
-      Denomination). Column selection persisted per-user (localStorage or a
-      user-preferences API). Sortable headers follow the visible set.
+- [x] Customisable coin list columns — a "Columns ▾" picker button opens a
+      dropdown listing all available columns (Name · Metal · Denomination · Year
+      · Category · Issuing authority · Grade · Mint). Name is always visible;
+      all others can be toggled on/off. Selection is persisted to
+      `localStorage` (`numisbook:coin-columns`) so it survives page reloads.
+      Sortable-header indicators (↑/↓/⇅) follow whichever columns are visible.
 
 ## TODO — backlog
 
