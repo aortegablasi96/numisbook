@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { coins, collections } from "@/db/schema";
 
@@ -6,11 +6,16 @@ export type Coin = typeof coins.$inferSelect;
 export type NewCoin = typeof coins.$inferInsert;
 export type CoinPatch = Partial<Omit<NewCoin, "id" | "collectionId" | "createdAt">>;
 
+export type CoinSortBy = "name" | "category" | "metal" | "denomination" | "year" | "createdAt";
+export type CoinSortDir = "asc" | "desc";
+
 export type CoinFilters = {
   q?: string;
   metal?: string;
   category?: string;
   year?: number;
+  sortBy?: CoinSortBy;
+  sortDir?: CoinSortDir;
   limit: number;
   offset: number;
 };
@@ -54,11 +59,23 @@ export const coinRepository = {
       conditions.push(eq(coins.year, filters.year));
     const where = and(...conditions);
 
+    const dir = (filters.sortDir ?? "desc") === "asc" ? asc : desc;
+    const orderCol = (() => {
+      switch (filters.sortBy) {
+        case "name":         return dir(coins.name);
+        case "category":     return dir(coins.category);
+        case "metal":        return dir(coins.metal);
+        case "denomination": return dir(coins.denomination);
+        case "year":         return dir(coins.year);
+        default:             return desc(coins.createdAt);
+      }
+    })();
+
     const rows = await db
       .select()
       .from(coins)
       .where(where)
-      .orderBy(desc(coins.createdAt))
+      .orderBy(orderCol)
       .limit(filters.limit)
       .offset(filters.offset);
 

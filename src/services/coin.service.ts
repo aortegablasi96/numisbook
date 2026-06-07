@@ -2,6 +2,8 @@ import {
   coinRepository,
   type Coin,
   type CoinPatch,
+  type CoinSortBy,
+  type CoinSortDir,
 } from "@/repositories/coin.repository";
 import { collectionRepository } from "@/repositories/collection.repository";
 import { createCoinSchema, updateCoinSchema } from "@/lib/validation/coin";
@@ -9,12 +11,16 @@ import { NotFoundError, ValidationError } from "@/lib/errors";
 
 export const COINS_PAGE_SIZE = 20;
 
+const VALID_SORT_BY = new Set<CoinSortBy>(["name", "category", "metal", "denomination", "year", "createdAt"]);
+
 export type CoinSearch = {
   q?: string;
   metal?: string;
   category?: string;
   year?: number;
   page?: number;
+  sortBy?: string;
+  sortDir?: string;
 };
 
 export type CoinSearchResult = {
@@ -52,11 +58,19 @@ export async function searchCoins(
   await assertOwnsCollection(userId, collectionId);
   const page = Math.max(1, Math.floor(search.page ?? 1));
   const pageSize = COINS_PAGE_SIZE;
+  const sortBy = VALID_SORT_BY.has(search.sortBy as CoinSortBy)
+    ? (search.sortBy as CoinSortBy)
+    : undefined;
+  const sortDir: CoinSortDir | undefined =
+    search.sortDir === "asc" || search.sortDir === "desc" ? search.sortDir : undefined;
+
   const { coins, total } = await coinRepository.searchInCollection(collectionId, {
     q: search.q?.trim() || undefined,
     metal: search.metal?.trim() || undefined,
     category: search.category?.trim() || undefined,
     year: Number.isFinite(search.year) ? search.year : undefined,
+    sortBy,
+    sortDir,
     limit: pageSize,
     offset: (page - 1) * pageSize,
   });

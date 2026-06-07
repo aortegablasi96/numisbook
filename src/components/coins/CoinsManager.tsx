@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 export type CoinView = {
@@ -23,9 +23,9 @@ type SearchResult = {
   pageSize: number;
 };
 
-type Filters = { q: string; metal: string; category: string; year: string };
+type Filters = { q: string; metal: string; category: string; year: string; sortBy: string; sortDir: "asc" | "desc" };
 
-const EMPTY_FILTERS: Filters = { q: "", metal: "", category: "", year: "" };
+const EMPTY_FILTERS: Filters = { q: "", metal: "", category: "", year: "", sortBy: "createdAt", sortDir: "desc" };
 
 const TEXT_FIELDS = [
   ["name", "Name"],
@@ -116,6 +116,8 @@ export function CoinsManager({
         if (f.metal.trim()) sp.set("metal", f.metal.trim());
         if (f.category.trim()) sp.set("category", f.category.trim());
         if (f.year.trim()) sp.set("year", f.year.trim());
+        if (f.sortBy) sp.set("sortBy", f.sortBy);
+        sp.set("sortDir", f.sortDir);
         sp.set("page", String(p));
         const res = await fetch(`/api/collections/${collectionId}/coins?${sp.toString()}`);
         if (!res.ok) {
@@ -155,6 +157,14 @@ export function CoinsManager({
     setEditingId(coin.id);
     setShowForm(true);
     setError(null);
+  }
+
+  function handleSort(col: string) {
+    setFilters((f) => ({
+      ...f,
+      sortBy: col,
+      sortDir: f.sortBy === col ? (f.sortDir === "asc" ? "desc" : "asc") : "asc",
+    }));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -202,7 +212,7 @@ export function CoinsManager({
     <section className="stack">
       {/* Toolbar: filters + add button */}
       <div className="filters" style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
-        <div className="row" style={{ flexWrap: "wrap", gap: "0.5rem", flex: 1 }}>
+        <div className="row" style={{ flexWrap: "wrap", gap: "0.5rem", flex: 1, alignItems: "flex-end" }}>
           <label>
             Search
             <input
@@ -244,7 +254,9 @@ export function CoinsManager({
               filters.q === "" &&
               filters.metal === "" &&
               filters.category === "" &&
-              filters.year === ""
+              filters.year === "" &&
+              filters.sortBy === "createdAt" &&
+              filters.sortDir === "desc"
             }
           >
             Clear
@@ -328,9 +340,9 @@ export function CoinsManager({
           <thead>
             <tr>
               <th className="td-thumb" />
-              <th>Name</th>
-              <th>Metal</th>
-              <th>Denomination</th>
+              <SortableTh col="name" label="Name" filters={filters} onSort={handleSort} />
+              <SortableTh col="metal" label="Metal" filters={filters} onSort={handleSort} />
+              <SortableTh col="denomination" label="Denomination" filters={filters} onSort={handleSort} />
               <th />
             </tr>
           </thead>
@@ -396,16 +408,57 @@ export function CoinsManager({
   );
 }
 
-function CoinThumb({ coinId }: { coinId: string }) {
-  const [show, setShow] = useState(true);
-  if (!show) return <span style={{ display: "block", width: 36, height: 36 }} />;
+function SortableTh({
+  col,
+  label,
+  filters,
+  onSort,
+}: {
+  col: string;
+  label: string;
+  filters: Filters;
+  onSort: (col: string) => void;
+}) {
+  const active = filters.sortBy === col;
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={`/api/coins/${coinId}/image`}
-      alt=""
-      className="thumb"
-      onError={() => setShow(false)}
-    />
+    <th
+      onClick={() => onSort(col)}
+      style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
+    >
+      {label}
+      <span style={{ marginLeft: "0.3rem", opacity: active ? 1 : 0.3, fontSize: "0.8em" }}>
+        {active ? (filters.sortDir === "asc" ? "↑" : "↓") : "⇅"}
+      </span>
+    </th>
   );
 }
+
+const CoinThumb = memo(function CoinThumb({ coinId }: { coinId: string }) {
+  const [imageIds, setImageIds] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/coins/${coinId}/images`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data: { images: { id: string }[] }) =>
+        setImageIds(data.images.slice(0, 2).map((img) => img.id)),
+      )
+      .catch(() => setImageIds([]));
+  }, [coinId]);
+
+  if (!imageIds?.length)
+    return <span style={{ display: "block", width: 160, height: 160 }} />;
+
+  return (
+    <span style={{ display: "flex", gap: "0.4rem" }}>
+      {imageIds.map((id) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={id}
+          src={`/api/coins/${coinId}/images/${id}`}
+          alt=""
+          className="thumb"
+        />
+      ))}
+    </span>
+  );
+});

@@ -339,11 +339,11 @@ button:disabled {
   border-radius: var(--radius);
   background: var(--surface);
   overflow: hidden;
-  font-size: 0.92rem;
+  font-size: 1rem;
 }
 .data-table thead th {
   text-align: left;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -359,7 +359,7 @@ button:disabled {
   background: var(--surface-2);
 }
 .data-table td {
-  padding: 0.6rem 0.9rem;
+  padding: 1rem 0.9rem;
   vertical-align: middle;
 }
 .data-table td.td-actions {
@@ -367,7 +367,7 @@ button:disabled {
   text-align: right;
 }
 .data-table td.td-thumb {
-  width: 52px;
+  width: 344px;
   padding-right: 0;
 }
 .data-table .thumb {
@@ -607,8 +607,8 @@ button:disabled {
   cursor: not-allowed;
 }
 .thumb {
-  width: 36px;
-  height: 36px;
+  width: 160px;
+  height: 160px;
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid var(--border);

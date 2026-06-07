@@ -18,6 +18,8 @@ export async function GET(request: Request, { params }: Params) {
       category: sp.get("category") ?? undefined,
       year: Number.isFinite(year) ? year : undefined,
       page: Number(sp.get("page") ?? "1"),
+      sortBy: sp.get("sortBy") ?? undefined,
+      sortDir: sp.get("sortDir") ?? undefined,
     });
     return NextResponse.json(result);
   } catch (error) {
