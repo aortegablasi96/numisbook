@@ -330,6 +330,50 @@ button:disabled {
   background: var(--surface-2);
 }
 
+/* ---- Data table --------------------------------------------------------- */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+  font-size: 0.92rem;
+}
+.data-table thead th {
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 0.55rem 0.9rem;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.data-table tbody tr + tr {
+  border-top: 1px solid var(--border);
+}
+.data-table tbody tr:hover {
+  background: var(--surface-2);
+}
+.data-table td {
+  padding: 0.6rem 0.9rem;
+  vertical-align: middle;
+}
+.data-table td.td-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+.data-table td.td-thumb {
+  width: 52px;
+  padding-right: 0;
+}
+.data-table .thumb {
+  display: block;
+}
+
 .badge {
   display: inline-block;
   font-size: 0.75rem;

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
-// Client-side shape: the server passes domain rows whose dates are serialized.
 export type CollectionView = {
   id: string;
   name: string;
@@ -24,8 +23,8 @@ export function CollectionsManager({
 }: {
   initialCollections: CollectionView[];
 }) {
-  const [collections, setCollections] =
-    useState<CollectionView[]>(initialCollections);
+  const [collections, setCollections] = useState<CollectionView[]>(initialCollections);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [filter, setFilter] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -51,11 +50,10 @@ export function CollectionsManager({
         setError(await readError(response));
         return;
       }
-      const { collection } = (await response.json()) as {
-        collection: CollectionView;
-      };
+      const { collection } = (await response.json()) as { collection: CollectionView };
       setCollections((prev) => [collection, ...prev]);
       setNewName("");
+      setShowAddForm(false);
     } finally {
       setBusy(false);
     }
@@ -82,12 +80,8 @@ export function CollectionsManager({
         setError(await readError(response));
         return;
       }
-      const { collection } = (await response.json()) as {
-        collection: CollectionView;
-      };
-      setCollections((prev) =>
-        prev.map((c) => (c.id === collection.id ? collection : c)),
-      );
+      const { collection } = (await response.json()) as { collection: CollectionView };
+      setCollections((prev) => prev.map((c) => (c.id === collection.id ? collection : c)));
       setEditingId(null);
       setEditingName("");
     } finally {
@@ -99,9 +93,7 @@ export function CollectionsManager({
     setError(null);
     setBusy(true);
     try {
-      const response = await fetch(`/api/collections/${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(`/api/collections/${id}`, { method: "DELETE" });
       if (!response.ok) {
         setError(await readError(response));
         return;
@@ -114,95 +106,125 @@ export function CollectionsManager({
 
   return (
     <section className="stack">
-      <form onSubmit={handleCreate} className="toolbar">
-        <input
-          type="text"
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="New collection name"
-          aria-label="New collection name"
-        />
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+        {collections.length > 1 ? (
+          <input
+            type="text"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter collections…"
+            aria-label="Filter collections"
+            style={{ maxWidth: "18rem" }}
+          />
+        ) : (
+          <span />
+        )}
         <button
-          type="submit"
-          className="btn-primary"
-          disabled={busy || newName.trim() === ""}
+          type="button"
+          className="btn-primary btn-sm"
+          onClick={() => { setShowAddForm((v) => !v); setNewName(""); setError(null); }}
         >
-          Add
+          {showAddForm ? "Cancel" : "+ New collection"}
         </button>
-      </form>
+      </div>
+
+      {showAddForm && (
+        <form onSubmit={handleCreate} className="card toolbar">
+          <input
+            type="text"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Collection name"
+            aria-label="New collection name"
+            autoFocus
+            style={{ flex: 1 }}
+          />
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={busy || newName.trim() === ""}
+          >
+            Create
+          </button>
+        </form>
+      )}
 
       {error && <p className="alert">{error}</p>}
 
-      {collections.length > 1 && (
-        <input
-          type="text"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter collections…"
-          aria-label="Filter collections"
-        />
-      )}
-
       {collections.length === 0 ? (
-        <p className="empty">No collections yet. Create your first one above.</p>
+        <p className="empty">No collections yet. Use the button above to create one.</p>
       ) : visible.length === 0 ? (
-        <p className="empty">No collections match “{filter}”.</p>
+        <p className="empty">No collections match &ldquo;{filter}&rdquo;.</p>
       ) : (
-        <ul className="rows">
-          {visible.map((collection) => (
-            <li key={collection.id}>
-              {editingId === collection.id ? (
-                <form onSubmit={saveRename} className="row grow">
-                  <input
-                    type="text"
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    aria-label="Collection name"
-                    autoFocus
-                    style={{ flex: 1 }}
-                  />
-                  <button
-                    type="submit"
-                    className="btn-sm btn-primary"
-                    disabled={busy || editingName.trim() === ""}
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-sm"
-                    onClick={() => setEditingId(null)}
-                    disabled={busy}
-                  >
-                    Cancel
-                  </button>
-                </form>
-              ) : (
-                <>
-                  <Link href={`/collections/${collection.id}`} className="grow">
-                    {collection.name}
-                  </Link>
-                  <button
-                    type="button"
-                    className="btn-sm"
-                    onClick={() => startRename(collection)}
-                    disabled={busy}
-                  >
-                    Rename
-                  </button>
-                  <ConfirmButton
-                    className="btn-sm btn-danger"
-                    disabled={busy}
-                    message={`Delete "${collection.name}" and all of its coins? This cannot be undone.`}
-                    onConfirm={() => handleDelete(collection.id)}
-                  >
-                    Delete
-                  </ConfirmButton>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map((collection) => (
+              <tr key={collection.id}>
+                <td>
+                  {editingId === collection.id ? (
+                    <form onSubmit={saveRename} className="row" style={{ gap: "0.5rem" }}>
+                      <input
+                        type="text"
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        aria-label="Collection name"
+                        autoFocus
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="submit"
+                        className="btn-sm btn-primary"
+                        disabled={busy || editingName.trim() === ""}
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-sm"
+                        onClick={() => setEditingId(null)}
+                        disabled={busy}
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  ) : (
+                    <Link href={`/collections/${collection.id}`}>
+                      {collection.name}
+                    </Link>
+                  )}
+                </td>
+                <td className="td-actions">
+                  {editingId !== collection.id && (
+                    <span className="row" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
+                      <button
+                        type="button"
+                        className="btn-sm"
+                        onClick={() => startRename(collection)}
+                        disabled={busy}
+                      >
+                        Rename
+                      </button>
+                      <ConfirmButton
+                        className="btn-sm btn-danger"
+                        disabled={busy}
+                        message={`Delete "${collection.name}" and all of its coins? This cannot be undone.`}
+                        onConfirm={() => handleDelete(collection.id)}
+                      >
+                        Delete
+                      </ConfirmButton>
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </section>
   );

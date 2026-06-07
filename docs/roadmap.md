@@ -110,6 +110,13 @@ Each feature follows the same vertical slice:
       is a fixed-size `2rem × 2rem` overlay in the bottom-right corner; file
       input replaced with a styled dashed "Add photo / Replace photo" button
       with accent-gold hover.
+- [x] Table layout for collections and coin lists — collections page and
+      collection detail page both replaced from card-lists to styled
+      `data-table` components. Collections table shows name + rename/delete
+      actions. Coins table shows thumbnail, name, metal, denomination, and
+      edit/delete actions. Add forms for both are hidden behind a toggleable
+      "+ New collection" / "+ Add coin" button; clicking it reveals the form
+      inline without a page navigation.
 - [x] Inline coin editing — Edit button on the coin detail page toggles the
       left card into a 2-column form (name, metal, year, denomination, mint,
       grade, category, issuing authority). Save PATCHes `/api/coins/[id]` and

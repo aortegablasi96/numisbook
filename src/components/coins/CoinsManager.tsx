@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
-// Client-side shape of a coin (dates are serialized away by the Server Component).
 export type CoinView = {
   id: string;
   name: string;
@@ -64,8 +63,6 @@ function toForm(coin: CoinView): FormState {
   };
 }
 
-// Build the request payload: send a field only when the user provided it. Empty
-// text becomes null (clear); year is sent as a number.
 function toPayload(form: FormState): Record<string, string | number | null> {
   const payload: Record<string, string | number | null> = {};
   for (const [key] of TEXT_FIELDS) {
@@ -87,19 +84,6 @@ async function readError(response: Response): Promise<string> {
   }
 }
 
-function summary(coin: CoinView): string {
-  return [
-    coin.category,
-    coin.issuingAuthority,
-    coin.year !== null ? (coin.year < 0 ? `${-coin.year} BC` : `${coin.year}`) : null,
-    coin.denomination,
-    coin.metal,
-    coin.grade,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-}
-
 export function CoinsManager({
   collectionId,
   initial,
@@ -113,6 +97,7 @@ export function CoinsManager({
   const [pageSize, setPageSize] = useState(initial.pageSize);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
 
+  const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -132,9 +117,7 @@ export function CoinsManager({
         if (f.category.trim()) sp.set("category", f.category.trim());
         if (f.year.trim()) sp.set("year", f.year.trim());
         sp.set("page", String(p));
-        const res = await fetch(
-          `/api/collections/${collectionId}/coins?${sp.toString()}`,
-        );
+        const res = await fetch(`/api/collections/${collectionId}/coins?${sp.toString()}`);
         if (!res.ok) {
           setError(await readError(res));
           return;
@@ -151,8 +134,6 @@ export function CoinsManager({
     [collectionId],
   );
 
-  // Debounced reload when filters change; reset to the first page. Skip the very
-  // first render — the initial result is already provided by the server.
   const firstRender = useRef(true);
   useEffect(() => {
     if (firstRender.current) {
@@ -166,6 +147,14 @@ export function CoinsManager({
   function resetForm() {
     setForm(EMPTY_FORM);
     setEditingId(null);
+    setShowForm(false);
+  }
+
+  function startEdit(coin: CoinView) {
+    setForm(toForm(coin));
+    setEditingId(coin.id);
+    setShowForm(true);
+    setError(null);
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -187,7 +176,6 @@ export function CoinsManager({
       }
       const wasEditing = editingId !== null;
       resetForm();
-      // Refresh: stay on the page when editing, jump to the first when adding.
       await load(wasEditing ? page : 1, filters);
     } finally {
       setBusy(false);
@@ -212,140 +200,177 @@ export function CoinsManager({
 
   return (
     <section className="stack">
-      <form onSubmit={handleSubmit} className="card stack">
-        <h2>{editingId ? "Edit coin" : "Add a coin"}</h2>
-        <div className="row" style={{ alignItems: "flex-end" }}>
-          {TEXT_FIELDS.map(([key, label]) => (
-            <label key={key}>
-              {label}
-              {key === "name" ? " *" : ""}
-              <input
-                type="text"
-                value={form[key]}
-                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-              />
-            </label>
-          ))}
+      {/* Toolbar: filters + add button */}
+      <div className="filters" style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
+        <div className="row" style={{ flexWrap: "wrap", gap: "0.5rem", flex: 1 }}>
           <label>
-            Year (− for BC)
+            Search
             <input
-              type="number"
-              value={form.year}
-              onChange={(e) => setForm((f) => ({ ...f, year: e.target.value }))}
+              type="text"
+              value={filters.q}
+              placeholder="name…"
+              onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
             />
           </label>
-        </div>
-        <div className="row">
+          <label>
+            Metal
+            <input
+              type="text"
+              value={filters.metal}
+              onChange={(e) => setFilters((f) => ({ ...f, metal: e.target.value }))}
+            />
+          </label>
+          <label>
+            Category
+            <input
+              type="text"
+              value={filters.category}
+              onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))}
+            />
+          </label>
+          <label>
+            Year
+            <input
+              type="number"
+              value={filters.year}
+              style={{ width: "6rem" }}
+              onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value }))}
+            />
+          </label>
           <button
-            type="submit"
-            className="btn-primary"
-            disabled={busy || form.name.trim() === ""}
-          >
-            {editingId ? "Save changes" : "Add coin"}
-          </button>
-          {editingId && (
-            <button type="button" onClick={resetForm} disabled={busy}>
-              Cancel
-            </button>
-          )}
-        </div>
-      </form>
-
-      {error && <p className="alert">{error}</p>}
-
-      <div className="filters">
-        <label>
-          Search
-          <input
-            type="text"
-            value={filters.q}
-            placeholder="name…"
-            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-          />
-        </label>
-        <label>
-          Metal
-          <input
-            type="text"
-            value={filters.metal}
-            onChange={(e) => setFilters((f) => ({ ...f, metal: e.target.value }))}
-          />
-        </label>
-        <label>
-          Category
-          <input
-            type="text"
-            value={filters.category}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, category: e.target.value }))
+            type="button"
+            onClick={() => setFilters(EMPTY_FILTERS)}
+            disabled={
+              filters.q === "" &&
+              filters.metal === "" &&
+              filters.category === "" &&
+              filters.year === ""
             }
-          />
-        </label>
-        <label>
-          Year
-          <input
-            type="number"
-            value={filters.year}
-            style={{ width: "6rem" }}
-            onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value }))}
-          />
-        </label>
+          >
+            Clear
+          </button>
+        </div>
         <button
           type="button"
-          onClick={() => setFilters(EMPTY_FILTERS)}
-          disabled={
-            filters.q === "" &&
-            filters.metal === "" &&
-            filters.category === "" &&
-            filters.year === ""
-          }
+          className="btn-primary btn-sm"
+          style={{ flexShrink: 0 }}
+          onClick={() => {
+            if (showForm && !editingId) {
+              resetForm();
+            } else {
+              setForm(EMPTY_FORM);
+              setEditingId(null);
+              setShowForm(true);
+              setError(null);
+            }
+          }}
         >
-          Clear
+          {showForm && !editingId ? "Cancel" : "+ Add coin"}
         </button>
       </div>
 
-      <h2>
-        Coins ({total}){loading && <span className="muted"> · loading…</span>}
-      </h2>
+      {/* Add / edit form */}
+      {showForm && (
+        <form onSubmit={handleSubmit} className="card stack">
+          <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>
+            {editingId ? "Edit coin" : "Add a coin"}
+          </h2>
+          <div className="row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
+            {TEXT_FIELDS.map(([key, label]) => (
+              <label key={key}>
+                {label}{key === "name" ? " *" : ""}
+                <input
+                  type="text"
+                  value={form[key]}
+                  onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                />
+              </label>
+            ))}
+            <label>
+              Year (− for BC)
+              <input
+                type="number"
+                value={form.year}
+                onChange={(e) => setForm((f) => ({ ...f, year: e.target.value }))}
+              />
+            </label>
+          </div>
+          <div className="row">
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={busy || form.name.trim() === ""}
+            >
+              {editingId ? "Save changes" : "Add coin"}
+            </button>
+            <button type="button" onClick={resetForm} disabled={busy}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {error && <p className="alert">{error}</p>}
+
+      <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+        {total} {total === 1 ? "coin" : "coins"}
+        {loading && " · loading…"}
+      </p>
+
       {coins.length === 0 ? (
         <p className="empty">
-          {total === 0 ? "No coins match." : "No coins on this page."}
+          {total === 0
+            ? "No coins yet. Use the button above to add one."
+            : "No coins match the current filters."}
         </p>
       ) : (
-        <ul className="rows">
-          {coins.map((coin) => (
-            <li key={coin.id}>
-              <CoinThumb coinId={coin.id} />
-              <span className="grow">
-                <Link href={`/coins/${coin.id}`}>
-                  <strong>{coin.name}</strong>
-                </Link>
-                {summary(coin) && (
-                  <span className="muted"> — {summary(coin)}</span>
-                )}
-              </span>
-              <button
-                type="button"
-                className="btn-sm"
-                onClick={() => {
-                  setForm(toForm(coin));
-                  setEditingId(coin.id);
-                }}
-                disabled={busy}
-              >
-                Edit
-              </button>
-              <ConfirmButton
-                className="btn-sm btn-danger"
-                disabled={busy}
-                message={`Delete "${coin.name}" and its valuations? This cannot be undone.`}
-                onConfirm={() => handleDelete(coin)}
-              >
-                Delete
-              </ConfirmButton>
-            </li>
-          ))}
-        </ul>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th className="td-thumb" />
+              <th>Name</th>
+              <th>Metal</th>
+              <th>Denomination</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {coins.map((coin) => (
+              <tr key={coin.id}>
+                <td className="td-thumb">
+                  <CoinThumb coinId={coin.id} />
+                </td>
+                <td>
+                  <Link href={`/coins/${coin.id}`}>
+                    <strong>{coin.name}</strong>
+                  </Link>
+                </td>
+                <td className="muted">{coin.metal ?? "—"}</td>
+                <td className="muted">{coin.denomination ?? "—"}</td>
+                <td className="td-actions">
+                  <span className="row" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
+                    <button
+                      type="button"
+                      className="btn-sm"
+                      onClick={() => startEdit(coin)}
+                      disabled={busy}
+                    >
+                      Edit
+                    </button>
+                    <ConfirmButton
+                      className="btn-sm btn-danger"
+                      disabled={busy}
+                      message={`Delete "${coin.name}" and its valuations? This cannot be undone.`}
+                      onConfirm={() => handleDelete(coin)}
+                    >
+                      Delete
+                    </ConfirmButton>
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
 
       {totalPages > 1 && (
@@ -357,9 +382,7 @@ export function CoinsManager({
           >
             ← Prev
           </button>
-          <span className="muted">
-            Page {page} of {totalPages}
-          </span>
+          <span className="muted">Page {page} of {totalPages}</span>
           <button
             type="button"
             onClick={() => load(page + 1, filters)}
@@ -373,11 +396,9 @@ export function CoinsManager({
   );
 }
 
-// A small coin thumbnail that hides itself when the coin has no image (the
-// owner-scoped endpoint 404s, firing onError).
 function CoinThumb({ coinId }: { coinId: string }) {
   const [show, setShow] = useState(true);
-  if (!show) return null;
+  if (!show) return <span style={{ display: "block", width: 36, height: 36 }} />;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
