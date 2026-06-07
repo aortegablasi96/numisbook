@@ -102,6 +102,11 @@ export function AssistantWidget() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [pendingImage, setPendingImage] = useState<string | null>(null);
+  // Image held across turns: set when first sent, cleared only when the assistant
+  // confirms it was saved ("Saved coin photo" in actions) or the chat is cleared.
+  // This fixes the case where the model asks for more info before calling add_coin,
+  // which would otherwise lose the image between turns.
+  const [heldImage, setHeldImage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -113,6 +118,8 @@ export function AssistantWidget() {
     setError(null);
     setBusy(true);
 
+    // Use the freshly attached image, or fall back to one held from a prior turn.
+    const imageToSend = pendingImage ?? heldImage;
     const newTurn: Turn = { role: "user", text: trimmed, imageUrl: pendingImage ?? undefined };
     const history: Message[] = [
       ...turns
@@ -122,7 +129,8 @@ export function AssistantWidget() {
     ];
     setTurns((prev) => [...prev, newTurn]);
     setInput("");
-    const imageToSend = pendingImage;
+    // Move pending → held (clears the preview; the data travels silently).
+    if (pendingImage) setHeldImage(pendingImage);
     setPendingImage(null);
 
     try {
@@ -139,6 +147,8 @@ export function AssistantWidget() {
         reply: string;
         actions: string[];
       };
+      // Once the assistant confirms the photo was saved, stop re-sending it.
+      if (actions.includes("Saved coin photo")) setHeldImage(null);
       setTurns((prev) => [...prev, { role: "assistant", text: reply, actions }]);
       setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } finally {
@@ -175,7 +185,7 @@ export function AssistantWidget() {
               <button
                 type="button"
                 className="chat-close-btn"
-                onClick={() => { setTurns([]); setPendingImage(null); }}
+                onClick={() => { setTurns([]); setPendingImage(null); setHeldImage(null); }}
                 aria-label="Clear conversation"
                 title="Clear conversation"
               >
