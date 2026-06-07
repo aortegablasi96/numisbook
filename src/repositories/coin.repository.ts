@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { coins, collections } from "@/db/schema";
 
@@ -52,9 +52,8 @@ export const coinRepository = {
   ): Promise<{ coins: Coin[]; total: number }> {
     const conditions: SQL[] = [eq(coins.collectionId, collectionId)];
     if (filters.q) conditions.push(ilike(coins.name, `%${filters.q}%`));
-    if (filters.metal) conditions.push(ilike(coins.metal, `%${filters.metal}%`));
-    if (filters.category)
-      conditions.push(ilike(coins.category, `%${filters.category}%`));
+    if (filters.metal) conditions.push(ilike(coins.metal, filters.metal));
+    if (filters.category) conditions.push(ilike(coins.category, filters.category));
     if (filters.year !== undefined)
       conditions.push(eq(coins.year, filters.year));
     const where = and(...conditions);
@@ -118,6 +117,22 @@ export const coinRepository = {
       )
       .returning();
     return row ?? null;
+  },
+
+  /** Distinct non-null metal and category values in a collection, for filter dropdowns. */
+  async getDistinctFacets(collectionId: string): Promise<{ metals: string[]; categories: string[] }> {
+    const [metalRows, categoryRows] = await Promise.all([
+      db.selectDistinct({ value: coins.metal }).from(coins)
+        .where(and(eq(coins.collectionId, collectionId), isNotNull(coins.metal)))
+        .orderBy(asc(coins.metal)),
+      db.selectDistinct({ value: coins.category }).from(coins)
+        .where(and(eq(coins.collectionId, collectionId), isNotNull(coins.category)))
+        .orderBy(asc(coins.category)),
+    ]);
+    return {
+      metals: metalRows.flatMap((r) => (r.value ? [r.value] : [])),
+      categories: categoryRows.flatMap((r) => (r.value ? [r.value] : [])),
+    };
   },
 
   /** Delete a coin only if it lives in one of the user's collections. */

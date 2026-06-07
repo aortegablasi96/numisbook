@@ -135,6 +135,15 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
   const [pageSize, setPageSize] = useState(initial.pageSize);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
 
+  const [facets, setFacets] = useState<{ metals: string[]; categories: string[] }>({ metals: [], categories: [] });
+
+  const fetchFacets = useCallback(async () => {
+    const res = await fetch(`/api/collections/${collectionId}/coins/facets`);
+    if (res.ok) setFacets((await res.json()) as { metals: string[]; categories: string[] });
+  }, [collectionId]);
+
+  useEffect(() => { void fetchFacets(); }, [fetchFacets]);
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -224,7 +233,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
       if (!response.ok) { setError(await readError(response)); return; }
       const wasEditing = editingId !== null;
       resetForm();
-      await load(wasEditing ? page : 1, filters);
+      await Promise.all([load(wasEditing ? page : 1, filters), fetchFacets()]);
     } finally { setBusy(false); }
   }
 
@@ -234,7 +243,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
       const response = await fetch(`/api/coins/${coin.id}`, { method: "DELETE" });
       if (!response.ok) { setError(await readError(response)); return; }
       if (editingId === coin.id) resetForm();
-      await load(page, filters);
+      await Promise.all([load(page, filters), fetchFacets()]);
     } finally { setBusy(false); }
   }
 
@@ -250,13 +259,17 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
           </label>
           <label>
             Metal
-            <input type="text" value={filters.metal}
-              onChange={(e) => setFilters((f) => ({ ...f, metal: e.target.value }))} />
+            <select value={filters.metal} onChange={(e) => setFilters((f) => ({ ...f, metal: e.target.value }))}>
+              <option value="">All</option>
+              {facets.metals.map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
           </label>
           <label>
             Category
-            <input type="text" value={filters.category}
-              onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))} />
+            <select value={filters.category} onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))}>
+              <option value="">All</option>
+              {facets.categories.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
           </label>
           <label>
             Year

@@ -77,6 +77,14 @@ export async function searchCoins(
   return { coins, total, page, pageSize };
 }
 
+export async function getCoinFacets(
+  userId: string,
+  collectionId: string,
+): Promise<{ metals: string[]; categories: string[] }> {
+  await assertOwnsCollection(userId, collectionId);
+  return coinRepository.getDistinctFacets(collectionId);
+}
+
 export async function getCoin(userId: string, coinId: string): Promise<Coin> {
   const coin = await coinRepository.findByIdForUser(coinId, userId);
   if (!coin) throw new NotFoundError("Coin not found");
