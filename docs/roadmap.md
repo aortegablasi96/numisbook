@@ -74,6 +74,7 @@ Each feature follows the same vertical slice:
       of feature cards; collections/coins/valuations use cards + bordered rows;
       portfolio uses themed bars; the assistant uses chat bubbles; coin photos
       are framed and thumbnails are styled. No new dependencies.
+
 ## Phase 4 — Improvements 1
 
 - [x] Search & filtering — search coins by name and filter by metal/category/year
@@ -121,6 +122,14 @@ Each feature follows the same vertical slice:
       left card into a 2-column form (name, metal, year, denomination, mint,
       grade, category, issuing authority). Save PATCHes `/api/coins/[id]` and
       updates the view in place; Cancel discards. No new API routes needed.
+- [x] Coin list table enhancements — thumbnail size raised to 160 px;
+      `CoinThumb` fetches `/api/coins/[id]/images` and renders the first two
+      photos side by side so coins are recognisable at a glance. Column headers
+      (Name, Metal, Denomination) are clickable: first click sorts ascending (↑),
+      second click descending (↓); inactive columns show a faint ⇅ indicator.
+      Sort is applied server-side through the full vertical slice
+      (`CoinSortBy`/`CoinSortDir` types → repository `searchInCollection` →
+      service → route query params → UI state).
 - [x] Thumbnail generation — `GET /api/coins/[id]/images/[imageId]?w=<px>`
       resizes on the fly with `sharp` and returns WebP at the requested width
       (capped at 2000px). Response carries `Cache-Control: immutable` so the
