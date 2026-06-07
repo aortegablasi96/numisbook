@@ -42,9 +42,11 @@ async function readError(response: Response): Promise<string> {
 export function ValuationsManager({
   coinId,
   initialValuations,
+  className = "card stack",
 }: {
   coinId: string;
   initialValuations: ValuationView[];
+  className?: string;
 }) {
   const [valuations, setValuations] =
     useState<ValuationView[]>(initialValuations);
@@ -91,7 +93,7 @@ export function ValuationsManager({
   }
 
   return (
-    <section className="card stack">
+    <section className={className}>
       <div className="spread">
         <h2 style={{ margin: 0 }}>Valuations</h2>
         {latest && (

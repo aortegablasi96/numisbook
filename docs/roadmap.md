@@ -101,6 +101,15 @@ Each feature follows the same vertical slice:
       asked for more details before calling `add_coin`. Image is now held in
       client state and re-sent silently on every subsequent turn until the
       assistant confirms "Saved coin photo" in its actions.
+- [x] UI layout polish — full-width layout (removed max-width cap; container
+      uses responsive horizontal padding only); nav bar horizontal padding
+      restored (specificity fix on `.site-header .bar`); coin detail page
+      redesigned as two matched-height cards (`2fr 1fr` grid): left card holds
+      coin name + attributes + valuations in a single border, right card holds
+      the photo filling the full card height via `flex: 1`; photo expand button
+      is a fixed-size `2rem × 2rem` overlay in the bottom-right corner; file
+      input replaced with a styled dashed "Add photo / Replace photo" button
+      with accent-gold hover.
 
 ## TODO — backlog
 

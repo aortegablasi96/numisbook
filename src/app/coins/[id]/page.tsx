@@ -75,23 +75,25 @@ export default async function CoinDetailPage({
       <p className="crumbs">
         <Link href={`/collections/${coin.collectionId}`}>← Collection</Link>
       </p>
-      <h1>{coin.name}</h1>
-
-      {details.length > 0 && (
-        <section className="card coin-details">
-          <dl>
-            {details.map(({ label, value }) => (
-              <div key={label} className="coin-details-row">
-                <dt>{label}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      )}
-
-      <CoinImage coinId={id} />
-      <ValuationsManager coinId={id} initialValuations={valuationViews} />
+      <div className="coin-overview">
+        <div className="card coin-overview-left">
+          <h1 style={{ margin: 0 }}>{coin.name}</h1>
+          {details.length > 0 && (
+            <section className="coin-details">
+              <dl>
+                {details.map(({ label, value }) => (
+                  <div key={label} className="coin-details-row">
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+          <ValuationsManager coinId={id} initialValuations={valuationViews} className="stack" />
+        </div>
+        <CoinImage coinId={id} />
+      </div>
     </main>
   );
 }
