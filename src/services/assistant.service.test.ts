@@ -24,6 +24,9 @@ vi.mock("@/services/valuation.service", () => ({
 vi.mock("@/services/analytics.service", () => ({
   getPortfolioSummary: vi.fn(),
 }));
+vi.mock("@/services/coinImage.service", () => ({
+  setCoinImage: vi.fn(),
+}));
 
 const collections = vi.mocked(collectionService);
 const coins = vi.mocked(coinService);

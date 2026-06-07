@@ -110,6 +110,18 @@ Each feature follows the same vertical slice:
       is a fixed-size `2rem × 2rem` overlay in the bottom-right corner; file
       input replaced with a styled dashed "Add photo / Replace photo" button
       with accent-gold hover.
+- [x] Multi-image per coin — `coin_images` schema migrated: `id` UUID PK,
+      `created_at`; old `coin_id`-as-PK row replaced with a proper FK so
+      multiple images can be stored per coin. Repository rewritten with
+      `insert`/`listByCoinId`/`getById`/`getFirstByCoinId`/`deleteById`;
+      service exposes `addCoinImage`, `listCoinImages`, `getCoinImage`,
+      `getFirstCoinImage`, `removeCoinImage`, plus a backward-compat
+      `setCoinImage` wrapper for the assistant. Two new API routes:
+      `GET/POST /api/coins/[id]/images` (list + upload) and
+      `GET/DELETE /api/coins/[id]/images/[imageId]` (serve + remove).
+      Old `GET /api/coins/[id]/image` kept as a thumbnail alias. `CoinImage`
+      component rewritten as a carousel: prev/next arrows only visible when
+      >1 photo, `1 / N` counter, upload and per-image remove controls.
 
 ## TODO — backlog
 

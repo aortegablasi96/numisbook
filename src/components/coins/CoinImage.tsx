@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { ALLOWED_IMAGE_TYPES } from "@/lib/images";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
@@ -29,23 +29,64 @@ function IconUpload() {
   );
 }
 
-// Display, upload, and remove a coin's image. The <img> loads the owner-scoped
-// endpoint; `version` cache-busts after a change, and `hasImage` is driven by the
-// image's load/error events (no separate existence query needed).
+function IconChevronLeft() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+    </svg>
+  );
+}
+
+function IconChevronRight() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+    </svg>
+  );
+}
+
 export function CoinImage({ coinId }: { coinId: string }) {
-  const [version, setVersion] = useState(0);
-  const [hasImage, setHasImage] = useState(true); // assume until onError says otherwise
+  const [imageIds, setImageIds] = useState<string[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lightboxRef = useRef<HTMLDialogElement>(null);
 
-  const openLightbox = useCallback(() => lightboxRef.current?.showModal(), []);
-  const closeLightboxOnBackdrop = useCallback((e: React.MouseEvent<HTMLDialogElement>) => {
-    if (e.target === lightboxRef.current) lightboxRef.current?.close();
-  }, []);
+  const fetchImages = useCallback(async () => {
+    const res = await fetch(`/api/coins/${coinId}/images`);
+    if (!res.ok) return;
+    const { images } = (await res.json()) as { images: { id: string }[] };
+    setImageIds(images.map((i) => i.id));
+    setLoaded(true);
+  }, [coinId]);
 
-  const src = `/api/coins/${coinId}/image?v=${version}`;
+  useEffect(() => {
+    void fetchImages();
+  }, [fetchImages]);
+
+  const currentId = imageIds[currentIndex];
+  const src = currentId ? `/api/coins/${coinId}/images/${currentId}` : null;
+  const hasImages = imageIds.length > 0;
+  const hasMultiple = imageIds.length > 1;
+
+  const openLightbox = useCallback(() => lightboxRef.current?.showModal(), []);
+  const closeLightboxOnBackdrop = useCallback(
+    (e: React.MouseEvent<HTMLDialogElement>) => {
+      if (e.target === lightboxRef.current) lightboxRef.current?.close();
+    },
+    [],
+  );
+
+  const prev = useCallback(
+    () => setCurrentIndex((i) => (i - 1 + imageIds.length) % imageIds.length),
+    [imageIds.length],
+  );
+  const next = useCallback(
+    () => setCurrentIndex((i) => (i + 1) % imageIds.length),
+    [imageIds.length],
+  );
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -55,7 +96,7 @@ export function CoinImage({ coinId }: { coinId: string }) {
     try {
       const body = new FormData();
       body.append("file", file);
-      const response = await fetch(`/api/coins/${coinId}/image`, {
+      const response = await fetch(`/api/coins/${coinId}/images`, {
         method: "POST",
         body,
       });
@@ -63,8 +104,12 @@ export function CoinImage({ coinId }: { coinId: string }) {
         setError(await readError(response));
         return;
       }
-      setHasImage(true);
-      setVersion((v) => v + 1);
+      const { id: newId } = (await response.json()) as { id: string };
+      setImageIds((prev) => {
+        const updated = [...prev, newId];
+        setCurrentIndex(updated.length - 1);
+        return updated;
+      });
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -72,35 +117,60 @@ export function CoinImage({ coinId }: { coinId: string }) {
   }
 
   async function handleRemove() {
+    if (!currentId) return;
     setError(null);
     setBusy(true);
     try {
-      const response = await fetch(`/api/coins/${coinId}/image`, {
+      const response = await fetch(`/api/coins/${coinId}/images/${currentId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
         setError(await readError(response));
         return;
       }
-      setHasImage(false);
-      setVersion((v) => v + 1);
+      const removedId = currentId;
+      setImageIds((prev) => {
+        const updated = prev.filter((id) => id !== removedId);
+        setCurrentIndex((idx) => Math.min(idx, Math.max(0, updated.length - 1)));
+        return updated;
+      });
     } finally {
       setBusy(false);
     }
   }
 
+  if (!loaded) return <section className="card coin-image-card" />;
+
   return (
     <section className="card coin-image-card">
       <div className="coin-photo-wrap">
-        {hasImage ? (
+        {hasImages && src ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={src}
-              alt="Coin"
-              className="coin-photo"
-              onError={() => setHasImage(false)}
-            />
+            <img src={src} alt="Coin" className="coin-photo" key={currentId} />
+            {hasMultiple && (
+              <>
+                <button
+                  type="button"
+                  className="coin-photo-nav coin-photo-prev"
+                  onClick={prev}
+                  aria-label="Previous photo"
+                >
+                  <IconChevronLeft />
+                </button>
+                <button
+                  type="button"
+                  className="coin-photo-nav coin-photo-next"
+                  onClick={next}
+                  aria-label="Next photo"
+                >
+                  <IconChevronRight />
+                </button>
+                <span className="coin-photo-counter">
+                  {currentIndex + 1} / {imageIds.length}
+                </span>
+              </>
+            )}
             <button
               type="button"
               className="coin-photo-expand"
@@ -143,13 +213,13 @@ export function CoinImage({ coinId }: { coinId: string }) {
           disabled={busy}
         >
           <IconUpload />
-          {hasImage ? "Replace photo" : "Add photo"}
+          Add photo
         </button>
-        {hasImage && (
+        {hasImages && (
           <ConfirmButton
             className="btn-sm btn-danger"
             disabled={busy}
-            message="Remove this coin's image?"
+            message="Remove this photo?"
             confirmLabel="Remove"
             onConfirm={handleRemove}
           >

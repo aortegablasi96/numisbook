@@ -22,6 +22,13 @@
       "when": 1780660923515,
       "tag": "0002_zippy_puma",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1749340000000,
+      "tag": "0003_multi_coin_images",
+      "breakpoints": true
     }
   ]
 }

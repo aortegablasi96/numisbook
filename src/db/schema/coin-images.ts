@@ -9,15 +9,16 @@ const bytea = customType<{ data: Buffer; driverData: Buffer }>({
   },
 });
 
-// One image per coin. Bytes live here (not on `coins`) so coin listings stay
-// lean. Cascade-deletes with the coin.
+// One or more images per coin, ordered by createdAt. Bytes live here (not on
+// `coins`) so coin listings stay lean. Cascade-deletes with the coin.
 export const coinImages = pgTable("coin_images", {
+  id: uuid("id").primaryKey().defaultRandom(),
   coinId: uuid("coin_id")
-    .primaryKey()
+    .notNull()
     .references(() => coins.id, { onDelete: "cascade" }),
   mimeType: text("mime_type").notNull(),
   data: bytea("data").notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
+  createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
