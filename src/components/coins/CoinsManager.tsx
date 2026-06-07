@@ -327,9 +327,8 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
               {visibleCols.map((col) => {
                 const def = defFor(col.key);
                 const isDragOver = headerDropKey === col.key && headerDragKey !== col.key;
-                const thProps = {
-                  key: col.key,
-                  draggable: true,
+                const thShared = {
+                  draggable: true as const,
                   onDragStart: () => setHeaderDragKey(col.key),
                   onDragOver: (e: React.DragEvent) => { e.preventDefault(); setHeaderDropKey(col.key); },
                   onDrop: () => { if (headerDragKey) reorderCols(headerDragKey, col.key); setHeaderDragKey(null); setHeaderDropKey(null); },
@@ -338,7 +337,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
                   style: { cursor: "grab", userSelect: "none" as const, whiteSpace: "nowrap" as const },
                 };
                 return def.sortable ? (
-                  <th {...thProps} onClick={() => handleSort(col.key)}>
+                  <th key={col.key} {...thShared} onClick={() => handleSort(col.key)}>
                     <span className="th-drag-grip">⠿</span>
                     {def.label}
                     <span style={{ marginLeft: "0.3rem", opacity: filters.sortBy === col.key ? 1 : 0.3, fontSize: "0.8em" }}>
@@ -346,7 +345,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
                     </span>
                   </th>
                 ) : (
-                  <th {...thProps}>
+                  <th key={col.key} {...thShared}>
                     <span className="th-drag-grip">⠿</span>
                     {def.label}
                   </th>
