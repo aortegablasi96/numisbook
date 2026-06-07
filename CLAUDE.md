@@ -23,6 +23,7 @@ AI-assisted coin identification.
 * **Drizzle ORM** over **PostgreSQL** (migrations via `drizzle-kit` → `drizzle/`)
 * **Zod** for input validation at the API boundary
 * **OpenAI** (`openai`, gpt-4o-mini) for the collection assistant only
+* **sharp** for on-the-fly image resizing (coin thumbnail API)
 
 ## Commands
 
@@ -150,6 +151,39 @@ returns 503 and the rest of the app works.
 The assistant is rendered as a floating widget (`AssistantWidget`) injected into
 the root layout, auth-gated by a Server Component wrapper (`FloatingAssistant`).
 
+## Coin images
+
+Images are stored as Postgres `bytea` in `coin_images` (separate table so coin
+listings stay lean; cascades on coin delete). Multiple images per coin; the UI
+shows a carousel. The `coinImage.repository` is the **only** layer that touches
+image storage — swapping to S3/R2 only requires changing that file.
+
+Image API routes:
+
+```
+GET    /api/coins/[id]/images              → { images: [{ id }] }  (metadata only)
+POST   /api/coins/[id]/images              → { id }  (multipart/form-data, field "file")
+GET    /api/coins/[id]/images/[imageId]    → raw image (or ?w=<px> → WebP resize via sharp)
+DELETE /api/coins/[id]/images/[imageId]    → 204
+GET    /api/coins/[id]/image               → legacy alias: serves the first image
+```
+
+The `?w=<px>` thumbnail path resizes to fit within `w×w` (max 2000 px),
+converts to WebP at quality 82, and returns `Cache-Control: public, immutable`
+(UUID-stable IDs never change). The no-`?w` path returns the original with
+`Cache-Control: private, no-cache`. Constraints: PNG/JPEG/WebP/GIF, max 5 MB
+(defined in `src/lib/images.ts`).
+
+## Coin search and filtering
+
+`GET /api/collections/[id]/coins` accepts query params: `q` (name substring),
+`metal`, `category`, `year`, `page`, `sortBy` (name | category | metal |
+denomination | year | createdAt), `sortDir` (asc | desc). Page size is 20
+(`COINS_PAGE_SIZE` in `src/services/coin.service.ts`). Response:
+`{ coins, total, page, pageSize }`.
+
+`GET /api/collections/[id]/coins/facets` returns `{ metals: string[], categories: string[] }` — distinct non-null values for filter dropdowns.
+
 ## UI / Design system
 
 The app uses a **dependency-free CSS design system** defined entirely in
@@ -162,6 +196,15 @@ The app uses a **dependency-free CSS design system** defined entirely in
 
 Do not introduce a CSS-in-JS library or a component framework (e.g. Tailwind,
 shadcn, MUI) — extend `globals.css` instead.
+
+**Destructive actions** use `<ConfirmButton>` (`src/components/ui/ConfirmButton.tsx`),
+a reusable `<dialog>`-based confirmation prompt. Use it for deletes instead of
+`window.confirm`.
+
+**UI state persistence**: client-side preferences use `localStorage`. Current
+key: `numisbook:coin-columns-v2` stores column visibility + order as
+`ColState[]` for the coin list table. Use a versioned key whenever the shape
+changes.
 
 ## Testing
 
@@ -218,6 +261,5 @@ Project-specific Claude Code skills live in `.claude/skills/`:
 
 ## Current Priority
 
-The MVP and post-MVP features (Phases 0–3) are complete. Work is now on Phase 4
-"Improvements" and the backlog in `docs/roadmap.md` — check it for the current
-focus before starting new work.
+Phases 0–4 are complete (see `docs/roadmap.md`). Work is now on the backlog
+items at the bottom of that file — check it before starting anything new.
