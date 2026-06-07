@@ -57,7 +57,10 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
 ```
 
 * **API routes are thin** (`src/app/api/**/route.ts`): validate input → call a
-  service → shape the response. No business logic, no DB access.
+  service → shape the response. No business logic, no DB access. Shared helpers
+  live in `src/app/api/_lib.ts`: `currentUser()` (resolve session → domain user),
+  `unauthorized()`, and `errorResponse()` (maps `ZodError` → 400, `AppError` →
+  its status, anything else → 500).
 * **Business logic belongs in services** (`src/services`). Services are
   framework-agnostic (no `Request`/`Response`, no React) and access data only
   through repositories.
@@ -73,10 +76,16 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   `userId` always comes from the authenticated session (`currentUser()` in
   `src/app/api/_lib.ts`), never from client input. Mutations that match no row
   raise `NotFoundError` (404) rather than revealing another tenant's data.
+  Coins are scoped indirectly — via a subquery of the user's `collectionId`s —
+  because `coins` has no `userId` column.
 * **React components** (`src/components`) must not contain database queries or
   import repositories; data comes via props, Server Components, or the API.
+  Components are organized by domain: `src/components/{collections,coins,
+  valuations,assistant}/`; shared primitives in `src/components/ui/`; shell in
+  `src/components/layout/`.
 * **Drizzle schema** lives in `src/db/schema`; migrations are generated into
-  `drizzle/` and are **not** hand-edited.
+  `drizzle/` and are **not** hand-edited. `src/db/schema/index.ts` re-exports
+  all table definitions.
 * **Imports use the `@/*` alias** (`@/* → ./src/*`, see `tsconfig.json`), e.g.
   `import { db } from "@/db"`. `src/db/index.ts` exports the singleton Drizzle
   client and throws at import time if `DATABASE_URL` is unset.
@@ -85,6 +94,31 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
 
 A new feature is built as a vertical slice:
 `schema → repository → service (+ tests) → API route → UI`.
+
+## Errors
+
+`src/lib/errors.ts` defines the typed error hierarchy used across services:
+
+```
+AppError(message, status)       — base; carries an HTTP status
+  ValidationError(message)      — 400; domain invariant violations
+  NotFoundError(message)        — 404; missing or invisible resource
+```
+
+Services throw these; `errorResponse()` in `_lib.ts` maps them to JSON
+responses. Never throw raw `Error` from a service for a known domain failure.
+
+## Repository types
+
+Repositories export inferred Drizzle types (`$inferSelect`, `$inferInsert`)
+as the canonical domain types re-used by services, API routes, and components:
+
+```ts
+export type Coin = typeof coins.$inferSelect;
+export type NewCoin = typeof coins.$inferInsert;
+```
+
+Import domain types from repositories, not from `@/db/schema` directly.
 
 ## Authentication
 
@@ -113,6 +147,44 @@ tool handler — it is never a model-supplied argument — so the model can only
 touch the signed-in user's data. Requires `OPENAI_API_KEY`; without it the route
 returns 503 and the rest of the app works.
 
+The assistant is rendered as a floating widget (`AssistantWidget`) injected into
+the root layout, auth-gated by a Server Component wrapper (`FloatingAssistant`).
+
+## UI / Design system
+
+The app uses a **dependency-free CSS design system** defined entirely in
+`src/app/globals.css`. It provides:
+
+* CSS custom-property theme tokens (light/dark via `prefers-color-scheme`):
+  `--color-*`, `--radius-*`, `--font-*`, etc.
+* Utility component classes: `.card`, `.row`, `.badge`, `.alert`,
+  `.analytics-bar`, `.chat-bubble`, and themed buttons/inputs/tables.
+
+Do not introduce a CSS-in-JS library or a component framework (e.g. Tailwind,
+shadcn, MUI) — extend `globals.css` instead.
+
+## Testing
+
+### Service tests (primary target)
+
+Mock all repositories with `vi.mock()`; test business logic in isolation.
+`describe` / `it` / `expect` are global (Vitest `globals: true`).
+
+### API route tests
+
+Mock `@/auth`, `@/services/auth.service`, and the called service module; use
+**real** Zod validation (do not mock it). Pattern from
+`src/app/api/collections/route.test.ts`:
+
+```ts
+vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("@/services/auth.service", () => ({ resolveCurrentUser: vi.fn() }));
+vi.mock("@/services/collection.service", () => ({ listCollections: vi.fn() }));
+```
+
+Cover: 401 when unauthenticated, 400 on invalid input (let Zod reject it),
+success status codes (200/201/204), and AppError → status mapping (404, etc.).
+
 ## Development Principles
 
 * Simplicity over complexity.
@@ -121,8 +193,6 @@ returns 503 and the rest of the app works.
 * Keep files under 300 lines when practical.
 * Generate tests for all business logic (services are the primary test target;
   mock repositories).
-* Vitest runs with `globals: true` (see `vitest.config.ts`), so `describe`,
-  `it`, and `expect` are available in test files without importing them.
 
 ## Before Implementing Any Feature
 
