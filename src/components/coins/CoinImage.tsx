@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { ALLOWED_IMAGE_TYPES } from "@/lib/images";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
@@ -22,6 +22,12 @@ export function CoinImage({ coinId }: { coinId: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const lightboxRef = useRef<HTMLDialogElement>(null);
+
+  const openLightbox = useCallback(() => lightboxRef.current?.showModal(), []);
+  const closeLightboxOnBackdrop = useCallback((e: React.MouseEvent<HTMLDialogElement>) => {
+    if (e.target === lightboxRef.current) lightboxRef.current?.close();
+  }, []);
 
   const src = `/api/coins/${coinId}/image?v=${version}`;
 
@@ -70,13 +76,25 @@ export function CoinImage({ coinId }: { coinId: string }) {
   return (
     <section className="card stack">
       {hasImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={src}
-          alt="Coin"
-          className="coin-photo"
-          onError={() => setHasImage(false)}
-        />
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt="Coin"
+            className="coin-photo"
+            style={{ cursor: "zoom-in" }}
+            onClick={openLightbox}
+            onError={() => setHasImage(false)}
+          />
+          <dialog
+            ref={lightboxRef}
+            className="lightbox-dialog"
+            onClick={closeLightboxOnBackdrop}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt="Coin (full size)" />
+          </dialog>
+        </>
       ) : (
         <p className="muted" style={{ margin: 0 }}>
           No image yet.

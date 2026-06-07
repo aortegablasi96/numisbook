@@ -348,6 +348,37 @@ button:disabled {
   background: var(--accent);
 }
 
+/* ---- Coin details ------------------------------------------------------- */
+
+.coin-details dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0 1.25rem;
+  margin: 0;
+}
+.coin-details-row {
+  display: contents;
+}
+.coin-details dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.3rem 0;
+}
+.coin-details dd {
+  margin: 0;
+  font-size: 0.92rem;
+  padding: 0.3rem 0;
+}
+.coin-details dt,
+.coin-details dd {
+  border-bottom: 1px solid var(--border);
+}
+.coin-details-row:last-child dt,
+.coin-details-row:last-child dd {
+  border-bottom: none;
+}
+
 /* ---- Coin image --------------------------------------------------------- */
 
 .coin-photo {
@@ -365,6 +396,26 @@ button:disabled {
   border-radius: 6px;
   border: 1px solid var(--border);
   flex: none;
+}
+
+/* ---- Lightbox ----------------------------------------------------------- */
+
+.lightbox-dialog {
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: 95vw;
+  max-height: 95vh;
+}
+.lightbox-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.88);
+}
+.lightbox-dialog img {
+  display: block;
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: var(--radius);
 }
 
 /* ---- Floating assistant widget ----------------------------------------- */

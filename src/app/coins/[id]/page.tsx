@@ -8,6 +8,10 @@ import { NotFoundError } from "@/lib/errors";
 import { ValuationsManager } from "@/components/valuations/ValuationsManager";
 import { CoinImage } from "@/components/coins/CoinImage";
 
+function formatYear(year: number): string {
+  return year < 0 ? `${Math.abs(year)} BC` : String(year);
+}
+
 // Server Component for a single coin: guards on auth + ownership, lists its
 // valuation history, and hosts the record-valuation form.
 export default async function CoinDetailPage({
@@ -55,12 +59,37 @@ export default async function CoinDetailPage({
     valuedAt: v.valuedAt.toISOString(),
   }));
 
+  const details: { label: string; value: string }[] = [
+    coin.metal && { label: "Metal", value: coin.metal },
+    coin.denomination && { label: "Denomination", value: coin.denomination },
+    coin.year !== null && coin.year !== undefined && { label: "Year", value: formatYear(coin.year) },
+    coin.mint && { label: "Mint", value: coin.mint },
+    coin.grade && { label: "Grade", value: coin.grade },
+    coin.category && { label: "Category", value: coin.category },
+    coin.issuingAuthority && { label: "Issuing authority", value: coin.issuingAuthority },
+    { label: "Added", value: coin.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) },
+  ].filter(Boolean) as { label: string; value: string }[];
+
   return (
     <main className="stack">
       <p className="crumbs">
         <Link href={`/collections/${coin.collectionId}`}>← Collection</Link>
       </p>
       <h1>{coin.name}</h1>
+
+      {details.length > 0 && (
+        <section className="card coin-details">
+          <dl>
+            {details.map(({ label, value }) => (
+              <div key={label} className="coin-details-row">
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
       <CoinImage coinId={id} />
       <ValuationsManager coinId={id} initialValuations={valuationViews} />
     </main>
