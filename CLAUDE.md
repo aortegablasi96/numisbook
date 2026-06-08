@@ -9,7 +9,7 @@ NumisBook is a SaaS platform for coin collectors.
 Built features (see `docs/roadmap.md` for status):
 
 * Collection management
-* Coin inventory (with per-coin images stored in Postgres)
+* Coin inventory (with per-coin images; bytes in object storage, metadata in Postgres)
 * Valuation tracking (value history per coin)
 * Portfolio analytics (aggregate value, allocation, trend)
 * Collection assistant — an OpenAI-backed chatbot over the domain services
