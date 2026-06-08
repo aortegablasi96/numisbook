@@ -100,3 +100,36 @@ docs/             # architecture, database, product, roadmap
 
 See also: [`database.md`](./database.md), [`product.md`](./product.md),
 [`roadmap.md`](./roadmap.md).
+
+## Dependency Rules
+
+Allowed:
+
+Service
+→ Repository
+
+Service
+→ Storage Abstraction
+
+Service
+→ AI Service
+
+Service
+→ Other Services (only when justified)
+
+Forbidden:
+
+Service
+→ Database
+
+Service
+→ Drizzle
+
+Service
+→ React
+
+Service
+→ Request / Response
+
+Service
+→ Cloudflare R2 SDK directly

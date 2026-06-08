@@ -39,3 +39,60 @@ Adding a new domain or entity (e.g. `collection`, `coin`, `valuation`).
 - Keep files under ~300 lines.
 - Generate tests for service business logic.
 - Don't introduce new dependencies without justification.
+
+## Workflow Prerequisites
+
+This skill is an execution skill.
+
+Before using this skill, the following workflow phases must be completed:
+
+1. Product Review (`product-manager`)
+2. Architecture Review (`architect`)
+3. Database Review (`database-designer`) if schema changes are involved
+
+This skill assumes those reviews have already been approved.
+
+Do not redefine requirements.
+Do not redesign architecture.
+Do not redesign the schema.
+
+If any prerequisite is missing, stop and request the missing review.
+
+## Required References
+
+Before scaffolding:
+
+Review:
+
+* CLAUDE.md
+* docs/architecture.md
+* docs/database.md
+* docs/decisions/*
+* Approved Product Review
+* Approved Architecture Review
+* Approved Database Review
+
+Generated code must remain consistent with documented decisions and approved reviews.
+
+## Scope
+
+This skill is responsible for scaffolding and implementation only.
+
+Responsibilities:
+
+* schema files
+* migrations
+* repositories
+* services
+* API routes
+* UI scaffolding
+* tests
+
+Not responsible for:
+
+* product design
+* architecture decisions
+* database design decisions
+* dependency selection
+
+Escalate those concerns to the appropriate workflow skill.

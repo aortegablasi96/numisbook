@@ -258,13 +258,43 @@ success status codes (200/201/204), and AppError → status mapping (404, etc.).
 3. Check for reusable components.
 4. Produce a short implementation plan.
 
-## Skills
+## Development Workflow
 
-Project-specific Claude Code skills live in `.claude/skills/`:
+For non-trivial features:
+
+1. Product Review (`product-manager`)
+2. Architecture Review (`architect`)
+3. Database Review (`database-designer`) when schema changes are required
+4. Implementation (`implementation-engineer` or appropriate execution skill)
+5. Testing Review (`testing`)
+
+Do not jump directly to implementation for significant features.
+
+For small bug fixes and UI tweaks, implementation may proceed directly.
+
+## Workflow Skills
+
+These skills are responsible for analysis, planning, and validation:
+
+* `product-manager`
+* `architect`
+* `database-designer`
+* `implementation-engineer`
+* `testing`
+
+Workflow skills own decisions and reviews.
+
+## Execution Skills
+
+These skills automate implementation tasks once reviews are complete:
 
 * `new-domain` — scaffold a full vertical slice for a new domain.
 * `new-repository` — scaffold a repository following the data-access rules.
 * `new-service` — scaffold a service (+ test) following the business-logic rules.
+
+Additional execution skills may be added as the project evolves.
+
+Execution skills must follow approved requirements, architecture, and database decisions.
 
 ## Documentation
 
@@ -272,6 +302,22 @@ Project-specific Claude Code skills live in `.claude/skills/`:
 * Database design: `docs/database.md`
 * Product requirements: `docs/product.md`
 * Roadmap: `docs/roadmap.md`
+
+## Decision Records
+
+Accepted architectural decisions are stored in:
+
+docs/decisions/
+
+These decisions take precedence over generated suggestions.
+
+If a task conflicts with an accepted decision:
+
+* identify the conflict
+* explain the tradeoffs
+* propose a new ADR
+
+Do not silently override accepted decisions.
 
 ## Current Priority
 
