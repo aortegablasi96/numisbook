@@ -83,7 +83,11 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   import repositories; data comes via props, Server Components, or the API.
   Components are organized by domain: `src/components/{collections,coins,
   valuations,assistant}/`; shared primitives in `src/components/ui/`; shell in
-  `src/components/layout/`.
+  `src/components/layout/`. Each domain has a client-side "manager" that owns its
+  view and talks to the API: `CollectionsManager`, `CoinsManager` (+ the
+  `CoinDetailsCard` / `CoinImage` detail views), `ValuationsManager`, and
+  `AssistantWidget`; `SiteHeader` (layout) and `ConfirmButton` (ui) are the
+  shared shell/primitive.
 * **Drizzle schema** lives in `src/db/schema`; migrations are generated into
   `drizzle/` and are **not** hand-edited. `src/db/schema/index.ts` re-exports
   all table definitions.
