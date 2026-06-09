@@ -277,6 +277,8 @@ For small bug fixes and UI tweaks, implementation may proceed directly.
 
 These skills are responsible for analysis, planning, and validation:
 
+### Core Workflow Skills
+
 * `product-manager`
 * `ui-designer`
 * `architect`
@@ -284,7 +286,37 @@ These skills are responsible for analysis, planning, and validation:
 * `implementation-engineer`
 * `testing`
 
-Workflow skills own decisions and reviews.
+These skills participate in the standard feature-development workflow.
+
+### Governance Skills
+
+* `adr-writer`
+* `refactoring-reviewer`
+
+Governance skills protect long-term consistency and are invoked only when needed.
+
+#### ADR Writer
+
+Use when:
+
+* introducing a new provider
+* introducing a major dependency
+* changing authentication strategy
+* changing storage strategy
+* changing deployment strategy
+* introducing a significant architectural pattern
+
+#### Refactoring Reviewer
+
+Use before:
+
+* major refactors
+* architectural restructuring
+* introducing new abstractions
+* reorganizing domains
+* replacing established patterns
+
+Governance reviews may approve, revise, or reject a proposal before implementation proceeds.
 
 ## Execution Skills
 
@@ -310,6 +342,25 @@ Each `src/*` layer also has a short `README.md` (`src/services`, `src/repositori
 `src/app`, `src/app/api`, `src/components`, `src/db/schema`, `src/lib`) restating
 the rule for that layer — read it when working inside one.
 
+## Documentation Hierarchy
+
+When making decisions, consult documentation in the following order:
+
+1. `docs/decisions/`
+2. `docs/product.md`
+3. `docs/roadmap.md`
+4. `docs/architecture.md`
+5. `docs/database.md`
+6. `docs/history.md`
+
+If documentation conflicts:
+
+1. Identify the conflict.
+2. Explain the tradeoffs.
+3. Request clarification or propose a new ADR.
+
+Do not silently choose one source over another.
+
 ## Decision Records
 
 Accepted architectural decisions are stored in:
@@ -328,8 +379,9 @@ Do not silently override accepted decisions.
 
 ## Current Priority
 
-The core collection-management platform is complete; the project is **post-MVP**.
-The active milestone is **Production Readiness** (deployment, CI/CD,
-observability, assistant hardening, auth resilience). See `docs/roadmap.md` for
-the current milestone tasks and the Technical Backlog — check it before starting
-anything new.
+The core collection-management platform is functionally complete; the project is
+in a **pre-deployment embellishment** phase. The active milestone is
+**Embellishment** — polishing and rounding out MVP features and UI before
+preparing for production deployment (which is now a future milestone). See
+`docs/roadmap.md` for the current milestone tasks and the Technical Backlog —
+check it before starting anything new.

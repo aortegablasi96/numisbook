@@ -23,25 +23,94 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Post-MVP**
+Current maturity: **Pre-deployment — Embellishment**
 
-The core collection-management platform is complete and operational.
+The core collection-management platform is functionally complete, but several
+MVP features and the UI need refinement before exposing NumisBook to real users.
 
 Primary objective:
 
-**Prepare NumisBook for production deployment and real-user usage.**
+**Polish and round out the MVP — features and UI — before preparing for
+production deployment.**
 
 Current priorities:
 
-- Deployment
-- Reliability
-- Security
-- Observability
-- Operational readiness
+- Feature completeness and refinement
+- UI/UX polish and consistency
+- Usability
+- Bug fixing
 
 ---
 
-# Next Milestone — Production Readiness
+# Next Milestone — Embellishment
+
+Goal:
+
+Bring the existing MVP features and UI to a level of quality and completeness
+suitable for real collectors before preparing to deploy.
+
+## Feature Refinement
+
+- [ ] Review and round out existing MVP features
+- [ ] Address rough edges and missing affordances
+
+## UI/UX Polish
+
+- [ ] Enhance style and UX 
+- [ ] Visual consistency across views
+- [ ] Empty / loading / error states
+- [ ] Responsive layout
+- [ ] Accessibility pass
+
+## Quality
+
+- [ ] Bug fixing
+- [ ] Usability improvements
+
+---
+
+# Future Milestone — Data Model Reform
+
+Goal:
+
+Reform the coin and valuation data models so they capture collectors' data more
+accurately before building richer analytics on top of them.
+
+## Coin Attributes
+
+- [ ] Review and reform the coin attribute schema
+- [ ] Add missing / refine existing attributes
+- [ ] Migration for existing coin data
+
+## Valuation Attributes
+
+- [ ] Rework the valuation attribute schema
+- [ ] Migration for existing valuation data
+
+---
+
+# Future Milestone — Portfolio Analytics Upgrade
+
+Goal:
+
+Improve the portfolio analytics page into a richer, more insightful view of a
+collector's holdings.
+
+## Analytics
+
+- [ ] Richer value-trend visualization over time
+- [ ] Deeper allocation breakdowns (by metal, category, year, etc.)
+- [ ] Per-collection and aggregate comparisons
+- [ ] Gain/loss and performance indicators
+
+## UX
+
+- [ ] Improved charts and layout
+- [ ] Date-range / filter controls
+
+---
+
+# Future Milestone — Production Readiness
 
 Goal:
 

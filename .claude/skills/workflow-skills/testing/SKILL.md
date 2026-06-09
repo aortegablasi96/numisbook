@@ -35,6 +35,14 @@ Product Manager
 → UI Designer
 → Architect
 → Database Designer (if needed)
+→ ADR Writer (if needed)
+→ Implementation Engineer
+→ Testing
+
+Before any major refactor:
+
+Refactoring Reviewer
+→ Architect
 → Implementation Engineer
 → Testing
 
