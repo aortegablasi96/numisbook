@@ -27,6 +27,9 @@ coverage/
 # Local object storage (FsStorage dev fallback for coin images)
 .storage/
 
+# Claude Code agent worktrees
+.claude/worktrees/
+
 # OS / editor
 .DS_Store
 Thumbs.db
