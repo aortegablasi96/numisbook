@@ -19,6 +19,7 @@ AI-assisted coin identification.
 
 ## Stack
 
+* **Node ≥ 20**, **npm** (lockfile committed) — Next 15 + React 19
 * **TypeScript** + **Next.js** (App Router) + **React**
 * **Drizzle ORM** over **PostgreSQL** (migrations via `drizzle-kit` → `drizzle/`)
 * **Zod** for input validation at the API boundary
@@ -44,6 +45,10 @@ npm run db:studio      # open Drizzle Studio
 ```
 
 Run a single test file: `npx vitest run path/to/file.test.ts`.
+
+A read-only **`postgres` MCP server** is available in this environment for
+ad-hoc inspection of the dev database (e.g. checking rows during debugging).
+Use it for reads only — never as a substitute for the repository layer.
 
 Local setup: copy `.env.example` to `.env`, set `DATABASE_URL` (and the Auth.js
 vars below to enable sign-in), then
@@ -275,6 +280,9 @@ For small bug fixes and UI tweaks, implementation may proceed directly.
 
 ## Workflow Skills
 
+Project skills live in `.claude/skills/{workflow,governance,execution}-skills/`,
+one `SKILL.md` per skill.
+
 These skills are responsible for analysis, planning, and validation:
 
 ### Core Workflow Skills
@@ -363,9 +371,15 @@ Do not silently choose one source over another.
 
 ## Decision Records
 
-Accepted architectural decisions are stored in:
+Accepted architectural decisions are stored in `docs/decisions/`:
 
-docs/decisions/
+* `001-nextjs-monolith` — Next.js monolith
+* `002-drizzle-over-prisma` — Drizzle ORM over Prisma
+* `003-authjs-google-oauth` — Auth.js + Google OAuth
+* `004-s3-storage-abstraction` — S3-compatible storage abstraction
+* `005-cloudflare-r2-initial-provider` — Cloudflare R2 as initial provider
+
+(`template.md` is the scaffold for new ADRs.)
 
 These decisions take precedence over generated suggestions.
 
