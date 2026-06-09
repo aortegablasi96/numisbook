@@ -301,7 +301,12 @@ Execution skills must follow approved requirements, architecture, and database d
 * Architecture: `docs/architecture.md`
 * Database design: `docs/database.md`
 * Product requirements: `docs/product.md`
-* Roadmap: `docs/roadmap.md`
+* Roadmap (planned work): `docs/roadmap.md`
+* History (completed milestones, by phase): `docs/history.md`
+
+Each `src/*` layer also has a short `README.md` (`src/services`, `src/repositories`,
+`src/app`, `src/app/api`, `src/components`, `src/db/schema`, `src/lib`) restating
+the rule for that layer — read it when working inside one.
 
 ## Decision Records
 
