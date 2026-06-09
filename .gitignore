@@ -30,6 +30,9 @@ coverage/
 # Claude Code agent worktrees
 .claude/worktrees/
 
+# Claude Code project MCP config (contains secrets; keep local, do not commit)
+.mcp.json
+
 # OS / editor
 .DS_Store
 Thumbs.db
