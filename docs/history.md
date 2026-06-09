@@ -185,6 +185,47 @@ Implemented:
 
 ---
 
+# Phase 5 — Data Model Reform
+
+Status: Complete
+
+Reformed the coin and valuation data models to capture collectors' data
+accurately before building richer analytics on them.
+
+## Coin Attributes
+
+Implemented:
+
+- Reformed attribute schema (year as a range, grade `pgEnum`, weight, diameter,
+  obverse/reverse descriptions, observations, catalogue references, auction
+  acquisition fields)
+- Removed the free-text `name`; coin title is now derived from attributes
+  (`formatCoinTitle`); search/sort repointed off `name`
+- Added `pedigree` (free-text provenance)
+- Added price paid — hammer / premium / shipping partition with a computed
+  `final_price` (or direct entry) and `price_currency` — distinct from valuations
+
+## Valuation Attributes
+
+Implemented:
+
+- Added `source_url` link to the sale/hammer page
+
+## Detail Page
+
+Implemented:
+
+- Reworked coin detail page: derived title, characteristics line, and the
+  roadmap-defined element order
+
+## Migrations
+
+Implemented:
+
+- Squashed migrations to a fresh baseline (pre-deployment DB reset)
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -194,6 +235,7 @@ See:
 - `docs/decisions/003-authjs-google-oauth.md`
 - `docs/decisions/004-s3-storage-abstraction.md`
 - `docs/decisions/005-cloudflare-r2-initial-provider.md`
+- `docs/decisions/006-coin-and-valuation-attribute-rework.md`
 
 ---
 

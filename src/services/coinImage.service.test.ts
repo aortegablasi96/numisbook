@@ -31,7 +31,6 @@ const coins = vi.mocked(coinRepository);
 const ownedCoin = {
   id: "coin-1",
   collectionId: "col-1",
-  name: "Denarius",
   issuingAuthority: null,
   category: null,
   yearFrom: null,
@@ -46,10 +45,16 @@ const ownedCoin = {
   reverseDescription: null,
   observations: null,
   catalogueReferences: null,
+  pedigree: null,
   auctionHouse: null,
   auctionName: null,
   auctionLot: null,
   auctionDate: null,
+  hammerPrice: null,
+  auctionPremium: null,
+  shippingCost: null,
+  finalPrice: null,
+  priceCurrency: null,
   createdAt: new Date(),
 };
 

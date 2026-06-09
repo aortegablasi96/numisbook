@@ -9,6 +9,7 @@ export type ValuationView = {
   amount: string;
   currency: string;
   source: string | null;
+  sourceUrl: string | null;
   valuedAt: string;
 };
 
@@ -53,6 +54,7 @@ export function ValuationsManager({
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [source, setSource] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [valuedAt, setValuedAt] = useState(today());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -72,6 +74,7 @@ export function ValuationsManager({
           amount: Number(amount),
           currency,
           source: source.trim() === "" ? null : source.trim(),
+          sourceUrl: sourceUrl.trim() === "" ? null : sourceUrl.trim(),
           valuedAt,
         }),
       });
@@ -87,6 +90,7 @@ export function ValuationsManager({
       );
       setAmount("");
       setSource("");
+      setSourceUrl("");
     } finally {
       setBusy(false);
     }
@@ -144,6 +148,15 @@ export function ValuationsManager({
             placeholder="auction, estimate…"
           />
         </label>
+        <label>
+          Link
+          <input
+            type="url"
+            value={sourceUrl}
+            onChange={(e) => setSourceUrl(e.target.value)}
+            placeholder="https://…"
+          />
+        </label>
         <button
           type="submit"
           className="btn-primary"
@@ -165,6 +178,11 @@ export function ValuationsManager({
               <span className="grow">
                 <strong>{formatAmount(v.amount, v.currency)}</strong>
                 {v.source && <span className="muted"> · {v.source}</span>}
+                {v.sourceUrl && (
+                  <a href={v.sourceUrl} target="_blank" rel="noreferrer noopener" className="muted" style={{ marginLeft: "0.4rem" }}>
+                    ↗ link
+                  </a>
+                )}
               </span>
             </li>
           ))}

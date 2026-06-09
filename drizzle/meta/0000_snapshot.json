@@ -1,5 +1,5 @@
 {
-  "id": "8f1083e1-3cae-422e-85cd-a43ae3da8162",
+  "id": "e80f7139-e39c-4bc6-8661-875802f96fbd",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -334,12 +334,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "issuing_authority": {
           "name": "issuing_authority",
           "type": "text",
@@ -425,6 +419,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "pedigree": {
+          "name": "pedigree",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "auction_house": {
           "name": "auction_house",
           "type": "text",
@@ -446,6 +446,36 @@
         "auction_date": {
           "name": "auction_date",
           "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hammer_price": {
+          "name": "hammer_price",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auction_premium": {
+          "name": "auction_premium",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipping_cost": {
+          "name": "shipping_cost",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "final_price": {
+          "name": "final_price",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_currency": {
+          "name": "price_currency",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -591,6 +621,12 @@
         },
         "source": {
           "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_url": {
+          "name": "source_url",
           "type": "text",
           "primaryKey": false,
           "notNull": false

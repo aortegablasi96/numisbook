@@ -41,7 +41,6 @@ const ownedCollection = {
 const fakeCoin: Coin = {
   id: "coin-1",
   collectionId: "col-1",
-  name: "Denarius",
   issuingAuthority: null,
   category: null,
   yearFrom: null,
@@ -56,10 +55,16 @@ const fakeCoin: Coin = {
   reverseDescription: null,
   observations: null,
   catalogueReferences: null,
+  pedigree: null,
   auctionHouse: null,
   auctionName: null,
   auctionLot: null,
   auctionDate: null,
+  hammerPrice: null,
+  auctionPremium: null,
+  shippingCost: null,
+  finalPrice: null,
+  priceCurrency: null,
   createdAt: new Date(),
 };
 
@@ -151,13 +156,13 @@ describe("coin.service", () => {
   });
 
   describe("addCoin", () => {
-    it("creates a coin in an owned collection, trimming the name", async () => {
+    it("creates a coin in an owned collection from its attributes", async () => {
       collections.findByIdForUser.mockResolvedValue(ownedCollection);
       coins.create.mockResolvedValue(fakeCoin);
-      await addCoin("user-1", "col-1", { name: "  Denarius  ", yearFrom: -44, yearTo: -44 });
+      await addCoin("user-1", "col-1", { category: "Romans", yearFrom: -44, yearTo: -44 });
       expect(coins.create).toHaveBeenCalledWith({
         collectionId: "col-1",
-        name: "Denarius",
+        category: "Romans",
         yearFrom: -44,
         yearTo: -44,
       });
@@ -167,7 +172,7 @@ describe("coin.service", () => {
       collections.findByIdForUser.mockResolvedValue(ownedCollection);
       coins.create.mockResolvedValue(fakeCoin);
       await addCoin("user-1", "col-1", {
-        name: "Tetradrachm",
+        denomination: "Tetradrachm",
         weight: 17.2,
         diameter: 30,
         grade: "EF",
@@ -175,7 +180,7 @@ describe("coin.service", () => {
       });
       expect(coins.create).toHaveBeenCalledWith({
         collectionId: "col-1",
-        name: "Tetradrachm",
+        denomination: "Tetradrachm",
         weight: "17.20",
         diameter: "30.00",
         grade: "EF",
@@ -183,9 +188,39 @@ describe("coin.service", () => {
       });
     });
 
+    it("computes final_price as the sum of the price partition (uppercasing currency)", async () => {
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.create.mockResolvedValue(fakeCoin);
+      await addCoin("user-1", "col-1", {
+        hammerPrice: 1000,
+        auctionPremium: 200,
+        shippingCost: 50,
+        priceCurrency: "eur",
+      });
+      expect(coins.create).toHaveBeenCalledWith({
+        collectionId: "col-1",
+        hammerPrice: "1000.00",
+        auctionPremium: "200.00",
+        shippingCost: "50.00",
+        finalPrice: "1250.00",
+        priceCurrency: "EUR",
+      });
+    });
+
+    it("uses a directly-provided final_price when no partition is given", async () => {
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.create.mockResolvedValue(fakeCoin);
+      await addCoin("user-1", "col-1", { finalPrice: 1500, priceCurrency: "USD" });
+      expect(coins.create).toHaveBeenCalledWith({
+        collectionId: "col-1",
+        finalPrice: "1500.00",
+        priceCurrency: "USD",
+      });
+    });
+
     it("rejects invalid input before any DB access", async () => {
       await expect(
-        addCoin("user-1", "col-1", { name: "" }),
+        addCoin("user-1", "col-1", { weight: -5 }),
       ).rejects.toBeInstanceOf(ZodError);
       expect(collections.findByIdForUser).not.toHaveBeenCalled();
       expect(coins.create).not.toHaveBeenCalled();
@@ -193,14 +228,14 @@ describe("coin.service", () => {
 
     it("rejects an out-of-set grade", async () => {
       await expect(
-        addCoin("user-1", "col-1", { name: "Denarius", grade: "XF" }),
+        addCoin("user-1", "col-1", { grade: "XF" }),
       ).rejects.toBeInstanceOf(ZodError);
       expect(coins.create).not.toHaveBeenCalled();
     });
 
     it("rejects a year range where the start is after the end", async () => {
       await expect(
-        addCoin("user-1", "col-1", { name: "Denarius", yearFrom: 100, yearTo: 50 }),
+        addCoin("user-1", "col-1", { yearFrom: 100, yearTo: 50 }),
       ).rejects.toBeInstanceOf(ZodError);
       expect(coins.create).not.toHaveBeenCalled();
     });
@@ -208,7 +243,7 @@ describe("coin.service", () => {
     it("throws NotFound when the user does not own the collection", async () => {
       collections.findByIdForUser.mockResolvedValue(null);
       await expect(
-        addCoin("user-1", "col-x", { name: "Denarius" }),
+        addCoin("user-1", "col-x", { category: "Romans" }),
       ).rejects.toBeInstanceOf(NotFoundError);
       expect(coins.create).not.toHaveBeenCalled();
     });

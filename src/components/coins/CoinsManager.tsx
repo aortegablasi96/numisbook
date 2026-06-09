@@ -4,11 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { COIN_GRADES } from "@/lib/validation/coin";
-import { formatYearRange } from "@/lib/coin-format";
+import { formatYearRange, formatCoinTitle } from "@/lib/coin-format";
 
 export type CoinView = {
   id: string;
-  name: string;
   issuingAuthority: string | null;
   category: string | null;
   yearFrom: number | null;
@@ -33,11 +32,11 @@ const EMPTY_FILTERS: Filters = { q: "", metal: "", category: "", year: "", sortB
 
 // ---- Column configuration ------------------------------------------------
 
-type ColumnKey = "name" | "metal" | "denomination" | "year" | "category" | "issuingAuthority" | "grade" | "mint" | "weight" | "diameter";
+type ColumnKey = "title" | "metal" | "denomination" | "year" | "category" | "issuingAuthority" | "grade" | "mint" | "weight" | "diameter";
 type ColState = { key: ColumnKey; visible: boolean };
 
 const COLUMN_DEFS: { key: ColumnKey; label: string; sortable: boolean; required: boolean; defaultVisible: boolean }[] = [
-  { key: "name",             label: "Name",              sortable: true,  required: true,  defaultVisible: true  },
+  { key: "title",            label: "Coin",              sortable: false, required: true,  defaultVisible: true  },
   { key: "metal",            label: "Metal",             sortable: true,  required: false, defaultVisible: true  },
   { key: "denomination",     label: "Denomination",      sortable: true,  required: false, defaultVisible: true  },
   { key: "year",             label: "Year",              sortable: true,  required: false, defaultVisible: false },
@@ -50,7 +49,7 @@ const COLUMN_DEFS: { key: ColumnKey; label: string; sortable: boolean; required:
 ];
 
 const DEFAULT_COL_STATE: ColState[] = COLUMN_DEFS.map((c) => ({ key: c.key, visible: c.defaultVisible }));
-const LS_KEY = "numisbook:coin-columns-v3";
+const LS_KEY = "numisbook:coin-columns-v4";
 
 function defFor(key: ColumnKey) {
   return COLUMN_DEFS.find((d) => d.key === key)!;
@@ -82,8 +81,8 @@ function saveColState(state: ColState[]) {
 
 function renderCell(coin: CoinView, key: ColumnKey): React.ReactNode {
   switch (key) {
-    case "name":
-      return <Link href={`/coins/${coin.id}`}><strong>{coin.name}</strong></Link>;
+    case "title":
+      return <Link href={`/coins/${coin.id}`}><strong>{formatCoinTitle(coin)}</strong></Link>;
     case "metal":            return coin.metal ?? "—";
     case "denomination":     return coin.denomination ?? "—";
     case "year":             return formatYearRange(coin.yearFrom, coin.yearTo) ?? "—";
@@ -99,20 +98,21 @@ function renderCell(coin: CoinView, key: ColumnKey): React.ReactNode {
 // ---- Form helpers --------------------------------------------------------
 
 // The list form covers the core identifying fields for quick add/edit. Richer
-// attributes (weight, diameter, descriptions, catalogue, auction) are managed on
-// the coin detail page; toPayload omits them, so a list edit is a safe partial
-// PATCH that never clears them.
+// attributes (weight, diameter, descriptions, catalogue, auction, price) are
+// managed on the coin detail page; toPayload omits them, so a list edit is a
+// safe partial PATCH that never clears them. (Coins have no name — they are
+// identified by these attributes; see formatCoinTitle.)
 const TEXT_FIELDS = [
-  ["name", "Name"], ["category", "Category"], ["issuingAuthority", "Issuing authority"],
+  ["category", "Category"], ["issuingAuthority", "Issuing authority"],
   ["denomination", "Denomination"], ["mint", "Mint"], ["metal", "Metal"],
 ] as const;
 
 type FormState = Record<string, string>;
-const EMPTY_FORM: FormState = { name: "", category: "", issuingAuthority: "", denomination: "", mint: "", metal: "", grade: "", yearFrom: "", yearTo: "" };
+const EMPTY_FORM: FormState = { category: "", issuingAuthority: "", denomination: "", mint: "", metal: "", grade: "", yearFrom: "", yearTo: "" };
 
 function toForm(coin: CoinView): FormState {
   return {
-    name: coin.name, category: coin.category ?? "", issuingAuthority: coin.issuingAuthority ?? "",
+    category: coin.category ?? "", issuingAuthority: coin.issuingAuthority ?? "",
     denomination: coin.denomination ?? "", mint: coin.mint ?? "", grade: coin.grade ?? "",
     metal: coin.metal ?? "",
     yearFrom: coin.yearFrom?.toString() ?? "", yearTo: coin.yearTo?.toString() ?? "",
@@ -123,8 +123,7 @@ function toPayload(form: FormState): Record<string, string | number | null> {
   const payload: Record<string, string | number | null> = {};
   for (const [key] of TEXT_FIELDS) {
     const value = form[key].trim();
-    if (key === "name") payload.name = value;
-    else payload[key] = value === "" ? null : value;
+    payload[key] = value === "" ? null : value;
   }
   payload.grade = form.grade.trim() === "" ? null : form.grade.trim();
   const yf = form.yearFrom.trim();
@@ -269,7 +268,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
         <div className="row" style={{ flexWrap: "wrap", gap: "0.5rem", flex: 1, alignItems: "flex-end" }}>
           <label>
             Search
-            <input type="text" value={filters.q} placeholder="name…"
+            <input type="text" value={filters.q} placeholder="category, authority…"
               onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))} />
           </label>
           <label>
@@ -317,7 +316,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
           <div className="row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
             {TEXT_FIELDS.map(([key, label]) => (
               <label key={key}>
-                {label}{key === "name" ? " *" : ""}
+                {label}
                 <input type="text" value={form[key]}
                   onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} />
               </label>
@@ -342,7 +341,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
             </label>
           </div>
           <div className="row">
-            <button type="submit" className="btn-primary" disabled={busy || form.name.trim() === ""}>
+            <button type="submit" className="btn-primary" disabled={busy}>
               {editingId ? "Save changes" : "Add coin"}
             </button>
             <button type="button" onClick={resetForm} disabled={busy}>Cancel</button>
@@ -400,7 +399,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
               <tr key={coin.id}>
                 <td className="td-thumb"><CoinThumb coinId={coin.id} /></td>
                 {visibleCols.map((col) => (
-                  <td key={col.key} className={col.key !== "name" ? "muted" : undefined}>
+                  <td key={col.key} className={col.key !== "title" ? "muted" : undefined}>
                     {renderCell(coin, col.key)}
                   </td>
                 ))}
@@ -408,7 +407,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
                   <span className="row" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
                     <button type="button" className="btn-sm" onClick={() => startEdit(coin)} disabled={busy}>Edit</button>
                     <ConfirmButton className="btn-sm btn-danger" disabled={busy}
-                      message={`Delete "${coin.name}" and its valuations? This cannot be undone.`}
+                      message={`Delete "${formatCoinTitle(coin)}" and its valuations? This cannot be undone.`}
                       onConfirm={() => handleDelete(coin)}>
                       Delete
                     </ConfirmButton>

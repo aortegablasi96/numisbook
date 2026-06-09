@@ -49,7 +49,6 @@ describe("assistant handlers — tenant scoping", () => {
     const coin = {
       id: "k1",
       collectionId: "c1",
-      name: "Denarius",
       issuingAuthority: null,
       category: null,
       yearFrom: null,
@@ -64,10 +63,16 @@ describe("assistant handlers — tenant scoping", () => {
       reverseDescription: null,
       observations: null,
       catalogueReferences: null,
+      pedigree: null,
       auctionHouse: null,
       auctionName: null,
       auctionLot: null,
       auctionDate: null,
+      hammerPrice: null,
+      auctionPremium: null,
+      shippingCost: null,
+      finalPrice: null,
+      priceCurrency: null,
       createdAt: new Date(),
     };
     collections.createCollection.mockResolvedValue(collection);
@@ -80,6 +85,7 @@ describe("assistant handlers — tenant scoping", () => {
       amount: "100.00",
       currency: "USD",
       source: null,
+      sourceUrl: null,
       valuedAt: new Date(),
       createdAt: new Date(),
     });
@@ -99,9 +105,9 @@ describe("assistant handlers — tenant scoping", () => {
     await h.list_coins({ collectionId: "c1" });
     expect(coins.listCoins).toHaveBeenCalledWith(USER, "c1");
 
-    await h.add_coin({ collectionId: "c1", name: "Denarius", metal: "silver" });
+    await h.add_coin({ collectionId: "c1", category: "Romans", metal: "silver" });
     expect(coins.addCoin).toHaveBeenCalledWith(USER, "c1", {
-      name: "Denarius",
+      category: "Romans",
       metal: "silver",
     });
 
@@ -143,9 +149,8 @@ describe("assistant handlers — tenant scoping", () => {
     coins.addCoin.mockResolvedValue({
       id: "k1",
       collectionId: "c1",
-      name: "Denarius",
       issuingAuthority: null,
-      category: null,
+      category: "Romans",
       yearFrom: null,
       yearTo: null,
       denomination: null,
@@ -158,10 +163,16 @@ describe("assistant handlers — tenant scoping", () => {
       reverseDescription: null,
       observations: null,
       catalogueReferences: null,
+      pedigree: null,
       auctionHouse: null,
       auctionName: null,
       auctionLot: null,
       auctionDate: null,
+      hammerPrice: null,
+      auctionPremium: null,
+      shippingCost: null,
+      finalPrice: null,
+      priceCurrency: null,
       createdAt: new Date(),
     });
 
@@ -169,10 +180,10 @@ describe("assistant handlers — tenant scoping", () => {
     expect(actions).toHaveLength(0); // reads don't log
 
     await h.create_collection({ name: "Rome" });
-    await h.add_coin({ collectionId: "c1", name: "Denarius" });
+    await h.add_coin({ collectionId: "c1", category: "Romans" });
     expect(actions).toEqual([
       'Created collection "Rome"',
-      'Added coin "Denarius"',
+      'Added coin "Romans"',
     ]);
   });
 });

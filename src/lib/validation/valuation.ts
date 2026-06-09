@@ -14,6 +14,12 @@ export const createValuationSchema = z.object({
     .regex(/^[A-Za-z]{3}$/, "Currency must be a 3-letter ISO code")
     .transform((code) => code.toUpperCase()),
   source: z.string().trim().max(100).nullish(),
+  sourceUrl: z
+    .string()
+    .trim()
+    .url("Link must be a valid URL")
+    .max(2000, "Link is too long")
+    .nullish(),
   valuedAt: z.coerce
     .date()
     .refine((d) => d.getTime() <= Date.now(), "Valuation date cannot be in the future"),

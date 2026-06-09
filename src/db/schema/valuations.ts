@@ -20,6 +20,8 @@ export const valuations = pgTable(
     currency: text("currency").notNull(),
     // Where the value came from: manual, auction, estimate, ...
     source: text("source"),
+    // Link to the sale/hammer page the value was taken from.
+    sourceUrl: text("source_url"),
     valuedAt: timestamp("valued_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

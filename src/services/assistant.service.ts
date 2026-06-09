@@ -4,6 +4,7 @@ import * as coinService from "@/services/coin.service";
 import * as valuationService from "@/services/valuation.service";
 import { getPortfolioSummary } from "@/services/analytics.service";
 import { setCoinImage } from "@/services/coinImage.service";
+import { formatCoinTitle } from "@/lib/coin-format";
 
 // NumisBook's collection assistant: OpenAI gpt-4o-mini with function calling over
 // the domain services, driven by a manual agentic loop. Tenant isolation is
@@ -21,7 +22,7 @@ const SYSTEM_PROMPT = `You are NumisBook's collection assistant. You help a sing
 
 Guidelines:
 - Use the tools to read and modify the user's data. Never invent collection names, coin ids, amounts, or values — look them up with the read tools first.
-- When the user refers to a collection or coin by name, call the relevant list tool to resolve it to an id before acting on it.
+- When the user refers to a collection by name, or to a coin by its attributes, call the relevant list tool to resolve it to an id before acting on it.
 - Coins belong to collections; valuations belong to coins. Amounts use a 3-letter ISO currency code (e.g. USD).
 - Before deleting a collection or coin, confirm with the user, unless they have already clearly confirmed the deletion in this conversation. Deletions cannot be undone.
 - Be concise. After taking an action, briefly confirm what you did.
@@ -78,7 +79,7 @@ export function buildHandlers(
       [key: string]: unknown;
     }) => {
       const coin = await coinService.addCoin(userId, collectionId, attributes);
-      actions.push(`Added coin "${coin.name}"`);
+      actions.push(`Added coin "${formatCoinTitle(coin)}"`);
       if (imageDataUrl) {
         try {
           const [meta, b64] = imageDataUrl.split(",");
@@ -101,7 +102,7 @@ export function buildHandlers(
       [key: string]: unknown;
     }) => {
       const coin = await coinService.editCoin(userId, coinId, patch);
-      actions.push(`Edited coin "${coin.name}"`);
+      actions.push(`Edited coin "${formatCoinTitle(coin)}"`);
       return coin;
     },
 
@@ -153,10 +154,20 @@ const coinAttributeProps = {
   reverseDescription: optionalText,
   observations: optionalText,
   catalogueReferences: optionalText,
+  pedigree: optionalText,
   auctionHouse: optionalText,
   auctionName: optionalText,
   auctionLot: optionalText,
   auctionDate: { type: "string", description: "YYYY-MM-DD" },
+  hammerPrice: { type: "number", description: "price paid: hammer price" },
+  auctionPremium: { type: "number", description: "price paid: buyer's premium" },
+  shippingCost: { type: "number", description: "price paid: shipping" },
+  finalPrice: {
+    type: "number",
+    description:
+      "total price paid; computed from hammer+premium+shipping when those are given",
+  },
+  priceCurrency: { type: "string", description: "ISO 4217 code for the price paid" },
 } as const;
 
 // Function-tool schemas exposed to the model (no userId — it is injected
@@ -227,16 +238,16 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: "add_coin",
       description:
-        "Add a coin to a collection. Only `name` is required. Years are negative " +
-        "for BC; use yearFrom/yearTo (equal when a single year is known).",
+        "Add a coin to a collection. All attributes are optional (coins have no " +
+        "name — they are identified by their attributes). Years are negative for " +
+        "BC; use yearFrom/yearTo (equal when a single year is known).",
       parameters: {
         type: "object",
         properties: {
           collectionId: { type: "string" },
-          name: { type: "string" },
           ...coinAttributeProps,
         },
-        required: ["collectionId", "name"],
+        required: ["collectionId"],
       },
     },
   },
@@ -249,7 +260,6 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         type: "object",
         properties: {
           coinId: { type: "string" },
-          name: optionalText,
           ...coinAttributeProps,
         },
         required: ["coinId"],
@@ -295,6 +305,7 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           currency: { type: "string" },
           valuedAt: { type: "string" },
           source: optionalText,
+          sourceUrl: { type: "string", description: "link to the sale/hammer page" },
         },
         required: ["coinId", "amount", "currency", "valuedAt"],
       },

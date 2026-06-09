@@ -19,7 +19,6 @@ function row(
     Pick<PortfolioValuationRow, "coinId" | "amount" | "currency" | "valuedAt">,
 ): PortfolioValuationRow {
   return {
-    coinName: "Coin",
     metal: null,
     category: null,
     collectionId: "col",

@@ -21,13 +21,16 @@ export const COIN_GRADES = ["G", "VG", "F", "VF", "EF", "AU", "MS"] as const;
 const optionalMeasurement = (max: number) =>
   z.number().positive("Must be greater than zero").max(max, "Value is too large").nullish();
 
+// A money amount mapped to a numeric(12,2) column. Non-negative so the price
+// partition (premium / shipping can be zero) is accepted.
+const optionalMoney = z
+  .number()
+  .nonnegative("Must not be negative")
+  .max(9_999_999_999.99, "Amount is too large")
+  .nullish();
+
 export const coinAttributesSchema = z
   .object({
-    name: z
-      .string({ required_error: "Name is required" })
-      .trim()
-      .min(1, "Name is required")
-      .max(200, "Name must be 200 characters or fewer"),
     issuingAuthority: optionalText(200),
     category: optionalText(200),
     yearFrom: yearValue.nullish(),
@@ -42,12 +45,25 @@ export const coinAttributesSchema = z
     reverseDescription: optionalText(2000),
     observations: optionalText(4000),
     catalogueReferences: optionalText(500),
+    pedigree: optionalText(4000),
     auctionHouse: optionalText(200),
     auctionName: optionalText(200),
     auctionLot: optionalText(60),
     auctionDate: z.coerce
       .date()
       .refine((d) => d.getTime() <= Date.now(), "Auction date cannot be in the future")
+      .nullish(),
+    // Price paid. hammer/premium/shipping form the partition; finalPrice is the
+    // total — computed from the partition in the service, or set directly.
+    hammerPrice: optionalMoney,
+    auctionPremium: optionalMoney,
+    shippingCost: optionalMoney,
+    finalPrice: optionalMoney,
+    priceCurrency: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z]{3}$/, "Currency must be a 3-letter ISO code")
+      .transform((code) => code.toUpperCase())
       .nullish(),
   })
   .refine(

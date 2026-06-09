@@ -15,7 +15,7 @@ import { NotFoundError, ValidationError } from "@/lib/errors";
 
 export const COINS_PAGE_SIZE = 20;
 
-const VALID_SORT_BY = new Set<CoinSortBy>(["name", "category", "metal", "denomination", "year", "createdAt"]);
+const VALID_SORT_BY = new Set<CoinSortBy>(["category", "metal", "denomination", "year", "createdAt"]);
 
 export type CoinSearch = {
   q?: string;
@@ -95,10 +95,22 @@ export async function getCoin(userId: string, coinId: string): Promise<Coin> {
   return coin;
 }
 
-// Maps validated input (numbers/dates) to the repository row shape. `weight` and
-// `diameter` are numeric columns stored/returned as strings (fixed to scale);
-// `auctionDate` is a date column stored as a "YYYY-MM-DD" string. Only keys
-// present on the input are emitted, so PATCH updates stay partial.
+// Numeric columns are stored/returned as fixed-scale strings.
+const MONEY_FIELDS = [
+  "hammerPrice",
+  "auctionPremium",
+  "shippingCost",
+  "finalPrice",
+] as const;
+
+// Maps validated input (numbers/dates) to the repository row shape. `weight`,
+// `diameter` and the price fields are numeric columns stored/returned as strings
+// (fixed to scale); `auctionDate` is a date column stored as "YYYY-MM-DD". Only
+// keys present on the input are emitted, so PATCH updates stay partial.
+//
+// Price-paid rule: when any of hammer/premium/shipping is provided, finalPrice
+// is their computed sum (missing components count as 0); otherwise a directly
+// provided finalPrice is used as-is.
 function toCoinRow(data: Partial<CreateCoinInput>): CoinPatch {
   const row: Record<string, unknown> = { ...data };
   if (data.weight !== undefined)
@@ -108,6 +120,18 @@ function toCoinRow(data: Partial<CreateCoinInput>): CoinPatch {
   if (data.auctionDate !== undefined)
     row.auctionDate =
       data.auctionDate === null ? null : data.auctionDate.toISOString().slice(0, 10);
+
+  for (const field of MONEY_FIELDS) {
+    const value = data[field];
+    if (value !== undefined) row[field] = value === null ? null : value.toFixed(2);
+  }
+  const hasComponent =
+    data.hammerPrice != null || data.auctionPremium != null || data.shippingCost != null;
+  if (hasComponent) {
+    const sum =
+      (data.hammerPrice ?? 0) + (data.auctionPremium ?? 0) + (data.shippingCost ?? 0);
+    row.finalPrice = sum.toFixed(2);
+  }
   return row as CoinPatch;
 }
 
@@ -118,8 +142,7 @@ export async function addCoin(
 ): Promise<Coin> {
   const data = createCoinSchema.parse(input);
   await assertOwnsCollection(userId, collectionId);
-  // `name` is required by the schema; re-assert it past the partial row mapping.
-  return coinRepository.create({ collectionId, ...toCoinRow(data), name: data.name });
+  return coinRepository.create({ collectionId, ...toCoinRow(data) });
 }
 
 export async function editCoin(

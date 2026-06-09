@@ -6,7 +6,7 @@ export type Coin = typeof coins.$inferSelect;
 export type NewCoin = typeof coins.$inferInsert;
 export type CoinPatch = Partial<Omit<NewCoin, "id" | "collectionId" | "createdAt">>;
 
-export type CoinSortBy = "name" | "category" | "metal" | "denomination" | "year" | "createdAt";
+export type CoinSortBy = "category" | "metal" | "denomination" | "year" | "createdAt";
 export type CoinSortDir = "asc" | "desc";
 
 export type CoinFilters = {
@@ -43,16 +43,24 @@ export const coinRepository = {
 
   /**
    * Search/filter coins within a collection, with pagination. Text fields use
-   * case-insensitive partial matching; a `year` filter matches coins whose
-   * minting range contains it (open-ended bounds count as unbounded on that
-   * side). Returns the page plus the total count for the same filters.
+   * case-insensitive partial matching; the free-text query `q` matches the
+   * coin's identifying attributes (category / issuing authority), since coins
+   * have no name. A `year` filter matches coins whose minting range contains it
+   * (open-ended bounds count as unbounded on that side). Returns the page plus
+   * the total count for the same filters.
    */
   async searchInCollection(
     collectionId: string,
     filters: CoinFilters,
   ): Promise<{ coins: Coin[]; total: number }> {
     const conditions: SQL[] = [eq(coins.collectionId, collectionId)];
-    if (filters.q) conditions.push(ilike(coins.name, `%${filters.q}%`));
+    if (filters.q)
+      conditions.push(
+        or(
+          ilike(coins.category, `%${filters.q}%`),
+          ilike(coins.issuingAuthority, `%${filters.q}%`),
+        )!,
+      );
     if (filters.metal) conditions.push(ilike(coins.metal, filters.metal));
     if (filters.category) conditions.push(ilike(coins.category, filters.category));
     if (filters.year !== undefined) {
@@ -72,7 +80,6 @@ export const coinRepository = {
     const dir = (filters.sortDir ?? "desc") === "asc" ? asc : desc;
     const orderCol = (() => {
       switch (filters.sortBy) {
-        case "name":         return dir(coins.name);
         case "category":     return dir(coins.category);
         case "metal":        return dir(coins.metal);
         case "denomination": return dir(coins.denomination);

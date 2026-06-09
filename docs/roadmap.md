@@ -23,50 +23,30 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Pre-deployment — Data Model Reform**
+Current maturity: **Pre-deployment — Portfolio Analytics Upgrade**
 
-The core collection-management platform is functionally complete. Before
-polishing features and UI, the coin and valuation data models will be reformed
-and the portfolio analytics built on top of them upgraded — so the later
-embellishment work targets the final data shape rather than the current one.
+The core collection-management platform is functionally complete, and the coin
+and valuation data models have been reformed (see `history.md` Phase 5 and
+`docs/decisions/006-coin-and-valuation-attribute-rework.md`). Portfolio analytics
+will now be upgraded on top of the new data shape, before the later embellishment
+work, so polish targets the final data shape rather than the current one.
 
 Primary objective:
 
-**Reform the coin and valuation data models and upgrade portfolio analytics
-before polishing the MVP for production deployment.**
+**Upgrade portfolio analytics on the reformed data models before polishing the
+MVP for production deployment.**
 
 Current priorities:
 
-- Coin and valuation data-model reform
 - Portfolio analytics upgrade
 - (then) feature and UI/UX polish
 
 ---
 
-# Next Milestone — Data Model Reform
+# Next Milestone — Portfolio Analytics Upgrade
 
-Goal:
-
-Reform the coin and valuation data models so they capture collectors' data more
-accurately before building richer analytics on top of them.
-
-## Coin Attributes
-
-- [x] Review and reform the coin attribute schema
-- [x] Add missing / refine existing attributes — year as a range, grade enum
-      (`G…MS`), weight, diameter, obverse/reverse descriptions, observations,
-      catalogue references, auction acquisition fields
-- [x] Migration for existing coin data — pre-deployment DB reset; migrations
-      squashed to a fresh baseline
-
-## Valuation Attributes
-
-- [ ] Rework the valuation attribute schema
-- [ ] Migration for existing valuation data
-
----
-
-# Future Milestone — Portfolio Analytics Upgrade
+> The preceding **Data Model Reform** milestone is complete; see `history.md`
+> (Phase 5) and `docs/decisions/006-coin-and-valuation-attribute-rework.md`.
 
 Goal:
 

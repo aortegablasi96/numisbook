@@ -36,6 +36,7 @@ export async function recordValuation(
     amount: data.amount.toFixed(2),
     currency: data.currency,
     source: data.source ?? null,
+    sourceUrl: data.sourceUrl ?? null,
     valuedAt: data.valuedAt,
   });
 }

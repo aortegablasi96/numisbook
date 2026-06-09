@@ -195,9 +195,10 @@ converts to WebP at quality 82, and returns `Cache-Control: public, immutable`
 
 ## Coin search and filtering
 
-`GET /api/collections/[id]/coins` accepts query params: `q` (name substring),
-`metal`, `category`, `year`, `page`, `sortBy` (name | category | metal |
-denomination | year | createdAt), `sortDir` (asc | desc). Page size is 20
+`GET /api/collections/[id]/coins` accepts query params: `q` (matches `category`
+/ `issuing_authority` — coins have no name), `metal`, `category`, `year`, `page`,
+`sortBy` (category | metal | denomination | year | createdAt), `sortDir` (asc |
+desc). Page size is 20
 (`COINS_PAGE_SIZE` in `src/services/coin.service.ts`). Response:
 `{ coins, total, page, pageSize }`.
 
@@ -221,7 +222,7 @@ a reusable `<dialog>`-based confirmation prompt. Use it for deletes instead of
 `window.confirm`.
 
 **UI state persistence**: client-side preferences use `localStorage`. Current
-key: `numisbook:coin-columns-v2` stores column visibility + order as
+key: `numisbook:coin-columns-v4` stores column visibility + order as
 `ColState[]` for the coin list table. Use a versioned key whenever the shape
 changes.
 
@@ -378,7 +379,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `003-authjs-google-oauth` — Auth.js + Google OAuth
 * `004-s3-storage-abstraction` — S3-compatible storage abstraction
 * `005-cloudflare-r2-initial-provider` — Cloudflare R2 as initial provider
-* `006-postgres-enums-for-fixed-value-sets` — Postgres enums (`pgEnum`) for fixed value sets (first: coin grade)
+* `006-coin-and-valuation-attribute-rework` — Coin & valuation attribute rework (derived coin title, price paid vs. valuations, grade `pgEnum`, valuation link)
 
 (`template.md` is the scaffold for new ADRs.)
 
@@ -395,10 +396,12 @@ Do not silently override accepted decisions.
 ## Current Priority
 
 The core collection-management platform is functionally complete; the project is
-in a **pre-deployment** phase. The active milestone is **Data Model Reform** —
-reforming the coin and valuation data models — followed by the **Portfolio
-Analytics Upgrade** built on top of them. Only then comes **Embellishment**
-(polishing MVP features and UI), so that polish work targets the final data
-shape rather than the current one. Production deployment remains a later
-milestone. See `docs/roadmap.md` for the current milestone tasks and the
-Technical Backlog — check it before starting anything new.
+in a **pre-deployment** phase. The **Data Model Reform** milestone is done — the
+coin and valuation data models have been reformed (see `docs/history.md` Phase 5
+and `docs/decisions/006-coin-and-valuation-attribute-rework.md`). The active
+milestone is now the **Portfolio Analytics Upgrade**, built on top of the
+reformed data. Only then comes **Embellishment** (polishing MVP features and UI),
+so that polish work targets the final data shape rather than the current one.
+Production deployment remains a later milestone. See `docs/roadmap.md` for the
+current milestone tasks and the Technical Backlog — check it before starting
+anything new.

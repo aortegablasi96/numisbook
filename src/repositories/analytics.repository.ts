@@ -7,7 +7,6 @@ import { coins, collections, valuations } from "@/db/schema";
 // from these rows; aggregation is business logic and lives in the service.
 export type PortfolioValuationRow = {
   coinId: string;
-  coinName: string;
   metal: string | null;
   category: string | null;
   collectionId: string;
@@ -28,7 +27,6 @@ export const analyticsRepository = {
     return db
       .select({
         coinId: coins.id,
-        coinName: coins.name,
         metal: coins.metal,
         category: coins.category,
         collectionId: collections.id,

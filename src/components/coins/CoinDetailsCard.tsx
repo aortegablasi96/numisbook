@@ -3,11 +3,10 @@
 import { useState } from "react";
 import type { Coin } from "@/repositories/coin.repository";
 import { COIN_GRADES } from "@/lib/validation/coin";
-import { formatYearRange } from "@/lib/coin-format";
+import { formatCoinTitle, formatCoinCharacteristics } from "@/lib/coin-format";
 
 type CoinFields = Pick<
   Coin,
-  | "name"
   | "metal"
   | "yearFrom"
   | "yearTo"
@@ -22,46 +21,75 @@ type CoinFields = Pick<
   | "obverseDescription"
   | "reverseDescription"
   | "observations"
+  | "pedigree"
   | "auctionHouse"
   | "auctionName"
   | "auctionLot"
   | "auctionDate"
+  | "hammerPrice"
+  | "auctionPremium"
+  | "shippingCost"
+  | "finalPrice"
+  | "priceCurrency"
 >;
 
-function buildDetails(coin: CoinFields): { label: string; value: string }[] {
-  const year = formatYearRange(coin.yearFrom, coin.yearTo);
-  return [
-    coin.metal && { label: "Metal", value: coin.metal },
-    coin.denomination && { label: "Denomination", value: coin.denomination },
-    year && { label: "Year", value: year },
-    coin.mint && { label: "Mint", value: coin.mint },
-    coin.grade && { label: "Grade", value: coin.grade },
-    coin.weight && { label: "Weight", value: `${coin.weight} g` },
-    coin.diameter && { label: "Diameter", value: `${coin.diameter} mm` },
-    coin.category && { label: "Category", value: coin.category },
-    coin.issuingAuthority && { label: "Issuing authority", value: coin.issuingAuthority },
-    coin.catalogueReferences && { label: "Catalogue", value: coin.catalogueReferences },
-    coin.auctionHouse && { label: "Auction house", value: coin.auctionHouse },
-    coin.auctionName && { label: "Auction", value: coin.auctionName },
-    coin.auctionLot && { label: "Lot", value: coin.auctionLot },
-    coin.auctionDate && { label: "Auction date", value: coin.auctionDate },
-  ].filter(Boolean) as { label: string; value: string }[];
+// Format a numeric-string amount, using the coin's price currency when known.
+function formatMoney(amount: string | null, currency: string | null): string | null {
+  if (!amount) return null;
+  const n = Number(amount);
+  if (Number.isNaN(n)) return currency ? `${amount} ${currency}` : amount;
+  if (currency) {
+    try {
+      return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(n);
+    } catch {
+      /* unknown currency code: fall through to a plain amount */
+    }
+  }
+  return n.toFixed(2);
 }
 
-// Longer free-text fields rendered as their own paragraphs below the detail list.
-function buildNotes(coin: CoinFields): { label: string; value: string }[] {
+// "Obtained from" line: "{Auction House}, {Auction Name}, {Auction Lot} ({date})".
+function formatAuctionLine(coin: CoinFields): string | null {
+  const head = [coin.auctionHouse, coin.auctionName, coin.auctionLot]
+    .map((s) => s?.trim())
+    .filter(Boolean)
+    .join(", ");
+  const date = coin.auctionDate?.trim();
+  if (head && date) return `${head} (${date})`;
+  return head || date || null;
+}
+
+type Block = { label: string; value: string; multiline?: boolean };
+
+// The detail card's elements, in the order defined by the roadmap. Missing
+// fields are dropped. Title + characteristics are rendered separately above.
+function buildBlocks(coin: CoinFields): Block[] {
+  const pricePaid = formatMoney(coin.finalPrice, coin.priceCurrency);
+  const breakdown = [
+    coin.hammerPrice && `hammer ${formatMoney(coin.hammerPrice, coin.priceCurrency)}`,
+    coin.auctionPremium && `premium ${formatMoney(coin.auctionPremium, coin.priceCurrency)}`,
+    coin.shippingCost && `shipping ${formatMoney(coin.shippingCost, coin.priceCurrency)}`,
+  ].filter(Boolean);
+
   return [
-    coin.obverseDescription && { label: "Obverse", value: coin.obverseDescription },
-    coin.reverseDescription && { label: "Reverse", value: coin.reverseDescription },
-    coin.observations && { label: "Observations", value: coin.observations },
-  ].filter(Boolean) as { label: string; value: string }[];
+    coin.grade && { label: "Condition", value: coin.grade },
+    coin.obverseDescription && { label: "Obverse", value: coin.obverseDescription, multiline: true },
+    coin.reverseDescription && { label: "Reverse", value: coin.reverseDescription, multiline: true },
+    coin.catalogueReferences && { label: "Catalogue references", value: coin.catalogueReferences },
+    coin.observations && { label: "Observations", value: coin.observations, multiline: true },
+    coin.pedigree && { label: "Pedigree", value: coin.pedigree, multiline: true },
+    pricePaid && {
+      label: "Price paid",
+      value: breakdown.length ? `${pricePaid} (${breakdown.join(" + ")})` : pricePaid,
+    },
+    formatAuctionLine(coin) && { label: "Obtained from", value: formatAuctionLine(coin)! },
+  ].filter(Boolean) as Block[];
 }
 
 type FormState = Record<string, string>;
 
 function toForm(coin: CoinFields): FormState {
   return {
-    name: coin.name,
     metal: coin.metal ?? "",
     yearFrom: coin.yearFrom !== null ? String(coin.yearFrom) : "",
     yearTo: coin.yearTo !== null ? String(coin.yearTo) : "",
@@ -76,10 +104,16 @@ function toForm(coin: CoinFields): FormState {
     obverseDescription: coin.obverseDescription ?? "",
     reverseDescription: coin.reverseDescription ?? "",
     observations: coin.observations ?? "",
+    pedigree: coin.pedigree ?? "",
     auctionHouse: coin.auctionHouse ?? "",
     auctionName: coin.auctionName ?? "",
     auctionLot: coin.auctionLot ?? "",
     auctionDate: coin.auctionDate ?? "",
+    hammerPrice: coin.hammerPrice ?? "",
+    auctionPremium: coin.auctionPremium ?? "",
+    shippingCost: coin.shippingCost ?? "",
+    finalPrice: coin.finalPrice ?? "",
+    priceCurrency: coin.priceCurrency ?? "",
   };
 }
 
@@ -88,7 +122,6 @@ function toPayload(form: FormState): Record<string, string | number | null> {
   const int = (v: string) => (v.trim() === "" ? null : parseInt(v, 10));
   const num = (v: string) => (v.trim() === "" ? null : Number(v));
   return {
-    name: form.name.trim(),
     metal: text(form.metal),
     yearFrom: int(form.yearFrom),
     yearTo: int(form.yearTo),
@@ -103,10 +136,18 @@ function toPayload(form: FormState): Record<string, string | number | null> {
     obverseDescription: text(form.obverseDescription),
     reverseDescription: text(form.reverseDescription),
     observations: text(form.observations),
+    pedigree: text(form.pedigree),
     auctionHouse: text(form.auctionHouse),
     auctionName: text(form.auctionName),
     auctionLot: text(form.auctionLot),
     auctionDate: text(form.auctionDate),
+    // hammer/premium/shipping form the partition; finalPrice is recomputed from
+    // them server-side when any is present, otherwise the direct value is used.
+    hammerPrice: num(form.hammerPrice),
+    auctionPremium: num(form.auctionPremium),
+    shippingCost: num(form.shippingCost),
+    finalPrice: num(form.finalPrice),
+    priceCurrency: text(form.priceCurrency),
   };
 }
 
@@ -137,10 +178,6 @@ export function CoinDetailsCard({
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) {
-      setError("Name is required.");
-      return;
-    }
     setBusy(true);
     setError(null);
     try {
@@ -162,8 +199,22 @@ export function CoinDetailsCard({
     }
   }
 
-  const details = buildDetails(current);
-  const notes = buildNotes(current);
+  // When the hammer/premium/shipping partition is entered, the final price is
+  // their sum (computed server-side); reflect that in a read-only field.
+  const hasComponent =
+    form.hammerPrice.trim() !== "" ||
+    form.auctionPremium.trim() !== "" ||
+    form.shippingCost.trim() !== "";
+  const componentsSum = (
+    (Number(form.hammerPrice) || 0) +
+    (Number(form.auctionPremium) || 0) +
+    (Number(form.shippingCost) || 0)
+  ).toFixed(2);
+  const finalPriceValue = hasComponent ? componentsSum : form.finalPrice;
+
+  const title = formatCoinTitle(current);
+  const characteristics = formatCoinCharacteristics(current);
+  const blocks = buildBlocks(current);
 
   return (
     <div className="card coin-overview-left">
@@ -184,17 +235,21 @@ export function CoinDetailsCard({
           {error && <p className="alert" style={{ margin: 0 }}>{error}</p>}
 
           <div className="coin-edit-grid">
-            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
-              Name <span style={{ color: "var(--accent)" }}>*</span>
-              <input type="text" value={form.name} onChange={(e) => set("name", e.target.value)} disabled={busy} required />
+            <label className="coin-edit-label">
+              Category
+              <input type="text" value={form.category} onChange={(e) => set("category", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Metal
-              <input type="text" value={form.metal} onChange={(e) => set("metal", e.target.value)} disabled={busy} />
+              Issuing authority
+              <input type="text" value={form.issuingAuthority} onChange={(e) => set("issuingAuthority", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
               Denomination
               <input type="text" value={form.denomination} onChange={(e) => set("denomination", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label">
+              Mint
+              <input type="text" value={form.mint} onChange={(e) => set("mint", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
               Year from (− for BC)
@@ -205,11 +260,11 @@ export function CoinDetailsCard({
               <input type="number" value={form.yearTo} onChange={(e) => set("yearTo", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Mint
-              <input type="text" value={form.mint} onChange={(e) => set("mint", e.target.value)} disabled={busy} />
+              Metal
+              <input type="text" value={form.metal} onChange={(e) => set("metal", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Grade
+              Condition (grade)
               <select value={form.grade} onChange={(e) => set("grade", e.target.value)} disabled={busy}>
                 <option value="">—</option>
                 {COIN_GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
@@ -223,17 +278,26 @@ export function CoinDetailsCard({
               Diameter (mm)
               <input type="number" step="0.01" min="0" value={form.diameter} onChange={(e) => set("diameter", e.target.value)} disabled={busy} />
             </label>
-            <label className="coin-edit-label">
-              Category
-              <input type="text" value={form.category} onChange={(e) => set("category", e.target.value)} disabled={busy} />
-            </label>
-            <label className="coin-edit-label">
-              Issuing authority
-              <input type="text" value={form.issuingAuthority} onChange={(e) => set("issuingAuthority", e.target.value)} disabled={busy} />
-            </label>
             <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
               Catalogue references
               <input type="text" value={form.catalogueReferences} onChange={(e) => set("catalogueReferences", e.target.value)} disabled={busy} placeholder="e.g. RIC 123; Sear 456" />
+            </label>
+
+            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
+              Obverse description
+              <textarea rows={2} value={form.obverseDescription} onChange={(e) => set("obverseDescription", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
+              Reverse description
+              <textarea rows={2} value={form.reverseDescription} onChange={(e) => set("reverseDescription", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
+              Observations
+              <textarea rows={3} value={form.observations} onChange={(e) => set("observations", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
+              Pedigree
+              <textarea rows={3} value={form.pedigree} onChange={(e) => set("pedigree", e.target.value)} disabled={busy} placeholder="Prior auctions where this coin was hammered, one per line" />
             </label>
 
             <label className="coin-edit-label">
@@ -253,46 +317,54 @@ export function CoinDetailsCard({
               <input type="date" value={form.auctionDate} onChange={(e) => set("auctionDate", e.target.value)} disabled={busy} />
             </label>
 
-            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
-              Obverse description
-              <textarea rows={2} value={form.obverseDescription} onChange={(e) => set("obverseDescription", e.target.value)} disabled={busy} />
+            <label className="coin-edit-label">
+              Hammer price
+              <input type="number" step="0.01" min="0" value={form.hammerPrice} onChange={(e) => set("hammerPrice", e.target.value)} disabled={busy} />
             </label>
-            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
-              Reverse description
-              <textarea rows={2} value={form.reverseDescription} onChange={(e) => set("reverseDescription", e.target.value)} disabled={busy} />
+            <label className="coin-edit-label">
+              Auction premium
+              <input type="number" step="0.01" min="0" value={form.auctionPremium} onChange={(e) => set("auctionPremium", e.target.value)} disabled={busy} />
             </label>
-            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
-              Observations
-              <textarea rows={3} value={form.observations} onChange={(e) => set("observations", e.target.value)} disabled={busy} />
+            <label className="coin-edit-label">
+              Shipping cost
+              <input type="number" step="0.01" min="0" value={form.shippingCost} onChange={(e) => set("shippingCost", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label">
+              Final price {hasComponent && <span style={{ color: "var(--muted)" }}>(= sum)</span>}
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={finalPriceValue}
+                onChange={(e) => set("finalPrice", e.target.value)}
+                disabled={busy || hasComponent}
+              />
+            </label>
+            <label className="coin-edit-label">
+              Price currency
+              <input type="text" maxLength={3} value={form.priceCurrency} onChange={(e) => set("priceCurrency", e.target.value.toUpperCase())} disabled={busy} placeholder="EUR" />
             </label>
           </div>
         </form>
       ) : (
         <>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem" }}>
-            <h1 style={{ margin: 0 }}>{current.name}</h1>
+            <div>
+              <h1 style={{ margin: 0 }}>{title}</h1>
+              {characteristics && (
+                <p style={{ margin: "0.25rem 0 0", color: "var(--muted)" }}>{characteristics}</p>
+              )}
+            </div>
             <button type="button" className="btn-sm" onClick={startEdit} style={{ flexShrink: 0 }}>
               Edit
             </button>
           </div>
-          {details.length > 0 && (
-            <section className="coin-details">
-              <dl>
-                {details.map(({ label, value }) => (
-                  <div key={label} className="coin-details-row">
-                    <dt>{label}</dt>
-                    <dd>{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          )}
-          {notes.length > 0 && (
-            <section className="coin-notes stack" style={{ gap: "0.5rem" }}>
-              {notes.map(({ label, value }) => (
+          {blocks.length > 0 && (
+            <section className="coin-notes stack" style={{ gap: "0.6rem" }}>
+              {blocks.map(({ label, value, multiline }) => (
                 <div key={label}>
                   <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.85rem" }}>{label}</p>
-                  <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{value}</p>
+                  <p style={{ margin: 0, whiteSpace: multiline ? "pre-wrap" : undefined }}>{value}</p>
                 </div>
               ))}
             </section>

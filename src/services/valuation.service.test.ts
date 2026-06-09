@@ -22,7 +22,6 @@ const coins = vi.mocked(coinRepository);
 const ownedCoin = {
   id: "coin-1",
   collectionId: "col-1",
-  name: "Denarius",
   issuingAuthority: null,
   category: null,
   yearFrom: null,
@@ -37,10 +36,16 @@ const ownedCoin = {
   reverseDescription: null,
   observations: null,
   catalogueReferences: null,
+  pedigree: null,
   auctionHouse: null,
   auctionName: null,
   auctionLot: null,
   auctionDate: null,
+  hammerPrice: null,
+  auctionPremium: null,
+  shippingCost: null,
+  finalPrice: null,
+  priceCurrency: null,
   createdAt: new Date(),
 };
 
@@ -50,6 +55,7 @@ const fakeValuation: Valuation = {
   amount: "100.00",
   currency: "USD",
   source: "auction",
+  sourceUrl: null,
   valuedAt: new Date("2026-01-01T00:00:00Z"),
   createdAt: new Date(),
 };
@@ -77,13 +83,14 @@ describe("valuation.service", () => {
   });
 
   describe("recordValuation", () => {
-    it("records a valuation, normalizing amount and currency", async () => {
+    it("records a valuation, normalizing amount and currency and keeping the link", async () => {
       coins.findByIdForUser.mockResolvedValue(ownedCoin);
       valuations.create.mockResolvedValue(fakeValuation);
       await recordValuation("user-1", "coin-1", {
         amount: 100,
         currency: "usd",
         source: "auction",
+        sourceUrl: "https://example.com/lot/42",
         valuedAt: "2026-01-01T00:00:00Z",
       });
       expect(valuations.create).toHaveBeenCalledWith({
@@ -91,8 +98,34 @@ describe("valuation.service", () => {
         amount: "100.00",
         currency: "USD",
         source: "auction",
+        sourceUrl: "https://example.com/lot/42",
         valuedAt: new Date("2026-01-01T00:00:00Z"),
       });
+    });
+
+    it("defaults source and link to null when omitted", async () => {
+      coins.findByIdForUser.mockResolvedValue(ownedCoin);
+      valuations.create.mockResolvedValue(fakeValuation);
+      await recordValuation("user-1", "coin-1", {
+        amount: 100,
+        currency: "USD",
+        valuedAt: "2026-01-01T00:00:00Z",
+      });
+      expect(valuations.create).toHaveBeenCalledWith(
+        expect.objectContaining({ source: null, sourceUrl: null }),
+      );
+    });
+
+    it("rejects an invalid link URL", async () => {
+      await expect(
+        recordValuation("user-1", "coin-1", {
+          amount: 10,
+          currency: "USD",
+          sourceUrl: "not-a-url",
+          valuedAt: "2026-01-01",
+        }),
+      ).rejects.toBeInstanceOf(ZodError);
+      expect(valuations.create).not.toHaveBeenCalled();
     });
 
     it("rejects invalid input before any DB access", async () => {

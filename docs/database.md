@@ -54,7 +54,6 @@ The adapter also owns `accounts`, `sessions`, and `verification_tokens`
 | --- | --- | --- |
 | id | uuid (pk) | |
 | collection_id | uuid (fk → Collection) | indexed |
-| name | text | |
 | issuing_authority | text | nullable; specific issuer, e.g. "Alexander III", "Athens", "Roman Republic" |
 | category | text | nullable; broad grouping, e.g. "Seleucids", "Romans", "Indo-Greek" |
 | year_from | integer | nullable; start of the minting range, negative = BC |
@@ -69,12 +68,23 @@ The adapter also owns `accounts`, `sessions`, and `verification_tokens`
 | reverse_description | text | nullable; type description of the reverse |
 | observations | text | nullable; detailed free-form notes |
 | catalogue_references | text | nullable; free text, e.g. "RIC 123; Sear 456" |
+| pedigree | text | nullable; provenance — free-text list of prior auctions where this coin was hammered |
 | auction_house | text | nullable; acquisition — auction house name |
 | auction_name | text | nullable; acquisition — auction/sale name |
 | auction_lot | text | nullable; acquisition — lot number (text, e.g. "123A") |
 | auction_date | date | nullable; acquisition — auction date |
+| hammer_price | numeric(12,2) | nullable; price paid — hammer price |
+| auction_premium | numeric(12,2) | nullable; price paid — buyer's premium |
+| shipping_cost | numeric(12,2) | nullable; price paid — shipping |
+| final_price | numeric(12,2) | nullable; total price paid — computed sum of the partition when any component is set, else entered directly |
+| price_currency | text | nullable; ISO 4217 code for the price-paid amounts |
 | created_at | timestamptz | default now() |
 
+> **No display name.** Coins have no `name`; the title is derived from the
+> attributes — `"{Category}. {Issuing Authority} ({year range}), {Mint}"` —
+> by `formatCoinTitle` (`src/lib/coin-format`). Free-text search (`q`) matches
+> `category` / `issuing_authority`.
+>
 > **Note:** ancient coinage is issued by an *authority*, not a modern country.
 > `issuing_authority` is the specific issuer; `category` is a broader grouping
 > (civilization / dynasty / cultural sphere) useful for browsing and grouping.
@@ -82,6 +92,11 @@ The adapter also owns `accounts`, `sessions`, and `verification_tokens`
 > **Minting year is a range.** Exact dates are often unknown, so the year is two
 > bounds (`year_from`, `year_to`); a single known year sets both equal. A `year`
 > search filter matches coins whose range contains it.
+>
+> **Price paid vs. valuations.** The `hammer_price` / `auction_premium` /
+> `shipping_cost` / `final_price` fields record what the collector *paid* (cost
+> basis). This is distinct from `valuations`, which track point-in-time *market
+> value*; comparing the two drives gain/loss analytics.
 
 ### CoinImage
 One or more images per coin. Only **metadata** lives here — the bytes are kept
@@ -107,6 +122,7 @@ delete; the `coinImage.repository` removes the stored object alongside the row.
 | amount | numeric(12,2) | |
 | currency | text | ISO 4217 (e.g. "USD") |
 | source | text | nullable (manual, auction, estimate) |
+| source_url | text | nullable; link to the sale/hammer page the value came from |
 | valued_at | timestamptz | |
 | created_at | timestamptz | default now() |
 
@@ -128,6 +144,17 @@ Resolved during implementation:
 - **Grade is a Postgres enum** (`coin_grade`: `G, VG, F, VF, EF, AU, MS`), not
   free text. Declaration order is worst → best so `ORDER BY grade` is meaningful.
   Sheldon 1–70 was considered but the lettered scale suits ancient/world coinage.
+  See ADR-006.
+- **Coins have no `name`.** The display title is derived from the attributes
+  (`formatCoinTitle`); search and sort were repointed off `name`. See ADR-006.
+- **Price paid is on the coin, separate from valuations.** The
+  hammer/premium/shipping partition plus `final_price` (computed sum or direct)
+  and `price_currency` record cost basis; `valuations` stay market value. See
+  ADR-006.
+- **`pedigree` is free text** (a user-entered list of prior auctions), not a
+  structured child table — kept simple until provenance analytics are needed.
+- **Valuations carry a `source_url`** link to the sale/hammer page; `source`
+  stays free text (not an enum).
 - **Currency is stored as-entered, never normalized.** Portfolio totals are
   reported per currency; allocation/trend use the primary (largest) currency. A
   user-selected base currency + FX conversion is on the roadmap backlog.
@@ -138,8 +165,8 @@ Still open:
   per-catalogue analytics become important, graduate it (and `issuing_authority`
   / `category`) to dedicated lookup tables (the repository pattern keeps that
   migration localized).
-- Valuation attribute rework is the next step of the Data Model Reform milestone
-  (the coin attributes were reformed first).
+- `pedigree` may graduate to a structured child table (one row per prior auction)
+  if provenance search or analytics are needed.
 
 ## Migrations Workflow
 

@@ -47,7 +47,6 @@ CREATE TABLE "collections" (
 CREATE TABLE "coins" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"collection_id" uuid NOT NULL,
-	"name" text NOT NULL,
 	"issuing_authority" text,
 	"category" text,
 	"year_from" integer,
@@ -62,10 +61,16 @@ CREATE TABLE "coins" (
 	"reverse_description" text,
 	"observations" text,
 	"catalogue_references" text,
+	"pedigree" text,
 	"auction_house" text,
 	"auction_name" text,
 	"auction_lot" text,
 	"auction_date" date,
+	"hammer_price" numeric(12, 2),
+	"auction_premium" numeric(12, 2),
+	"shipping_cost" numeric(12, 2),
+	"final_price" numeric(12, 2),
+	"price_currency" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -84,6 +89,7 @@ CREATE TABLE "valuations" (
 	"amount" numeric(12, 2) NOT NULL,
 	"currency" text NOT NULL,
 	"source" text,
+	"source_url" text,
 	"valued_at" timestamp with time zone NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );

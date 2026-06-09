@@ -30,7 +30,8 @@ export const coins = pgTable(
     collectionId: uuid("collection_id")
       .notNull()
       .references(() => collections.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
+    // No display name: the coin's title is derived from its attributes
+    // (category / issuing authority / year range / mint) — see src/lib/coin-format.
     // Specific issuer, e.g. "Alexander III", "Athens", "Roman Republic".
     issuingAuthority: text("issuing_authority"),
     // Broad grouping, e.g. "Seleucids", "Romans", "Indo-Greek".
@@ -53,11 +54,22 @@ export const coins = pgTable(
     observations: text("observations"),
     // Catalogue references, free text (e.g. "RIC 123; Sear 456").
     catalogueReferences: text("catalogue_references"),
+    // Provenance: free-text list of prior auctions where this coin was hammered.
+    pedigree: text("pedigree"),
     // Acquisition: the auction the coin was obtained from.
     auctionHouse: text("auction_house"),
     auctionName: text("auction_name"),
     auctionLot: text("auction_lot"),
     auctionDate: date("auction_date"),
+    // Price the collector paid (distinct from valuations, which track market
+    // value). Either entered as the hammer/premium/shipping partition — in which
+    // case finalPrice is their computed sum — or finalPrice is set directly when
+    // the partition is unknown. priceCurrency (ISO 4217) applies to all four.
+    hammerPrice: numeric("hammer_price", { precision: 12, scale: 2 }),
+    auctionPremium: numeric("auction_premium", { precision: 12, scale: 2 }),
+    shippingCost: numeric("shipping_cost", { precision: 12, scale: 2 }),
+    finalPrice: numeric("final_price", { precision: 12, scale: 2 }),
+    priceCurrency: text("price_currency"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

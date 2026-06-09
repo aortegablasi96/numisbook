@@ -53,6 +53,7 @@ export default async function CoinDetailPage({
     amount: v.amount,
     currency: v.currency,
     source: v.source,
+    sourceUrl: v.sourceUrl,
     valuedAt: v.valuedAt.toISOString(),
   }));
 
