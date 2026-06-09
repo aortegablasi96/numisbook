@@ -136,6 +136,29 @@ export function buildHandlers(
 
 const optionalText = { type: "string" } as const;
 
+// Coin attribute properties shared by the add_coin / edit_coin tool schemas.
+// Years are integers (negative = BC) given as a range; auctionDate is YYYY-MM-DD.
+const coinAttributeProps = {
+  issuingAuthority: optionalText,
+  category: optionalText,
+  yearFrom: { type: "integer" },
+  yearTo: { type: "integer" },
+  denomination: optionalText,
+  mint: optionalText,
+  metal: optionalText,
+  grade: { type: "string", enum: ["G", "VG", "F", "VF", "EF", "AU", "MS"] },
+  weight: { type: "number", description: "grams" },
+  diameter: { type: "number", description: "millimetres" },
+  obverseDescription: optionalText,
+  reverseDescription: optionalText,
+  observations: optionalText,
+  catalogueReferences: optionalText,
+  auctionHouse: optionalText,
+  auctionName: optionalText,
+  auctionLot: optionalText,
+  auctionDate: { type: "string", description: "YYYY-MM-DD" },
+} as const;
+
 // Function-tool schemas exposed to the model (no userId — it is injected
 // server-side). `strict: false` so optional fields can be omitted.
 const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
@@ -204,19 +227,14 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: "add_coin",
       description:
-        "Add a coin to a collection. Only `name` is required; year is negative for BC.",
+        "Add a coin to a collection. Only `name` is required. Years are negative " +
+        "for BC; use yearFrom/yearTo (equal when a single year is known).",
       parameters: {
         type: "object",
         properties: {
           collectionId: { type: "string" },
           name: { type: "string" },
-          issuingAuthority: optionalText,
-          category: optionalText,
-          year: { type: "integer" },
-          denomination: optionalText,
-          mint: optionalText,
-          metal: optionalText,
-          grade: optionalText,
+          ...coinAttributeProps,
         },
         required: ["collectionId", "name"],
       },
@@ -232,13 +250,7 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         properties: {
           coinId: { type: "string" },
           name: optionalText,
-          issuingAuthority: optionalText,
-          category: optionalText,
-          year: { type: "integer" },
-          denomination: optionalText,
-          mint: optionalText,
-          metal: optionalText,
-          grade: optionalText,
+          ...coinAttributeProps,
         },
         required: ["coinId"],
       },

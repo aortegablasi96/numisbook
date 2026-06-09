@@ -2,26 +2,112 @@
 
 import { useState } from "react";
 import type { Coin } from "@/repositories/coin.repository";
+import { COIN_GRADES } from "@/lib/validation/coin";
+import { formatYearRange } from "@/lib/coin-format";
 
 type CoinFields = Pick<
   Coin,
-  "name" | "metal" | "year" | "denomination" | "mint" | "grade" | "category" | "issuingAuthority"
+  | "name"
+  | "metal"
+  | "yearFrom"
+  | "yearTo"
+  | "denomination"
+  | "mint"
+  | "grade"
+  | "weight"
+  | "diameter"
+  | "category"
+  | "issuingAuthority"
+  | "catalogueReferences"
+  | "obverseDescription"
+  | "reverseDescription"
+  | "observations"
+  | "auctionHouse"
+  | "auctionName"
+  | "auctionLot"
+  | "auctionDate"
 >;
 
-function formatYear(year: number): string {
-  return year < 0 ? `${Math.abs(year)} BC` : String(year);
-}
-
 function buildDetails(coin: CoinFields): { label: string; value: string }[] {
+  const year = formatYearRange(coin.yearFrom, coin.yearTo);
   return [
     coin.metal && { label: "Metal", value: coin.metal },
     coin.denomination && { label: "Denomination", value: coin.denomination },
-    coin.year !== null && coin.year !== undefined && { label: "Year", value: formatYear(coin.year) },
+    year && { label: "Year", value: year },
     coin.mint && { label: "Mint", value: coin.mint },
     coin.grade && { label: "Grade", value: coin.grade },
+    coin.weight && { label: "Weight", value: `${coin.weight} g` },
+    coin.diameter && { label: "Diameter", value: `${coin.diameter} mm` },
     coin.category && { label: "Category", value: coin.category },
     coin.issuingAuthority && { label: "Issuing authority", value: coin.issuingAuthority },
+    coin.catalogueReferences && { label: "Catalogue", value: coin.catalogueReferences },
+    coin.auctionHouse && { label: "Auction house", value: coin.auctionHouse },
+    coin.auctionName && { label: "Auction", value: coin.auctionName },
+    coin.auctionLot && { label: "Lot", value: coin.auctionLot },
+    coin.auctionDate && { label: "Auction date", value: coin.auctionDate },
   ].filter(Boolean) as { label: string; value: string }[];
+}
+
+// Longer free-text fields rendered as their own paragraphs below the detail list.
+function buildNotes(coin: CoinFields): { label: string; value: string }[] {
+  return [
+    coin.obverseDescription && { label: "Obverse", value: coin.obverseDescription },
+    coin.reverseDescription && { label: "Reverse", value: coin.reverseDescription },
+    coin.observations && { label: "Observations", value: coin.observations },
+  ].filter(Boolean) as { label: string; value: string }[];
+}
+
+type FormState = Record<string, string>;
+
+function toForm(coin: CoinFields): FormState {
+  return {
+    name: coin.name,
+    metal: coin.metal ?? "",
+    yearFrom: coin.yearFrom !== null ? String(coin.yearFrom) : "",
+    yearTo: coin.yearTo !== null ? String(coin.yearTo) : "",
+    denomination: coin.denomination ?? "",
+    mint: coin.mint ?? "",
+    grade: coin.grade ?? "",
+    weight: coin.weight ?? "",
+    diameter: coin.diameter ?? "",
+    category: coin.category ?? "",
+    issuingAuthority: coin.issuingAuthority ?? "",
+    catalogueReferences: coin.catalogueReferences ?? "",
+    obverseDescription: coin.obverseDescription ?? "",
+    reverseDescription: coin.reverseDescription ?? "",
+    observations: coin.observations ?? "",
+    auctionHouse: coin.auctionHouse ?? "",
+    auctionName: coin.auctionName ?? "",
+    auctionLot: coin.auctionLot ?? "",
+    auctionDate: coin.auctionDate ?? "",
+  };
+}
+
+function toPayload(form: FormState): Record<string, string | number | null> {
+  const text = (v: string) => (v.trim() === "" ? null : v.trim());
+  const int = (v: string) => (v.trim() === "" ? null : parseInt(v, 10));
+  const num = (v: string) => (v.trim() === "" ? null : Number(v));
+  return {
+    name: form.name.trim(),
+    metal: text(form.metal),
+    yearFrom: int(form.yearFrom),
+    yearTo: int(form.yearTo),
+    denomination: text(form.denomination),
+    mint: text(form.mint),
+    grade: text(form.grade),
+    weight: num(form.weight),
+    diameter: num(form.diameter),
+    category: text(form.category),
+    issuingAuthority: text(form.issuingAuthority),
+    catalogueReferences: text(form.catalogueReferences),
+    obverseDescription: text(form.obverseDescription),
+    reverseDescription: text(form.reverseDescription),
+    observations: text(form.observations),
+    auctionHouse: text(form.auctionHouse),
+    auctionName: text(form.auctionName),
+    auctionLot: text(form.auctionLot),
+    auctionDate: text(form.auctionDate),
+  };
 }
 
 export function CoinDetailsCard({
@@ -37,39 +123,10 @@ export function CoinDetailsCard({
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Form state mirrors CoinFields with year as string for controlled input
-  const [form, setForm] = useState<{
-    name: string;
-    metal: string;
-    year: string;
-    denomination: string;
-    mint: string;
-    grade: string;
-    category: string;
-    issuingAuthority: string;
-  }>({
-    name: coin.name,
-    metal: coin.metal ?? "",
-    year: coin.year !== null && coin.year !== undefined ? String(coin.year) : "",
-    denomination: coin.denomination ?? "",
-    mint: coin.mint ?? "",
-    grade: coin.grade ?? "",
-    category: coin.category ?? "",
-    issuingAuthority: coin.issuingAuthority ?? "",
-  });
+  const [form, setForm] = useState<FormState>(() => toForm(coin));
 
   function startEdit() {
-    setForm({
-      name: current.name,
-      metal: current.metal ?? "",
-      year: current.year !== null && current.year !== undefined ? String(current.year) : "",
-      denomination: current.denomination ?? "",
-      mint: current.mint ?? "",
-      grade: current.grade ?? "",
-      category: current.category ?? "",
-      issuingAuthority: current.issuingAuthority ?? "",
-    });
+    setForm(toForm(current));
     setError(null);
     setEditing(true);
   }
@@ -87,20 +144,10 @@ export function CoinDetailsCard({
     setBusy(true);
     setError(null);
     try {
-      const body = {
-        name: form.name.trim(),
-        metal: form.metal.trim() || null,
-        year: form.year.trim() !== "" ? parseInt(form.year, 10) : null,
-        denomination: form.denomination.trim() || null,
-        mint: form.mint.trim() || null,
-        grade: form.grade.trim() || null,
-        category: form.category.trim() || null,
-        issuingAuthority: form.issuingAuthority.trim() || null,
-      };
       const res = await fetch(`/api/coins/${coinId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(toPayload(form)),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -116,6 +163,7 @@ export function CoinDetailsCard({
   }
 
   const details = buildDetails(current);
+  const notes = buildNotes(current);
 
   return (
     <div className="card coin-overview-left">
@@ -136,33 +184,25 @@ export function CoinDetailsCard({
           {error && <p className="alert" style={{ margin: 0 }}>{error}</p>}
 
           <div className="coin-edit-grid">
-            <label className="coin-edit-label">
+            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
               Name <span style={{ color: "var(--accent)" }}>*</span>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => set("name", e.target.value)}
-                disabled={busy}
-                required
-              />
+              <input type="text" value={form.name} onChange={(e) => set("name", e.target.value)} disabled={busy} required />
             </label>
             <label className="coin-edit-label">
               Metal
               <input type="text" value={form.metal} onChange={(e) => set("metal", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Year
-              <input
-                type="number"
-                value={form.year}
-                onChange={(e) => set("year", e.target.value)}
-                disabled={busy}
-                placeholder="e.g. −27 for BC"
-              />
-            </label>
-            <label className="coin-edit-label">
               Denomination
               <input type="text" value={form.denomination} onChange={(e) => set("denomination", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label">
+              Year from (− for BC)
+              <input type="number" value={form.yearFrom} onChange={(e) => set("yearFrom", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label">
+              Year to (− for BC)
+              <input type="number" value={form.yearTo} onChange={(e) => set("yearTo", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
               Mint
@@ -170,15 +210,60 @@ export function CoinDetailsCard({
             </label>
             <label className="coin-edit-label">
               Grade
-              <input type="text" value={form.grade} onChange={(e) => set("grade", e.target.value)} disabled={busy} />
+              <select value={form.grade} onChange={(e) => set("grade", e.target.value)} disabled={busy}>
+                <option value="">—</option>
+                {COIN_GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </label>
+            <label className="coin-edit-label">
+              Weight (g)
+              <input type="number" step="0.01" min="0" value={form.weight} onChange={(e) => set("weight", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label">
+              Diameter (mm)
+              <input type="number" step="0.01" min="0" value={form.diameter} onChange={(e) => set("diameter", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
               Category
               <input type="text" value={form.category} onChange={(e) => set("category", e.target.value)} disabled={busy} />
             </label>
-            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
+            <label className="coin-edit-label">
               Issuing authority
               <input type="text" value={form.issuingAuthority} onChange={(e) => set("issuingAuthority", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
+              Catalogue references
+              <input type="text" value={form.catalogueReferences} onChange={(e) => set("catalogueReferences", e.target.value)} disabled={busy} placeholder="e.g. RIC 123; Sear 456" />
+            </label>
+
+            <label className="coin-edit-label">
+              Auction house
+              <input type="text" value={form.auctionHouse} onChange={(e) => set("auctionHouse", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label">
+              Auction name
+              <input type="text" value={form.auctionName} onChange={(e) => set("auctionName", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label">
+              Lot number
+              <input type="text" value={form.auctionLot} onChange={(e) => set("auctionLot", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label">
+              Auction date
+              <input type="date" value={form.auctionDate} onChange={(e) => set("auctionDate", e.target.value)} disabled={busy} />
+            </label>
+
+            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
+              Obverse description
+              <textarea rows={2} value={form.obverseDescription} onChange={(e) => set("obverseDescription", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
+              Reverse description
+              <textarea rows={2} value={form.reverseDescription} onChange={(e) => set("reverseDescription", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
+              Observations
+              <textarea rows={3} value={form.observations} onChange={(e) => set("observations", e.target.value)} disabled={busy} />
             </label>
           </div>
         </form>
@@ -200,6 +285,16 @@ export function CoinDetailsCard({
                   </div>
                 ))}
               </dl>
+            </section>
+          )}
+          {notes.length > 0 && (
+            <section className="coin-notes stack" style={{ gap: "0.5rem" }}>
+              {notes.map(({ label, value }) => (
+                <div key={label}>
+                  <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.85rem" }}>{label}</p>
+                  <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{value}</p>
+                </div>
+              ))}
             </section>
           )}
         </>

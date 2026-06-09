@@ -44,11 +44,22 @@ const fakeCoin: Coin = {
   name: "Denarius",
   issuingAuthority: null,
   category: null,
-  year: null,
+  yearFrom: null,
+  yearTo: null,
   denomination: null,
   mint: null,
   metal: null,
   grade: null,
+  weight: null,
+  diameter: null,
+  obverseDescription: null,
+  reverseDescription: null,
+  observations: null,
+  catalogueReferences: null,
+  auctionHouse: null,
+  auctionName: null,
+  auctionLot: null,
+  auctionDate: null,
   createdAt: new Date(),
 };
 
@@ -143,11 +154,32 @@ describe("coin.service", () => {
     it("creates a coin in an owned collection, trimming the name", async () => {
       collections.findByIdForUser.mockResolvedValue(ownedCollection);
       coins.create.mockResolvedValue(fakeCoin);
-      await addCoin("user-1", "col-1", { name: "  Denarius  ", year: -44 });
+      await addCoin("user-1", "col-1", { name: "  Denarius  ", yearFrom: -44, yearTo: -44 });
       expect(coins.create).toHaveBeenCalledWith({
         collectionId: "col-1",
         name: "Denarius",
-        year: -44,
+        yearFrom: -44,
+        yearTo: -44,
+      });
+    });
+
+    it("stores weight/diameter as fixed-scale strings and auctionDate as a date", async () => {
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.create.mockResolvedValue(fakeCoin);
+      await addCoin("user-1", "col-1", {
+        name: "Tetradrachm",
+        weight: 17.2,
+        diameter: 30,
+        grade: "EF",
+        auctionDate: "2023-05-01",
+      });
+      expect(coins.create).toHaveBeenCalledWith({
+        collectionId: "col-1",
+        name: "Tetradrachm",
+        weight: "17.20",
+        diameter: "30.00",
+        grade: "EF",
+        auctionDate: "2023-05-01",
       });
     });
 
@@ -156,6 +188,20 @@ describe("coin.service", () => {
         addCoin("user-1", "col-1", { name: "" }),
       ).rejects.toBeInstanceOf(ZodError);
       expect(collections.findByIdForUser).not.toHaveBeenCalled();
+      expect(coins.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects an out-of-set grade", async () => {
+      await expect(
+        addCoin("user-1", "col-1", { name: "Denarius", grade: "XF" }),
+      ).rejects.toBeInstanceOf(ZodError);
+      expect(coins.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects a year range where the start is after the end", async () => {
+      await expect(
+        addCoin("user-1", "col-1", { name: "Denarius", yearFrom: 100, yearTo: 50 }),
+      ).rejects.toBeInstanceOf(ZodError);
       expect(coins.create).not.toHaveBeenCalled();
     });
 

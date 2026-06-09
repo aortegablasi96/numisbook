@@ -6,7 +6,11 @@ import {
   type CoinSortDir,
 } from "@/repositories/coin.repository";
 import { collectionRepository } from "@/repositories/collection.repository";
-import { createCoinSchema, updateCoinSchema } from "@/lib/validation/coin";
+import {
+  createCoinSchema,
+  updateCoinSchema,
+  type CreateCoinInput,
+} from "@/lib/validation/coin";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 
 export const COINS_PAGE_SIZE = 20;
@@ -91,6 +95,22 @@ export async function getCoin(userId: string, coinId: string): Promise<Coin> {
   return coin;
 }
 
+// Maps validated input (numbers/dates) to the repository row shape. `weight` and
+// `diameter` are numeric columns stored/returned as strings (fixed to scale);
+// `auctionDate` is a date column stored as a "YYYY-MM-DD" string. Only keys
+// present on the input are emitted, so PATCH updates stay partial.
+function toCoinRow(data: Partial<CreateCoinInput>): CoinPatch {
+  const row: Record<string, unknown> = { ...data };
+  if (data.weight !== undefined)
+    row.weight = data.weight === null ? null : data.weight.toFixed(2);
+  if (data.diameter !== undefined)
+    row.diameter = data.diameter === null ? null : data.diameter.toFixed(2);
+  if (data.auctionDate !== undefined)
+    row.auctionDate =
+      data.auctionDate === null ? null : data.auctionDate.toISOString().slice(0, 10);
+  return row as CoinPatch;
+}
+
 export async function addCoin(
   userId: string,
   collectionId: string,
@@ -98,7 +118,8 @@ export async function addCoin(
 ): Promise<Coin> {
   const data = createCoinSchema.parse(input);
   await assertOwnsCollection(userId, collectionId);
-  return coinRepository.create({ collectionId, ...data });
+  // `name` is required by the schema; re-assert it past the partial row mapping.
+  return coinRepository.create({ collectionId, ...toCoinRow(data), name: data.name });
 }
 
 export async function editCoin(
@@ -109,7 +130,7 @@ export async function editCoin(
   const data = updateCoinSchema.parse(input);
   // Drop omitted fields so we only update what was provided (and never .set({})).
   const patch = Object.fromEntries(
-    Object.entries(data).filter(([, value]) => value !== undefined),
+    Object.entries(toCoinRow(data)).filter(([, value]) => value !== undefined),
   ) as CoinPatch;
   if (Object.keys(patch).length === 0) {
     throw new ValidationError("No fields to update");

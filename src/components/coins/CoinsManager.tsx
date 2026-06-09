@@ -3,17 +3,22 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import { COIN_GRADES } from "@/lib/validation/coin";
+import { formatYearRange } from "@/lib/coin-format";
 
 export type CoinView = {
   id: string;
   name: string;
   issuingAuthority: string | null;
   category: string | null;
-  year: number | null;
+  yearFrom: number | null;
+  yearTo: number | null;
   denomination: string | null;
   mint: string | null;
   metal: string | null;
   grade: string | null;
+  weight: string | null;
+  diameter: string | null;
 };
 
 type SearchResult = {
@@ -28,7 +33,7 @@ const EMPTY_FILTERS: Filters = { q: "", metal: "", category: "", year: "", sortB
 
 // ---- Column configuration ------------------------------------------------
 
-type ColumnKey = "name" | "metal" | "denomination" | "year" | "category" | "issuingAuthority" | "grade" | "mint";
+type ColumnKey = "name" | "metal" | "denomination" | "year" | "category" | "issuingAuthority" | "grade" | "mint" | "weight" | "diameter";
 type ColState = { key: ColumnKey; visible: boolean };
 
 const COLUMN_DEFS: { key: ColumnKey; label: string; sortable: boolean; required: boolean; defaultVisible: boolean }[] = [
@@ -40,10 +45,12 @@ const COLUMN_DEFS: { key: ColumnKey; label: string; sortable: boolean; required:
   { key: "issuingAuthority", label: "Issuing authority", sortable: false, required: false, defaultVisible: false },
   { key: "grade",            label: "Grade",             sortable: false, required: false, defaultVisible: false },
   { key: "mint",             label: "Mint",              sortable: false, required: false, defaultVisible: false },
+  { key: "weight",           label: "Weight",            sortable: false, required: false, defaultVisible: false },
+  { key: "diameter",         label: "Diameter",          sortable: false, required: false, defaultVisible: false },
 ];
 
 const DEFAULT_COL_STATE: ColState[] = COLUMN_DEFS.map((c) => ({ key: c.key, visible: c.defaultVisible }));
-const LS_KEY = "numisbook:coin-columns-v2";
+const LS_KEY = "numisbook:coin-columns-v3";
 
 function defFor(key: ColumnKey) {
   return COLUMN_DEFS.find((d) => d.key === key)!;
@@ -79,31 +86,36 @@ function renderCell(coin: CoinView, key: ColumnKey): React.ReactNode {
       return <Link href={`/coins/${coin.id}`}><strong>{coin.name}</strong></Link>;
     case "metal":            return coin.metal ?? "—";
     case "denomination":     return coin.denomination ?? "—";
-    case "year":
-      if (coin.year === null) return "—";
-      return coin.year < 0 ? `${Math.abs(coin.year)} BC` : String(coin.year);
+    case "year":             return formatYearRange(coin.yearFrom, coin.yearTo) ?? "—";
     case "category":         return coin.category ?? "—";
     case "issuingAuthority": return coin.issuingAuthority ?? "—";
     case "grade":            return coin.grade ?? "—";
     case "mint":             return coin.mint ?? "—";
+    case "weight":           return coin.weight ? `${coin.weight} g` : "—";
+    case "diameter":         return coin.diameter ? `${coin.diameter} mm` : "—";
   }
 }
 
 // ---- Form helpers --------------------------------------------------------
 
+// The list form covers the core identifying fields for quick add/edit. Richer
+// attributes (weight, diameter, descriptions, catalogue, auction) are managed on
+// the coin detail page; toPayload omits them, so a list edit is a safe partial
+// PATCH that never clears them.
 const TEXT_FIELDS = [
   ["name", "Name"], ["category", "Category"], ["issuingAuthority", "Issuing authority"],
-  ["denomination", "Denomination"], ["mint", "Mint"], ["metal", "Metal"], ["grade", "Grade"],
+  ["denomination", "Denomination"], ["mint", "Mint"], ["metal", "Metal"],
 ] as const;
 
 type FormState = Record<string, string>;
-const EMPTY_FORM: FormState = { name: "", category: "", issuingAuthority: "", denomination: "", mint: "", metal: "", grade: "", year: "" };
+const EMPTY_FORM: FormState = { name: "", category: "", issuingAuthority: "", denomination: "", mint: "", metal: "", grade: "", yearFrom: "", yearTo: "" };
 
 function toForm(coin: CoinView): FormState {
   return {
     name: coin.name, category: coin.category ?? "", issuingAuthority: coin.issuingAuthority ?? "",
     denomination: coin.denomination ?? "", mint: coin.mint ?? "", grade: coin.grade ?? "",
-    metal: coin.metal ?? "", year: coin.year?.toString() ?? "",
+    metal: coin.metal ?? "",
+    yearFrom: coin.yearFrom?.toString() ?? "", yearTo: coin.yearTo?.toString() ?? "",
   };
 }
 
@@ -114,8 +126,11 @@ function toPayload(form: FormState): Record<string, string | number | null> {
     if (key === "name") payload.name = value;
     else payload[key] = value === "" ? null : value;
   }
-  const year = form.year.trim();
-  payload.year = year === "" ? null : Number(year);
+  payload.grade = form.grade.trim() === "" ? null : form.grade.trim();
+  const yf = form.yearFrom.trim();
+  const yt = form.yearTo.trim();
+  payload.yearFrom = yf === "" ? null : Number(yf);
+  payload.yearTo = yt === "" ? null : Number(yt);
   return payload;
 }
 
@@ -308,9 +323,22 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
               </label>
             ))}
             <label>
-              Year (− for BC)
-              <input type="number" value={form.year}
-                onChange={(e) => setForm((f) => ({ ...f, year: e.target.value }))} />
+              Grade
+              <select value={form.grade}
+                onChange={(e) => setForm((f) => ({ ...f, grade: e.target.value }))}>
+                <option value="">—</option>
+                {COIN_GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </label>
+            <label>
+              Year from (− BC)
+              <input type="number" value={form.yearFrom} style={{ width: "7rem" }}
+                onChange={(e) => setForm((f) => ({ ...f, yearFrom: e.target.value }))} />
+            </label>
+            <label>
+              Year to (− BC)
+              <input type="number" value={form.yearTo} style={{ width: "7rem" }}
+                onChange={(e) => setForm((f) => ({ ...f, yearTo: e.target.value }))} />
             </label>
           </div>
           <div className="row">

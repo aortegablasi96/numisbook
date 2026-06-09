@@ -378,6 +378,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `003-authjs-google-oauth` — Auth.js + Google OAuth
 * `004-s3-storage-abstraction` — S3-compatible storage abstraction
 * `005-cloudflare-r2-initial-provider` — Cloudflare R2 as initial provider
+* `006-postgres-enums-for-fixed-value-sets` — Postgres enums (`pgEnum`) for fixed value sets (first: coin grade)
 
 (`template.md` is the scaffold for new ADRs.)
 

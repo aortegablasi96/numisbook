@@ -52,9 +52,12 @@ accurately before building richer analytics on top of them.
 
 ## Coin Attributes
 
-- [ ] Review and reform the coin attribute schema
-- [ ] Add missing / refine existing attributes
-- [ ] Migration for existing coin data
+- [x] Review and reform the coin attribute schema
+- [x] Add missing / refine existing attributes — year as a range, grade enum
+      (`G…MS`), weight, diameter, obverse/reverse descriptions, observations,
+      catalogue references, auction acquisition fields
+- [x] Migration for existing coin data — pre-deployment DB reset; migrations
+      squashed to a fresh baseline
 
 ## Valuation Attributes
 

@@ -57,16 +57,31 @@ The adapter also owns `accounts`, `sessions`, and `verification_tokens`
 | name | text | |
 | issuing_authority | text | nullable; specific issuer, e.g. "Alexander III", "Athens", "Roman Republic" |
 | category | text | nullable; broad grouping, e.g. "Seleucids", "Romans", "Indo-Greek" |
-| year | integer | nullable; negative values = BC (see open questions) |
+| year_from | integer | nullable; start of the minting range, negative = BC |
+| year_to | integer | nullable; end of the minting range, negative = BC. A single known year is stored as `year_from == year_to` |
 | denomination | text | nullable; e.g. tetradrachm, denarius |
 | mint | text | nullable; place struck (distinct from the issuing authority) |
 | metal | text | nullable |
-| grade | text | nullable (grading scale TBD) |
+| grade | coin_grade (enum) | nullable; one of `G, VG, F, VF, EF, AU, MS` (worst → best; enum order is preserved for sorting) |
+| weight | numeric(7,2) | nullable; grams |
+| diameter | numeric(6,2) | nullable; millimetres |
+| obverse_description | text | nullable; type description of the obverse |
+| reverse_description | text | nullable; type description of the reverse |
+| observations | text | nullable; detailed free-form notes |
+| catalogue_references | text | nullable; free text, e.g. "RIC 123; Sear 456" |
+| auction_house | text | nullable; acquisition — auction house name |
+| auction_name | text | nullable; acquisition — auction/sale name |
+| auction_lot | text | nullable; acquisition — lot number (text, e.g. "123A") |
+| auction_date | date | nullable; acquisition — auction date |
 | created_at | timestamptz | default now() |
 
 > **Note:** ancient coinage is issued by an *authority*, not a modern country.
 > `issuing_authority` is the specific issuer; `category` is a broader grouping
 > (civilization / dynasty / cultural sphere) useful for browsing and grouping.
+>
+> **Minting year is a range.** Exact dates are often unknown, so the year is two
+> bounds (`year_from`, `year_to`); a single known year sets both equal. A `year`
+> search filter matches coins whose range contains it.
 
 ### CoinImage
 One or more images per coin. Only **metadata** lives here — the bytes are kept
@@ -107,18 +122,24 @@ Resolved during implementation:
 
 - **Deletes are hard.** Every owned table cascades on parent delete; there is no
   soft-delete column.
-- **Year is a single integer** (negative = BC); the UI renders BC/AD. Date
-  *ranges* and textual period labels remain a possible future refinement.
+- **Year is a range** (`year_from`/`year_to`, negative = BC); the UI renders
+  BC/AD and collapses equal bounds to a single year. Replaced the original single
+  `year` integer in the Data Model Reform milestone.
+- **Grade is a Postgres enum** (`coin_grade`: `G, VG, F, VF, EF, AU, MS`), not
+  free text. Declaration order is worst → best so `ORDER BY grade` is meaningful.
+  Sheldon 1–70 was considered but the lettered scale suits ancient/world coinage.
 - **Currency is stored as-entered, never normalized.** Portfolio totals are
   reported per currency; allocation/trend use the primary (largest) currency. A
   user-selected base currency + FX conversion is on the roadmap backlog.
 
 Still open:
 
-- Grading scale: free text vs. enum (Sheldon 1–70)? Currently free text.
-- `issuing_authority` and `category` are free-text fields. If naming consistency
-  or analytics-by-issuer/category becomes important, graduate them to dedicated
-  lookup tables (the repository pattern keeps that migration localized).
+- `catalogue_references` is a single free-text field. If catalogue lookups or
+  per-catalogue analytics become important, graduate it (and `issuing_authority`
+  / `category`) to dedicated lookup tables (the repository pattern keeps that
+  migration localized).
+- Valuation attribute rework is the next step of the Data Model Reform milestone
+  (the coin attributes were reformed first).
 
 ## Migrations Workflow
 

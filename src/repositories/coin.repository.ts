@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { coins, collections } from "@/db/schema";
 
@@ -43,8 +43,9 @@ export const coinRepository = {
 
   /**
    * Search/filter coins within a collection, with pagination. Text fields use
-   * case-insensitive partial matching; `year` is exact. Returns the page plus
-   * the total count for the same filters.
+   * case-insensitive partial matching; a `year` filter matches coins whose
+   * minting range contains it (open-ended bounds count as unbounded on that
+   * side). Returns the page plus the total count for the same filters.
    */
   async searchInCollection(
     collectionId: string,
@@ -54,8 +55,18 @@ export const coinRepository = {
     if (filters.q) conditions.push(ilike(coins.name, `%${filters.q}%`));
     if (filters.metal) conditions.push(ilike(coins.metal, filters.metal));
     if (filters.category) conditions.push(ilike(coins.category, filters.category));
-    if (filters.year !== undefined)
-      conditions.push(eq(coins.year, filters.year));
+    if (filters.year !== undefined) {
+      const y = filters.year;
+      // Match coins whose [year_from, year_to] range contains y. A missing bound
+      // is unbounded on that side; coins with neither bound never match.
+      conditions.push(
+        and(
+          or(isNotNull(coins.yearFrom), isNotNull(coins.yearTo)),
+          or(isNull(coins.yearFrom), lte(coins.yearFrom, y)),
+          or(isNull(coins.yearTo), gte(coins.yearTo, y)),
+        )!,
+      );
+    }
     const where = and(...conditions);
 
     const dir = (filters.sortDir ?? "desc") === "asc" ? asc : desc;
@@ -65,7 +76,7 @@ export const coinRepository = {
         case "category":     return dir(coins.category);
         case "metal":        return dir(coins.metal);
         case "denomination": return dir(coins.denomination);
-        case "year":         return dir(coins.year);
+        case "year":         return dir(coins.yearFrom);
         default:             return desc(coins.createdAt);
       }
     })();
