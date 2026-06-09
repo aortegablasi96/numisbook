@@ -32,11 +32,12 @@ This skill executes approved work.
 
 Workflow:
 
-product-manager
-→ architect
-→ database-designer
-→ implementation-engineer
-→ testing
+Product Manager
+→ UI Designer
+→ Architect
+→ Database Designer (if needed)
+→ Implementation Engineer
+→ Testing
 
 Assume upstream reviews are approved.
 

@@ -36,13 +36,14 @@ Never optimize prematurely.
 
 ---
 
-## Roadmap Awareness
+## Workflow Position
 
 This skill owns architectural design and technical planning.
 
 Workflow:
 
 Product Manager
+→ UI Designer
 → Architect
 → Database Designer (if needed)
 → Implementation Engineer

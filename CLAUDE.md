@@ -263,10 +263,11 @@ success status codes (200/201/204), and AppError → status mapping (404, etc.).
 For non-trivial features:
 
 1. Product Review (`product-manager`)
-2. Architecture Review (`architect`)
-3. Database Review (`database-designer`) when schema changes are required
-4. Implementation (`implementation-engineer` or appropriate execution skill)
-5. Testing Review (`testing`)
+2. UI Review (`ui-designer`)
+3. Architecture Review (`architect`)
+4. Database Review (`database-designer`) when schema changes are required
+5. Implementation (`implementation-engineer` or appropriate execution skill)
+6. Testing Review (`testing`)
 
 Do not jump directly to implementation for significant features.
 
@@ -277,6 +278,7 @@ For small bug fixes and UI tweaks, implementation may proceed directly.
 These skills are responsible for analysis, planning, and validation:
 
 * `product-manager`
+* `ui-designer`
 * `architect`
 * `database-designer`
 * `implementation-engineer`
