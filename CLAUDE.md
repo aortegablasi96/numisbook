@@ -328,5 +328,8 @@ Do not silently override accepted decisions.
 
 ## Current Priority
 
-Phases 0–4 are complete (see `docs/roadmap.md`). Work is now on the backlog
-items at the bottom of that file — check it before starting anything new.
+The core collection-management platform is complete; the project is **post-MVP**.
+The active milestone is **Production Readiness** (deployment, CI/CD,
+observability, assistant hardening, auth resilience). See `docs/roadmap.md` for
+the current milestone tasks and the Technical Backlog — check it before starting
+anything new.
