@@ -394,8 +394,10 @@ Do not silently override accepted decisions.
 ## Current Priority
 
 The core collection-management platform is functionally complete; the project is
-in a **pre-deployment embellishment** phase. The active milestone is
-**Embellishment** — polishing and rounding out MVP features and UI before
-preparing for production deployment (which is now a future milestone). See
-`docs/roadmap.md` for the current milestone tasks and the Technical Backlog —
-check it before starting anything new.
+in a **pre-deployment** phase. The active milestone is **Data Model Reform** —
+reforming the coin and valuation data models — followed by the **Portfolio
+Analytics Upgrade** built on top of them. Only then comes **Embellishment**
+(polishing MVP features and UI), so that polish work targets the final data
+shape rather than the current one. Production deployment remains a later
+milestone. See `docs/roadmap.md` for the current milestone tasks and the
+Technical Backlog — check it before starting anything new.

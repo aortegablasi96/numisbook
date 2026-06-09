@@ -23,53 +23,27 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Pre-deployment — Embellishment**
+Current maturity: **Pre-deployment — Data Model Reform**
 
-The core collection-management platform is functionally complete, but several
-MVP features and the UI need refinement before exposing NumisBook to real users.
+The core collection-management platform is functionally complete. Before
+polishing features and UI, the coin and valuation data models will be reformed
+and the portfolio analytics built on top of them upgraded — so the later
+embellishment work targets the final data shape rather than the current one.
 
 Primary objective:
 
-**Polish and round out the MVP — features and UI — before preparing for
-production deployment.**
+**Reform the coin and valuation data models and upgrade portfolio analytics
+before polishing the MVP for production deployment.**
 
 Current priorities:
 
-- Feature completeness and refinement
-- UI/UX polish and consistency
-- Usability
-- Bug fixing
+- Coin and valuation data-model reform
+- Portfolio analytics upgrade
+- (then) feature and UI/UX polish
 
 ---
 
-# Next Milestone — Embellishment
-
-Goal:
-
-Bring the existing MVP features and UI to a level of quality and completeness
-suitable for real collectors before preparing to deploy.
-
-## Feature Refinement
-
-- [ ] Review and round out existing MVP features
-- [ ] Address rough edges and missing affordances
-
-## UI/UX Polish
-
-- [ ] Enhance style and UX 
-- [ ] Visual consistency across views
-- [ ] Empty / loading / error states
-- [ ] Responsive layout
-- [ ] Accessibility pass
-
-## Quality
-
-- [ ] Bug fixing
-- [ ] Usability improvements
-
----
-
-# Future Milestone — Data Model Reform
+# Next Milestone — Data Model Reform
 
 Goal:
 
@@ -107,6 +81,33 @@ collector's holdings.
 
 - [ ] Improved charts and layout
 - [ ] Date-range / filter controls
+
+---
+
+# Future Milestone — Embellishment
+
+Goal:
+
+Bring the existing MVP features and UI to a level of quality and completeness
+suitable for real collectors before preparing to deploy.
+
+## Feature Refinement
+
+- [ ] Review and round out existing MVP features
+- [ ] Address rough edges and missing affordances
+
+## UI/UX Polish
+
+- [ ] Enhance style and UX 
+- [ ] Visual consistency across views
+- [ ] Empty / loading / error states
+- [ ] Responsive layout
+- [ ] Accessibility pass
+
+## Quality
+
+- [ ] Bug fixing
+- [ ] Usability improvements
 
 ---
 
