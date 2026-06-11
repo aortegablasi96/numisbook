@@ -1,119 +1,209 @@
 import {
   analyticsRepository,
-  type PortfolioValuationRow,
+  type PortfolioCoinRow,
 } from "@/repositories/analytics.repository";
+import { buildConverter } from "@/services/fx.service";
+import { formatCoinTitle } from "@/lib/coin-format";
 
 // Portfolio analytics. All aggregation is business logic and lives here; the
-// repository only supplies the user-scoped valuation rows.
+// repository only supplies the user-scoped coin rows.
 //
-// Currencies are never summed together: totals are reported per currency, while
-// allocation and trend are computed for the *primary* currency (the one with the
-// largest total value) so the figures stay meaningful.
+// Figures are based on the **price paid** for each coin (hammer + premium +
+// shipping, or a directly-entered final price), not on market valuations —
+// valuation-based value and gain/loss are a later stage (see ADR-007).
+// Everything is expressed in a single base currency (the user's preference, or
+// the dominant price currency when unset) using ECB FX conversion: each price is
+// converted at the rate on or before its acquisition date, so historical
+// purchases keep their real base-currency cost. When no rate covers that date
+// (or the coin has no acquisition date) the current rate is used instead. Only
+// prices in a currency ECB does not quote at all are counted as unconvertible —
+// never dropped or summed across currencies.
 
-export type CurrencyTotal = {
-  currency: string;
-  total: number;
-  coinCount: number;
+// One acquisition, in the base currency, with the dimension labels the timeline
+// filters by. The cumulative cost trend is built (and filtered) from these in the
+// client; only coins with an acquisition date appear (they need a point in time).
+export type AcquisitionEvent = {
+  id: string; // coin id
+  label: string; // derived coin title (coins have no name)
+  date: string; // YYYY-MM-DD acquisition date
+  amount: number; // final price paid, base currency
+  metal: string;
+  category: string;
+  collection: string;
+  year: string; // acquisition year
+  currency: string; // native price currency
 };
 
-export type AllocationSlice = {
-  label: string;
-  total: number;
-};
-
-export type TrendPoint = {
-  date: string; // YYYY-MM-DD
-  total: number;
+// Total cost split into its components, base currency. Coins entered with the
+// hammer/premium/shipping partition contribute to those three; coins with only a
+// final price contribute to `unsplit` (their cost is counted but not split).
+// hammer + premium + shipping + unsplit == totalFinal.
+export type CostBreakdown = {
+  hammer: number;
+  premium: number;
+  shipping: number;
+  unsplit: number;
 };
 
 export type PortfolioSummary = {
   totalCoins: number;
-  valuedCoins: number;
-  totalsByCurrency: CurrencyTotal[];
-  primaryCurrency: string | null;
-  allocationByMetal: AllocationSlice[];
-  allocationByCollection: AllocationSlice[];
-  trend: TrendPoint[];
+  pricedCoins: number; // coins with a recorded price paid
+  baseCurrency: string | null;
+  totalFinal: number; // total paid, base currency
+  unconvertible: number; // priced coins no rate could convert
+  costBreakdown: CostBreakdown;
+  events: AcquisitionEvent[]; // dated, convertible coins for the filterable trend
 };
 
 const toNumber = (amount: string): number => Number.parseFloat(amount);
 const round2 = (n: number): number => Math.round(n * 100) / 100;
+const parseDay = (day: string): Date => new Date(`${day}T00:00:00Z`);
 
-function allocate(
-  rows: PortfolioValuationRow[],
-  keyOf: (row: PortfolioValuationRow) => string,
-): AllocationSlice[] {
-  const totals = new Map<string, number>();
-  for (const row of rows) {
-    const key = keyOf(row);
-    totals.set(key, (totals.get(key) ?? 0) + toNumber(row.amount));
+// Most common price currency by coin count (currency-agnostic, so it needs no
+// FX), used as the default base when the user has set no preference.
+function dominantCurrency(priced: PortfolioCoinRow[]): string | null {
+  const counts = new Map<string, number>();
+  for (const row of priced) {
+    if (!row.priceCurrency) continue;
+    counts.set(row.priceCurrency, (counts.get(row.priceCurrency) ?? 0) + 1);
   }
-  return [...totals.entries()]
-    .map(([label, total]) => ({ label, total: round2(total) }))
-    .sort((a, b) => b.total - a.total);
+  let best: string | null = null;
+  let bestCount = -1;
+  for (const [currency, count] of counts) {
+    if (count > bestCount || (count === bestCount && best && currency < best)) {
+      best = currency;
+      bestCount = count;
+    }
+  }
+  return best;
 }
 
-// Portfolio value at each date a valuation was recorded: walk the (ascending)
-// history, keeping each coin's most recent amount, and snapshot the running
-// total at the end of every distinct day.
-function buildTrend(rowsAscending: PortfolioValuationRow[]): TrendPoint[] {
-  const latestPerCoin = new Map<string, number>();
-  const totalByDay = new Map<string, number>();
-  for (const row of rowsAscending) {
-    latestPerCoin.set(row.coinId, toNumber(row.amount));
-    const day = row.valuedAt.toISOString().slice(0, 10);
-    let sum = 0;
-    for (const amount of latestPerCoin.values()) sum += amount;
-    totalByDay.set(day, round2(sum));
-  }
-  return [...totalByDay.entries()].map(([date, total]) => ({ date, total }));
+function emptySummary(
+  totalCoins: number,
+  baseCurrency: string | null,
+): PortfolioSummary {
+  return {
+    totalCoins,
+    pricedCoins: 0,
+    baseCurrency,
+    totalFinal: 0,
+    unconvertible: 0,
+    costBreakdown: { hammer: 0, premium: 0, shipping: 0, unsplit: 0 },
+    events: [],
+  };
 }
 
 export async function getPortfolioSummary(
   userId: string,
+  baseCurrencyPref: string | null,
 ): Promise<PortfolioSummary> {
-  const [rows, totalCoins] = await Promise.all([
-    analyticsRepository.valuationsWithCoinForUser(userId),
-    analyticsRepository.coinCountForUser(userId),
-  ]);
+  const rows = await analyticsRepository.coinsForUser(userId);
+  const totalCoins = rows.length;
+  const priced = rows.filter((r) => r.finalPrice != null);
 
-  // Latest valuation per coin: rows are ascending, so the last one wins.
-  const latestByCoin = new Map<string, PortfolioValuationRow>();
-  for (const row of rows) latestByCoin.set(row.coinId, row);
-  const latest = [...latestByCoin.values()];
-
-  // Totals per currency, largest first.
-  const byCurrency = new Map<string, { total: number; coinCount: number }>();
-  for (const row of latest) {
-    const acc = byCurrency.get(row.currency) ?? { total: 0, coinCount: 0 };
-    acc.total += toNumber(row.amount);
-    acc.coinCount += 1;
-    byCurrency.set(row.currency, acc);
+  const baseCurrency = baseCurrencyPref ?? dominantCurrency(priced);
+  if (priced.length === 0 || !baseCurrency) {
+    return emptySummary(totalCoins, baseCurrency);
   }
-  const totalsByCurrency: CurrencyTotal[] = [...byCurrency.entries()]
-    .map(([currency, acc]) => ({
-      currency,
-      total: round2(acc.total),
-      coinCount: acc.coinCount,
-    }))
-    .sort((a, b) => b.total - a.total);
 
-  const primaryCurrency = totalsByCurrency[0]?.currency ?? null;
+  // The converter must span every price currency and acquisition date.
+  const currencies = new Set<string>();
+  let minDate: Date | null = null;
+  let maxDate: Date | null = null;
+  for (const row of priced) {
+    if (row.priceCurrency) currencies.add(row.priceCurrency);
+    if (row.auctionDate) {
+      const acquired = parseDay(row.auctionDate);
+      if (!minDate || acquired < minDate) minDate = acquired;
+      if (!maxDate || acquired > maxDate) maxDate = acquired;
+    }
+  }
+  const today = new Date();
+  const converter = await buildConverter(
+    baseCurrency,
+    [...currencies],
+    minDate ?? today,
+    maxDate ?? today,
+  );
 
-  const latestInPrimary = primaryCurrency
-    ? latest.filter((row) => row.currency === primaryCurrency)
-    : [];
-  const historyInPrimary = primaryCurrency
-    ? rows.filter((row) => row.currency === primaryCurrency)
-    : [];
+  // Convert at the acquisition-day rate; if no rate covers that date (or the
+  // coin has no acquisition date) fall back to the current rate. A coin is only
+  // counted unconvertible when even the current rate is unavailable — i.e. ECB
+  // does not quote the currency at all.
+  const convertPrice = (
+    amount: string,
+    currency: string | null,
+    auctionDate: string | null,
+  ): number | null => {
+    if (!currency) return null;
+    const amt = toNumber(amount);
+    if (auctionDate) {
+      const atAuction = converter.convert(amt, currency, parseDay(auctionDate));
+      if (atAuction != null) return atAuction;
+    }
+    return converter.convertLatest(amt, currency);
+  };
+
+  let totalFinal = 0;
+  let unconvertible = 0;
+  const breakdown: CostBreakdown = {
+    hammer: 0,
+    premium: 0,
+    shipping: 0,
+    unsplit: 0,
+  };
+  const events: AcquisitionEvent[] = [];
+
+  for (const row of priced) {
+    const { priceCurrency: currency, auctionDate } = row;
+    const final = convertPrice(row.finalPrice!, currency, auctionDate);
+    if (final == null) {
+      unconvertible += 1;
+      continue;
+    }
+    totalFinal += final;
+
+    // Coins with a hammer price were entered as a partition; split the cost into
+    // its components. Coins with only a final price stay whole (`unsplit`).
+    if (row.hammerPrice != null) {
+      breakdown.hammer += convertPrice(row.hammerPrice, currency, auctionDate) ?? 0;
+      if (row.auctionPremium != null)
+        breakdown.premium +=
+          convertPrice(row.auctionPremium, currency, auctionDate) ?? 0;
+      if (row.shippingCost != null)
+        breakdown.shipping +=
+          convertPrice(row.shippingCost, currency, auctionDate) ?? 0;
+    } else {
+      breakdown.unsplit += final;
+    }
+
+    if (auctionDate) {
+      events.push({
+        id: row.coinId,
+        label: formatCoinTitle(row),
+        date: auctionDate,
+        amount: round2(final),
+        metal: row.metal ?? "Unknown",
+        category: row.category ?? "Uncategorized",
+        collection: row.collectionName,
+        year: auctionDate.slice(0, 4),
+        currency: currency!,
+      });
+    }
+  }
 
   return {
     totalCoins,
-    valuedCoins: latest.length,
-    totalsByCurrency,
-    primaryCurrency,
-    allocationByMetal: allocate(latestInPrimary, (r) => r.metal ?? "Unknown"),
-    allocationByCollection: allocate(latestInPrimary, (r) => r.collectionName),
-    trend: buildTrend(historyInPrimary),
+    pricedCoins: priced.length,
+    baseCurrency,
+    totalFinal: round2(totalFinal),
+    unconvertible,
+    costBreakdown: {
+      hammer: round2(breakdown.hammer),
+      premium: round2(breakdown.premium),
+      shipping: round2(breakdown.shipping),
+      unsplit: round2(breakdown.unsplit),
+    },
+    events,
   };
 }

@@ -383,6 +383,14 @@ button:disabled {
   padding: 0.05rem 0.5rem;
 }
 
+/* Gain/loss text colours (portfolio performance). */
+.pos {
+  color: var(--ok);
+}
+.neg {
+  color: var(--danger);
+}
+
 .alert {
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 8%, var(--surface));
@@ -408,6 +416,110 @@ button:disabled {
   display: block;
   height: 100%;
   background: var(--accent);
+}
+
+/* ---- Trend chart (SVG) -------------------------------------------------- */
+
+.chart-axis {
+  fill: var(--muted);
+  font-size: 0.7rem;
+}
+.chart-line {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.chart-area {
+  fill: color-mix(in srgb, var(--accent) 14%, transparent);
+  stroke: none;
+}
+.chart-dot {
+  fill: var(--accent);
+}
+.range-btn[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--primary-text);
+  border-color: var(--primary);
+}
+
+/* ---- Timeline filters --------------------------------------------------- */
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.filter-group {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.filter-label {
+  flex: 0 0 5.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+/* ---- Stacked cost-breakdown bar ----------------------------------------- */
+
+.stack-bar {
+  display: flex;
+  height: 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.stack-seg {
+  height: 100%;
+  min-width: 2px;
+}
+.stack-seg + .stack-seg {
+  border-left: 1px solid var(--surface);
+}
+
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.legend > li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.legend .grow {
+  flex: 1;
+  min-width: 0;
+}
+.swatch {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+/* Segment colours, shared by the bar and the legend swatches. */
+.seg-hammer {
+  background: var(--accent);
+}
+.seg-premium {
+  background: color-mix(in srgb, var(--accent) 50%, var(--surface));
+}
+.seg-shipping {
+  background: color-mix(in srgb, var(--primary) 55%, var(--surface));
+}
+.seg-unsplit {
+  background: var(--muted);
 }
 
 /* ---- Coin overview (details left, image right) -------------------------- */

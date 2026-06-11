@@ -4,6 +4,7 @@ import * as coinService from "@/services/coin.service";
 import * as valuationService from "@/services/valuation.service";
 import { getPortfolioSummary } from "@/services/analytics.service";
 import { setCoinImage } from "@/services/coinImage.service";
+import { userRepository } from "@/repositories/user.repository";
 import { formatCoinTitle } from "@/lib/coin-format";
 
 // NumisBook's collection assistant: OpenAI gpt-4o-mini with function calling over
@@ -131,7 +132,10 @@ export function buildHandlers(
       return recorded;
     },
 
-    get_portfolio_summary: () => getPortfolioSummary(userId),
+    get_portfolio_summary: async () => {
+      const u = await userRepository.findById(userId);
+      return getPortfolioSummary(userId, u?.baseCurrency ?? null);
+    },
   };
 }
 

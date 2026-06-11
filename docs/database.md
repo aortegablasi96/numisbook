@@ -36,6 +36,7 @@ login). Application code reads but does not write these.
 | email | text | unique, not null |
 | email_verified | timestamptz | nullable |
 | image | text | nullable; avatar URL |
+| base_currency | text | nullable; ISO 4217 portfolio base currency. Null = derive from the dominant price currency. Written by app code (not the adapter). See ADR-007 |
 | created_at | timestamptz | default now() |
 
 The adapter also owns `accounts`, `sessions`, and `verification_tokens`
@@ -126,11 +127,30 @@ delete; the `coinImage.repository` removes the stored object alongside the row.
 | valued_at | timestamptz | |
 | created_at | timestamptz | default now() |
 
+### FxRate
+Cache of European Central Bank daily reference rates (fetched via
+frankfurter.app), used to convert portfolio figures into the user's base
+currency. **Global reference data — not tenant-scoped** (rates are the same for
+everyone). Rates are stored in ECB's native quotation (units of `currency` per
+1 EUR); EUR is the implicit pivot (rate 1) and is never stored. Rows are
+(re)fetched on demand and conversion tolerates gaps by using the most recent
+rate on or before the requested date. See ADR-007.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| rate_date | date | ECB publication day; part of composite pk |
+| currency | text | ISO 4217 quoted currency; part of composite pk |
+| rate | numeric(18,8) | units of `currency` per 1 EUR |
+| fetched_at | timestamptz | default now(); refreshed on upsert |
+
+Composite primary key `(rate_date, currency)`.
+
 ## Indexing (initial)
 
 - `collection.user_id`
 - `coin.collection_id`
 - `valuation.coin_id`, and `(coin_id, valued_at)` for latest-value lookups.
+- `fx_rate (currency, rate_date)` for "latest rate on or before date D".
 
 ## Decisions & Open Questions
 
@@ -155,9 +175,12 @@ Resolved during implementation:
   structured child table — kept simple until provenance analytics are needed.
 - **Valuations carry a `source_url`** link to the sale/hammer page; `source`
   stays free text (not an enum).
-- **Currency is stored as-entered, never normalized.** Portfolio totals are
-  reported per currency; allocation/trend use the primary (largest) currency. A
-  user-selected base currency + FX conversion is on the roadmap backlog.
+- **Currency is stored as-entered, never normalized.** Native per-currency
+  spend is still reported for reference, but portfolio figures (total paid,
+  allocation, acquisition-cost trend) are converted into the user's base
+  currency (`users.base_currency`, or the dominant price currency when unset)
+  using cached ECB rates (`fx_rates`). Analytics is based on the price paid;
+  valuation-based value/gain-loss is a later stage. See ADR-007.
 
 Still open:
 

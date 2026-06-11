@@ -27,6 +27,9 @@ vi.mock("@/services/analytics.service", () => ({
 vi.mock("@/services/coinImage.service", () => ({
   setCoinImage: vi.fn(),
 }));
+vi.mock("@/repositories/user.repository", () => ({
+  userRepository: { findById: vi.fn() },
+}));
 
 const collections = vi.mocked(collectionService);
 const coins = vi.mocked(coinService);
@@ -133,7 +136,9 @@ describe("assistant handlers — tenant scoping", () => {
     });
 
     await h.get_portfolio_summary();
-    expect(analytics.getPortfolioSummary).toHaveBeenCalledWith(USER);
+    // The user's saved base-currency preference is resolved and forwarded;
+    // with no stored preference it falls back to null (auto).
+    expect(analytics.getPortfolioSummary).toHaveBeenCalledWith(USER, null);
   });
 
   it("logs mutations (not reads) to the actions list", async () => {

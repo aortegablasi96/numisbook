@@ -14,6 +14,7 @@ const fakeUser: User = {
   email: "ada@example.com",
   emailVerified: null,
   image: null,
+  baseCurrency: null,
   createdAt: new Date(),
 };
 

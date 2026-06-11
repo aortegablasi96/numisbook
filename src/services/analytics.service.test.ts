@@ -2,115 +2,181 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getPortfolioSummary } from "./analytics.service";
 import {
   analyticsRepository,
-  type PortfolioValuationRow,
+  type PortfolioCoinRow,
 } from "@/repositories/analytics.repository";
+import { buildConverter, type Converter } from "@/services/fx.service";
 
 vi.mock("@/repositories/analytics.repository", () => ({
-  analyticsRepository: {
-    valuationsWithCoinForUser: vi.fn(),
-    coinCountForUser: vi.fn(),
-  },
+  analyticsRepository: { coinsForUser: vi.fn() },
 }));
 
+vi.mock("@/services/fx.service", () => ({ buildConverter: vi.fn() }));
+
 const repo = vi.mocked(analyticsRepository);
+const fx = vi.mocked(buildConverter);
 
 function row(
-  partial: Partial<PortfolioValuationRow> &
-    Pick<PortfolioValuationRow, "coinId" | "amount" | "currency" | "valuedAt">,
-): PortfolioValuationRow {
+  partial: Partial<PortfolioCoinRow> & Pick<PortfolioCoinRow, "coinId">,
+): PortfolioCoinRow {
   return {
     metal: null,
     category: null,
+    issuingAuthority: null,
+    yearFrom: null,
+    yearTo: null,
+    mint: null,
     collectionId: "col",
     collectionName: "Collection",
+    hammerPrice: null,
+    auctionPremium: null,
+    shippingCost: null,
+    finalPrice: null,
+    priceCurrency: null,
+    auctionDate: null,
     ...partial,
   };
 }
 
-// Ascending by valuedAt, as the repository returns them.
-const history: PortfolioValuationRow[] = [
-  row({ coinId: "A", amount: "100.00", currency: "USD", valuedAt: new Date("2026-01-01"), metal: "gold", collectionName: "Rome" }),
-  row({ coinId: "B", amount: "50.00", currency: "USD", valuedAt: new Date("2026-02-01"), metal: "silver", collectionName: "Greek" }),
-  row({ coinId: "D", amount: "200.00", currency: "EUR", valuedAt: new Date("2026-02-10"), metal: null, collectionName: "Greek" }),
-  row({ coinId: "C", amount: "80.00", currency: "USD", valuedAt: new Date("2026-02-15"), metal: "gold", collectionName: "Rome" }),
-  row({ coinId: "A", amount: "120.00", currency: "USD", valuedAt: new Date("2026-03-01"), metal: "gold", collectionName: "Rome" }),
+// A converter that multiplies each currency's amount by a fixed factor into the
+// base currency; an absent factor means "unconvertible" (null). Date-agnostic.
+function fakeConverter(base: string, factors: Record<string, number>): Converter {
+  const apply = (amount: number, from: string) =>
+    factors[from] == null ? null : amount * factors[from];
+  return {
+    base,
+    convert: (amount, from) => apply(amount, from),
+    convertLatest: (amount, from) => apply(amount, from),
+  };
+}
+
+// Coins with prices paid, ascending by acquisition date (as the repo returns).
+// C1/C2 are partitioned (hammer+premium+shipping = final); C3 has only a final
+// price (unsplit). C4 has no price → excluded from priced figures.
+const coins: PortfolioCoinRow[] = [
+  row({ coinId: "C1", hammerPrice: "80.00", auctionPremium: "15.00", shippingCost: "5.00", finalPrice: "100.00", priceCurrency: "USD", metal: "gold", category: "Romans", collectionId: "rome", collectionName: "Rome", auctionDate: "2024-06-01" }),
+  row({ coinId: "C2", hammerPrice: "150.00", auctionPremium: "40.00", shippingCost: "10.00", finalPrice: "200.00", priceCurrency: "EUR", metal: "silver", category: "Greek", collectionId: "greek", collectionName: "Greek", auctionDate: "2025-03-01" }),
+  row({ coinId: "C3", finalPrice: "50.00", priceCurrency: "USD", metal: "gold", category: "Romans", collectionId: "rome", collectionName: "Rome", auctionDate: "2025-06-01" }),
+  row({ coinId: "C4", metal: "gold" }), // no price
 ];
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // 1 EUR = 1.1 USD; USD identity.
+  fx.mockResolvedValue(fakeConverter("USD", { USD: 1, EUR: 1.1 }));
 });
 
 describe("getPortfolioSummary", () => {
-  it("returns an empty summary when there are no valuations", async () => {
-    repo.valuationsWithCoinForUser.mockResolvedValue([]);
-    repo.coinCountForUser.mockResolvedValue(3);
-
-    const summary = await getPortfolioSummary("user-1");
-    expect(summary.totalCoins).toBe(3);
-    expect(summary.valuedCoins).toBe(0);
-    expect(summary.totalsByCurrency).toEqual([]);
-    expect(summary.primaryCurrency).toBeNull();
-    expect(summary.allocationByMetal).toEqual([]);
-    expect(summary.allocationByCollection).toEqual([]);
-    expect(summary.trend).toEqual([]);
+  it("returns an empty summary when there are no coins", async () => {
+    repo.coinsForUser.mockResolvedValue([]);
+    const summary = await getPortfolioSummary("user-1", "EUR");
+    expect(summary.totalCoins).toBe(0);
+    expect(summary.pricedCoins).toBe(0);
+    expect(summary.totalFinal).toBe(0);
+    expect(summary.baseCurrency).toBe("EUR");
+    expect(summary.costBreakdown).toEqual({
+      hammer: 0,
+      premium: 0,
+      shipping: 0,
+      unsplit: 0,
+    });
+    expect(summary.events).toEqual([]);
+    expect(fx).not.toHaveBeenCalled();
   });
 
-  it("uses each coin's latest valuation and totals per currency", async () => {
-    repo.valuationsWithCoinForUser.mockResolvedValue(history);
-    repo.coinCountForUser.mockResolvedValue(5);
-
-    const summary = await getPortfolioSummary("user-1");
-
-    // 4 distinct coins valued (A, B, C, D); 5 total exist.
-    expect(summary.valuedCoins).toBe(4);
-    expect(summary.totalCoins).toBe(5);
-
-    // USD uses A's latest (120) + B(50) + C(80) = 250; EUR = 200. Largest first.
-    expect(summary.totalsByCurrency).toEqual([
-      { currency: "USD", total: 250, coinCount: 3 },
-      { currency: "EUR", total: 200, coinCount: 1 },
-    ]);
-    expect(summary.primaryCurrency).toBe("USD");
+  it("returns an empty summary when coins exist but none have a price", async () => {
+    repo.coinsForUser.mockResolvedValue([row({ coinId: "X", metal: "gold" })]);
+    const summary = await getPortfolioSummary("user-1", "USD");
+    expect(summary.totalCoins).toBe(1);
+    expect(summary.pricedCoins).toBe(0);
+    expect(summary.totalFinal).toBe(0);
+    expect(fx).not.toHaveBeenCalled();
   });
 
-  it("allocates the primary currency by metal and collection", async () => {
-    repo.valuationsWithCoinForUser.mockResolvedValue(history);
-    repo.coinCountForUser.mockResolvedValue(5);
+  it("totals the final price paid in the base currency", async () => {
+    repo.coinsForUser.mockResolvedValue(coins);
+    const summary = await getPortfolioSummary("user-1", "USD");
 
-    const summary = await getPortfolioSummary("user-1");
+    expect(summary.totalCoins).toBe(4);
+    expect(summary.pricedCoins).toBe(3);
+    expect(summary.baseCurrency).toBe("USD");
+    // final: 100 + 200€→220 + 50 = 370.
+    expect(summary.totalFinal).toBe(370);
+    expect(summary.unconvertible).toBe(0);
+  });
 
-    expect(summary.allocationByMetal).toEqual([
-      { label: "gold", total: 200 }, // A(120) + C(80)
-      { label: "silver", total: 50 },
-    ]);
-    expect(summary.allocationByCollection).toEqual([
-      { label: "Rome", total: 200 },
-      { label: "Greek", total: 50 },
+  it("splits cost into hammer/premium/shipping and keeps final-only coins whole", async () => {
+    repo.coinsForUser.mockResolvedValue(coins);
+    const summary = await getPortfolioSummary("user-1", "USD");
+    expect(summary.costBreakdown).toEqual({
+      hammer: 245, // 80 + 150€→165
+      premium: 59, // 15 + 40€→44
+      shipping: 16, // 5 + 10€→11
+      unsplit: 50, // C3, final only
+    });
+    // The four components reconstitute the total paid.
+    const { hammer, premium, shipping, unsplit } = summary.costBreakdown;
+    expect(hammer + premium + shipping + unsplit).toBe(summary.totalFinal);
+  });
+
+  it("emits one acquisition event per dated, convertible coin", async () => {
+    repo.coinsForUser.mockResolvedValue(coins);
+    const summary = await getPortfolioSummary("user-1", "USD");
+    expect(summary.events).toEqual([
+      { id: "C1", label: "Romans", date: "2024-06-01", amount: 100, metal: "gold", category: "Romans", collection: "Rome", year: "2024", currency: "USD" },
+      { id: "C2", label: "Greek", date: "2025-03-01", amount: 220, metal: "silver", category: "Greek", collection: "Greek", year: "2025", currency: "EUR" },
+      { id: "C3", label: "Romans", date: "2025-06-01", amount: 50, metal: "gold", category: "Romans", collection: "Rome", year: "2025", currency: "USD" },
     ]);
   });
 
-  it("labels a missing metal as Unknown", async () => {
-    repo.valuationsWithCoinForUser.mockResolvedValue([
-      row({ coinId: "X", amount: "10.00", currency: "USD", valuedAt: new Date("2026-01-01"), metal: null }),
+  it("labels missing metal/category and excludes undated coins from events", async () => {
+    repo.coinsForUser.mockResolvedValue([
+      row({ coinId: "D1", finalPrice: "10.00", priceCurrency: "USD", auctionDate: "2024-01-01" }),
+      row({ coinId: "D2", finalPrice: "20.00", priceCurrency: "USD" }), // no date
     ]);
-    repo.coinCountForUser.mockResolvedValue(1);
-
-    const summary = await getPortfolioSummary("user-1");
-    expect(summary.allocationByMetal).toEqual([{ label: "Unknown", total: 10 }]);
+    const summary = await getPortfolioSummary("user-1", "USD");
+    expect(summary.events).toEqual([
+      { id: "D1", label: "Untitled coin", date: "2024-01-01", amount: 10, metal: "Unknown", category: "Uncategorized", collection: "Collection", year: "2024", currency: "USD" },
+    ]);
+    // Both coins still count toward the total (the undated one just has no point).
+    expect(summary.totalFinal).toBe(30);
   });
 
-  it("builds a portfolio-value trend (primary currency, one point per day)", async () => {
-    repo.valuationsWithCoinForUser.mockResolvedValue(history);
-    repo.coinCountForUser.mockResolvedValue(5);
+  it("defaults the base to the dominant price currency when unset", async () => {
+    repo.coinsForUser.mockResolvedValue(coins);
+    const summary = await getPortfolioSummary("user-1", null);
+    expect(summary.baseCurrency).toBe("USD"); // 2 USD coins vs 1 EUR
+    expect(fx).toHaveBeenCalledWith("USD", expect.any(Array), expect.any(Date), expect.any(Date));
+  });
 
-    const summary = await getPortfolioSummary("user-1");
+  it("counts prices no rate can convert as unconvertible", async () => {
+    fx.mockResolvedValue(fakeConverter("USD", { USD: 1 })); // EUR has no rate
+    repo.coinsForUser.mockResolvedValue(coins);
+    const summary = await getPortfolioSummary("user-1", "USD");
+    // C2 (EUR) excluded; final 100 + 50 = 150.
+    expect(summary.totalFinal).toBe(150);
+    expect(summary.unconvertible).toBe(1);
+    expect(summary.costBreakdown).toEqual({
+      hammer: 80,
+      premium: 15,
+      shipping: 5,
+      unsplit: 50,
+    });
+    expect(summary.events.map((e) => e.currency)).toEqual(["USD", "USD"]);
+  });
 
-    // EUR (coin D) is excluded; only USD movements count.
-    expect(summary.trend).toEqual([
-      { date: "2026-01-01", total: 100 }, // A=100
-      { date: "2026-02-01", total: 150 }, // A=100, B=50
-      { date: "2026-02-15", total: 230 }, // + C=80
-      { date: "2026-03-01", total: 250 }, // A re-valued to 120
-    ]);
+  it("falls back to the current rate when the acquisition-day rate is missing", async () => {
+    // EUR has no acquisition-day rate (convert → null) but a current rate exists
+    // (convertLatest → 1.1). The EUR coin must convert via the fallback, not be
+    // dropped as unconvertible.
+    fx.mockResolvedValue({
+      base: "USD",
+      convert: (amount, from) => (from === "USD" ? amount : null),
+      convertLatest: (amount, from) => (from === "USD" ? amount : amount * 1.1),
+    });
+    repo.coinsForUser.mockResolvedValue(coins);
+    const summary = await getPortfolioSummary("user-1", "USD");
+    // Same total as the all-rates case: 100 + 220 + 50 = 370.
+    expect(summary.totalFinal).toBe(370);
+    expect(summary.unconvertible).toBe(0);
   });
 });

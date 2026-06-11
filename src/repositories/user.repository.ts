@@ -25,4 +25,12 @@ export const userRepository = {
       .limit(1);
     return row ?? null;
   },
+
+  /** Set (or clear, with null) the user's preferred base currency. */
+  async updateBaseCurrency(
+    id: string,
+    baseCurrency: string | null,
+  ): Promise<void> {
+    await db.update(users).set({ baseCurrency }).where(eq(users.id, id));
+  },
 };

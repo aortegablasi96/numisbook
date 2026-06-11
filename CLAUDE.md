@@ -83,12 +83,15 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   `src/app/api/_lib.ts`), never from client input. Mutations that match no row
   raise `NotFoundError` (404) rather than revealing another tenant's data.
   Coins are scoped indirectly — via a subquery of the user's `collectionId`s —
-  because `coins` has no `userId` column.
+  because `coins` has no `userId` column. Exception: `fx_rates` /
+  `fxRateRepository` are global reference data, intentionally **not**
+  tenant-scoped.
 * **React components** (`src/components`) must not contain database queries or
   import repositories; data comes via props, Server Components, or the API.
   Components are organized by domain: `src/components/{collections,coins,
-  valuations,assistant}/`; shared primitives in `src/components/ui/`; shell in
-  `src/components/layout/`. Each domain has a client-side "manager" that owns its
+  valuations,assistant,analytics}/`; shared primitives in `src/components/ui/`;
+  shell in `src/components/layout/`. (`analytics/TrendChart` is the client SVG
+  trend chart rendered by the server `/portfolio` page.) Each domain has a client-side "manager" that owns its
   view and talks to the API: `CollectionsManager`, `CoinsManager` (+ the
   `CoinDetailsCard` / `CoinImage` detail views), `ValuationsManager`, and
   `AssistantWidget`; `SiteHeader` (layout) and `ConfirmButton` (ui) are the
@@ -99,8 +102,9 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
 * **Imports use the `@/*` alias** (`@/* → ./src/*`, see `tsconfig.json`), e.g.
   `import { db } from "@/db"`. `src/db/index.ts` exports the singleton Drizzle
   client and throws at import time if `DATABASE_URL` is unset.
-* **Cross-cutting helpers** (Zod validation schemas, typed errors, formatting)
-  live in `src/lib`.
+* **Cross-cutting helpers** live in `src/lib`: typed errors, formatting,
+  per-domain Zod schemas (`src/lib/validation/`), and the swappable
+  `FxRateProvider` (`src/lib/fx`, frankfurter.app — see ADR-007).
 
 A new feature is built as a vertical slice:
 `schema → repository → service (+ tests) → API route → UI`.
@@ -256,6 +260,11 @@ success status codes (200/201/204), and AppError → status mapping (404, etc.).
 * Keep files under 300 lines when practical.
 * Generate tests for all business logic (services are the primary test target;
   mock repositories).
+* Keep `CLAUDE.md` lean. It carries rules, conventions, invariants, and
+  *pointers* — not material an ADR or `docs/` already covers. When a feature
+  needs documenting, put the detail in `docs/` (or an ADR) and link to it from
+  here; do not duplicate it into CLAUDE.md, which is always-on context. Prefer a
+  one-line breadcrumb to a paragraph.
 
 ## Before Implementing Any Feature
 
@@ -380,6 +389,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `004-s3-storage-abstraction` — S3-compatible storage abstraction
 * `005-cloudflare-r2-initial-provider` — Cloudflare R2 as initial provider
 * `006-coin-and-valuation-attribute-rework` — Coin & valuation attribute rework (derived coin title, price paid vs. valuations, grade `pgEnum`, valuation link)
+* `007-portfolio-analytics-upgrade` — Portfolio Analytics Upgrade; the architectural decision within it is multi-currency support: per-user base currency + currency conversion via cached ECB rates (frankfurter.app) behind an `FxRateProvider` interface
 
 (`template.md` is the scaffold for new ADRs.)
 
@@ -396,12 +406,11 @@ Do not silently override accepted decisions.
 ## Current Priority
 
 The core collection-management platform is functionally complete; the project is
-in a **pre-deployment** phase. The **Data Model Reform** milestone is done — the
-coin and valuation data models have been reformed (see `docs/history.md` Phase 5
-and `docs/decisions/006-coin-and-valuation-attribute-rework.md`). The active
-milestone is now the **Portfolio Analytics Upgrade**, built on top of the
-reformed data. Only then comes **Embellishment** (polishing MVP features and UI),
-so that polish work targets the final data shape rather than the current one.
-Production deployment remains a later milestone. See `docs/roadmap.md` for the
-current milestone tasks and the Technical Backlog — check it before starting
-anything new.
+in a **pre-deployment** phase. The **Data Model Reform** (Phase 5) and the
+**Portfolio Analytics Upgrade** (Phase 6 — multi-currency base currency + ECB FX
+conversion, gain/loss, deeper allocation, per-collection comparison, SVG trend
+chart; see `docs/history.md` and ADRs 006–007) are both done. The active
+milestone is now **Embellishment**: polishing the MVP features and UI against the
+final data shape before production readiness. Production deployment remains a
+later milestone. See `docs/roadmap.md` for the current milestone tasks and the
+Technical Backlog — check it before starting anything new.

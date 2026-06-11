@@ -59,8 +59,15 @@ Request
   storage behind `src/lib/storage`; metadata in Postgres; on-the-fly WebP
   thumbnails via `sharp`).
 - **Valuations** — point-in-time values for a coin.
-- **Portfolio analytics** — a read-model over valuations (totals per currency,
-  allocation, value-over-time trend).
+- **Portfolio analytics** — a read-model over coins' **price paid** (hammer and
+  final price). Figures (total paid, allocation, acquisition-cost trend) are
+  converted into the user's base currency via FX conversion; native per-currency
+  spend is still reported for reference. Valuation-based value and gain/loss are
+  a later stage.
+- **Currency conversion** — ECB reference rates behind an `FxRateProvider`
+  interface (`src/lib/fx`, mirroring the storage abstraction), cached in
+  `fx_rates`. `fx.service` orchestrates cache-or-fetch and exposes a converter to
+  the analytics service. See ADR-007.
 - **Collection assistant** — an OpenAI-backed chatbot with function calling over
   the domain services (see `CLAUDE.md`).
 

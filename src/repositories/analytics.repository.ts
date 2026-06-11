@@ -1,54 +1,60 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { coins, collections, valuations } from "@/db/schema";
+import { coins, collections } from "@/db/schema";
 
-// One valuation joined with its coin and collection, scoped to a user. The
-// service derives portfolio figures (latest-per-coin, totals, allocation, trend)
-// from these rows; aggregation is business logic and lives in the service.
-export type PortfolioValuationRow = {
+// One coin with the data the portfolio read-model needs, scoped to a user. The
+// service derives portfolio figures (totals, allocation, acquisition-cost trend)
+// from the price paid; aggregation is business logic and lives in the service.
+//
+// Analytics is currently based on the price paid, not on market valuations —
+// valuation-based value and gain/loss are a later stage (see ADR-007).
+export type PortfolioCoinRow = {
   coinId: string;
   metal: string | null;
   category: string | null;
+  // Title-deriving attributes (coins have no name — see src/lib/coin-format).
+  issuingAuthority: string | null;
+  yearFrom: number | null;
+  yearTo: number | null;
+  mint: string | null;
   collectionId: string;
   collectionName: string;
-  amount: string;
-  currency: string;
-  valuedAt: Date;
+  hammerPrice: string | null;
+  auctionPremium: string | null;
+  shippingCost: string | null;
+  finalPrice: string | null;
+  priceCurrency: string | null;
+  auctionDate: string | null; // YYYY-MM-DD
 };
 
 // Read-model data access for analytics. Joins across aggregates for reporting;
 // like every repository it is the only layer that touches the database, and all
 // reads are scoped to the owning user (tenant isolation).
 export const analyticsRepository = {
-  /** Every valuation for the user's coins, oldest first (for trend building). */
-  async valuationsWithCoinForUser(
-    userId: string,
-  ): Promise<PortfolioValuationRow[]> {
+  /** Every coin the user owns, with its price paid, oldest acquisition first. */
+  async coinsForUser(userId: string): Promise<PortfolioCoinRow[]> {
     return db
       .select({
         coinId: coins.id,
         metal: coins.metal,
         category: coins.category,
+        issuingAuthority: coins.issuingAuthority,
+        yearFrom: coins.yearFrom,
+        yearTo: coins.yearTo,
+        mint: coins.mint,
         collectionId: collections.id,
         collectionName: collections.name,
-        amount: valuations.amount,
-        currency: valuations.currency,
-        valuedAt: valuations.valuedAt,
+        hammerPrice: coins.hammerPrice,
+        auctionPremium: coins.auctionPremium,
+        shippingCost: coins.shippingCost,
+        finalPrice: coins.finalPrice,
+        priceCurrency: coins.priceCurrency,
+        auctionDate: coins.auctionDate,
       })
-      .from(valuations)
-      .innerJoin(coins, eq(valuations.coinId, coins.id))
-      .innerJoin(collections, eq(coins.collectionId, collections.id))
-      .where(eq(collections.userId, userId))
-      .orderBy(asc(valuations.valuedAt), asc(valuations.createdAt));
-  },
-
-  /** Total number of coins across the user's collections (valued or not). */
-  async coinCountForUser(userId: string): Promise<number> {
-    const [row] = await db
-      .select({ count: sql<number>`count(*)::int` })
       .from(coins)
       .innerJoin(collections, eq(coins.collectionId, collections.id))
-      .where(eq(collections.userId, userId));
-    return row?.count ?? 0;
+      .where(eq(collections.userId, userId))
+      // Ascending acquisition date (nulls last) so the trend can accumulate.
+      .orderBy(asc(coins.auctionDate));
   },
 };

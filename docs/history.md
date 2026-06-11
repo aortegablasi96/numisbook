@@ -226,6 +226,59 @@ Implemented:
 
 ---
 
+# Phase 6 — Portfolio Analytics Upgrade
+
+Status: Complete
+
+Upgraded portfolio analytics on top of the reformed data models, expressing all
+figures in a single base currency so a mixed-currency collection is finally
+comparable. Analytics is based on the **price paid** per coin (hammer and final
+price); valuation-based value and gain/loss are deferred to a later stage (when
+valuation tracking matures). Built through the standard workflow
+(product → UI → architecture → ADR/DB → implementation → testing).
+
+## Multi-currency foundation
+
+Implemented:
+
+- Per-user base-currency preference (`users.base_currency`; null = derive from
+  the dominant price currency)
+- Currency conversion via European Central Bank reference rates (frankfurter.app,
+  no API key), behind an `FxRateProvider` interface (mirroring the storage
+  abstraction) with an `fx_rates` cache table for offline-safe reads
+- `fx.service` converter (EUR-pivot; each price converted at the rate on or
+  before its acquisition date); see ADR-007
+
+## Price-based portfolio figures
+
+Implemented:
+
+- Total paid in the base currency, with hammer and final totals shown side by
+  side; native spend per currency reported for reference
+- Prices no rate covers are surfaced as a count, never summed across currencies
+
+## Allocation & comparisons
+
+Implemented:
+
+- Allocation breakdowns by metal, category, acquisition year, and collection
+  (by final price)
+- Per-collection comparison (hammer + total paid per collection)
+
+## Charts & controls
+
+Implemented:
+
+- Dependency-free SVG line/area chart (`analytics/TrendChart`) showing cumulative
+  acquisition cost over time, with 3M/6M/1Y/All date-range presets
+
+## Deferred to a later stage
+
+- Market valuations as the basis for current value, gain/loss, and performance
+  indicators (depends on valuation tracking maturing)
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -236,6 +289,7 @@ See:
 - `docs/decisions/004-s3-storage-abstraction.md`
 - `docs/decisions/005-cloudflare-r2-initial-provider.md`
 - `docs/decisions/006-coin-and-valuation-attribute-rework.md`
+- `docs/decisions/007-portfolio-analytics-upgrade.md`
 
 ---
 

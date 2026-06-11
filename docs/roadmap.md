@@ -23,51 +23,60 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Pre-deployment — Portfolio Analytics Upgrade**
+Current maturity: **Pre-deployment — Embellishment**
 
-The core collection-management platform is functionally complete, and the coin
-and valuation data models have been reformed (see `history.md` Phase 5 and
-`docs/decisions/006-coin-and-valuation-attribute-rework.md`). Portfolio analytics
-will now be upgraded on top of the new data shape, before the later embellishment
-work, so polish targets the final data shape rather than the current one.
+The core collection-management platform is functionally complete, the coin and
+valuation data models have been reformed (see `history.md` Phase 5), and the
+**Portfolio Analytics Upgrade** is now complete — portfolio figures are
+multi-currency aware, with gain/loss, deeper allocation, per-collection
+comparison, and an SVG trend chart (see `history.md` Phase 6 and
+`docs/decisions/007-portfolio-analytics-upgrade.md`). The next milestone is
+**Embellishment**: polishing the MVP features and UI against the final data
+shape before preparing for deployment.
 
 Primary objective:
 
-**Upgrade portfolio analytics on the reformed data models before polishing the
-MVP for production deployment.**
+**Polish the MVP features and UI to a quality bar suitable for real collectors
+before preparing for production deployment.**
 
 Current priorities:
 
-- Portfolio analytics upgrade
-- (then) feature and UI/UX polish
+- Feature and UI/UX polish (Embellishment)
+- (then) production readiness
 
 ---
 
-# Next Milestone — Portfolio Analytics Upgrade
+# Completed Milestone — Portfolio Analytics Upgrade
 
-> The preceding **Data Model Reform** milestone is complete; see `history.md`
-> (Phase 5) and `docs/decisions/006-coin-and-valuation-attribute-rework.md`.
+Complete. Analytics is based on the **price paid** per coin (hammer + final
+price), expressed in one base currency: total paid, allocation breakdowns (metal,
+category, acquisition year, collection), per-collection comparison, a cumulative
+acquisition-cost trend chart, and multi-currency support (per-user base currency
++ ECB FX conversion). See `history.md` (Phase 6) and
+`docs/decisions/007-portfolio-analytics-upgrade.md`.
+
+> Valuation-based current value, gain/loss, and performance indicators were
+> **deferred** to a later stage (they depend on valuation tracking maturing) —
+> see the Valuation-Based Analytics milestone below.
+
+---
+
+# Future Milestone — Valuation-Based Analytics
 
 Goal:
 
-Improve the portfolio analytics page into a richer, more insightful view of a
-collector's holdings.
+Layer market value on top of the price-paid analytics once valuation tracking is
+mature.
 
-## Analytics
+## Features
 
-- [ ] Richer value-trend visualization over time
-- [ ] Deeper allocation breakdowns (by metal, category, year, etc.)
-- [ ] Per-collection and aggregate comparisons
-- [ ] Gain/loss and performance indicators
-
-## UX
-
-- [ ] Improved charts and layout
-- [ ] Date-range / filter controls
+- [ ] Current value from latest valuations (in the base currency)
+- [ ] Gain/loss vs. price paid (absolute + %), portfolio and per collection
+- [ ] Performance indicators and value-over-time (market) trend
 
 ---
 
-# Future Milestone — Embellishment
+# Next Milestone — Embellishment
 
 Goal:
 
@@ -142,8 +151,10 @@ Improve collection management and portability.
 
 ## Features
 
-- [ ] Multi-currency portfolio support
-- [ ] Base-currency preferences
+> Multi-currency portfolio support and base-currency preferences were pulled
+> forward into the **Portfolio Analytics Upgrade** milestone — analytics figures
+> are only meaningful once all values share a single currency.
+
 - [ ] User profile/account settings
 - [ ] CSV export
 - [ ] CSV import
