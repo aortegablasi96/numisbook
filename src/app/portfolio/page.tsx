@@ -6,7 +6,6 @@ import { getPortfolioSummary } from "@/services/analytics.service";
 import { COMMON_CURRENCIES } from "@/lib/currencies";
 import { TrendChart } from "@/components/analytics/TrendChart";
 import { CostBreakdownChart } from "@/components/analytics/CostBreakdownChart";
-import { CoinProportionChart } from "@/components/analytics/CoinProportionChart";
 
 function money(amount: number, currency: string): string {
   try {
@@ -110,12 +109,7 @@ export default async function PortfolioPage() {
             </span>
           </section>
 
-          <CostBreakdownChart
-            breakdown={summary.costBreakdown}
-            currency={baseCurrency}
-          />
-
-          <CoinProportionChart events={summary.events} currency={baseCurrency} />
+          <CostBreakdownChart events={summary.events} currency={baseCurrency} />
 
           <TrendChart events={summary.events} currency={baseCurrency} />
         </>

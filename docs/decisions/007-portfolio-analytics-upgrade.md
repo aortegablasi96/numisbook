@@ -3,7 +3,7 @@
 > Scope: the Portfolio Analytics Upgrade milestone. The part requiring an
 > architectural decision is multi-currency support — a per-user base currency
 > plus the conversion mechanism that expresses all portfolio figures in it. The
-> derived analytics (cost breakdown, per-coin proportion, the filterable
+> derived analytics (the per-coin cost breakdown and the filterable
 > acquisition-cost timeline) are computed in the service/UI from existing data
 > and need no separate ADR, but the **conversion semantics** they rely on (which
 > rate is applied, and what happens when one is missing) are recorded here, and
@@ -12,7 +12,15 @@
 
 Status: Accepted
 
-Date: 2026-06-10 (updated 2026-06-11)
+Date: 2026-06-10 (updated 2026-06-11; presentation revised 2026-06-15)
+
+> **Revision (2026-06-15).** The presentation was refined after review: the
+> redundant "Coins by share of cost" chart was removed, and the cost breakdown
+> changed from one aggregate stacked bar into a **per-coin** vertical column
+> chart ordered by acquisition (hammer) date. This is a UI refinement only — the
+> conversion decision below is unchanged — so this ADR is updated in place rather
+> than superseded. The "Analytics & presentation" subsection records the current
+> shape.
 
 ## Context
 
@@ -28,8 +36,8 @@ one portfolio total.
 > them when they arrive.
 
 The Portfolio Analytics Upgrade milestone pulls multi-currency support forward
-(see `docs/roadmap.md`): portfolio figures — totals, the cost breakdown,
-per-coin proportions and the acquisition-cost trend — must be expressed in one
+(see `docs/roadmap.md`): portfolio figures — totals, the per-coin cost breakdown
+and the acquisition-cost trend — must be expressed in one
 **base currency** the collector chooses. That requires exchange rates, including
 **historical** rates, so each purchase keeps its real base-currency cost at its
 acquisition date.
@@ -124,21 +132,28 @@ Risks:
 
 ### Analytics & presentation (derived, no separate ADR)
 
-The reworked `/portfolio` view is built from the converted figures the service
-produces — `totalFinal`, a `costBreakdown`, and a list of per-coin
-`AcquisitionEvent`s (date + base-currency amount + dimension labels):
+The `/portfolio` view is built from the converted figures the service produces —
+`totalFinal`, an aggregate `costBreakdown` (for the header line), and a list of
+per-coin `AcquisitionEvent`s (date + base-currency amount + its hammer / premium /
+shipping / "final only" split + dimension labels):
 
-* **Cost breakdown** — a stacked bar splitting total cost into hammer, premium,
-  shipping and "final only" (coins entered with just a final price, counted but
-  not split). The four components reconstitute the total paid.
-* **Coins by share of cost** — a stacked bar where each segment is one coin,
-  sized by its share of the total and ordered along the acquisition timeline,
-  coloured by collection with a legend.
+* **Cost breakdown** — a **per-coin** chart: one vertical column per coin,
+  ordered left→right by acquisition (hammer) date, each column stacked into its
+  price-paid components (hammer, premium, shipping) or a single "final only"
+  segment for coins entered with just a final price. Column height is the coin's
+  total cost; a legend reports each component's total across the shown coins.
+  Dependency-free SVG, mirroring the trend chart. Only dated, convertible coins
+  appear (undated coins have no place on the date axis but still count toward the
+  header `totalFinal`).
 * **Acquisition-cost timeline** — the cumulative cost trend, with multi-select
   per-dimension filters (metal, category, collection, year, currency). The
   filters and the running total are computed client-side from the events; they
   **replace** the previous static allocation and per-collection comparison
   tables (those dimensions are now the timeline's filters).
+
+> A separate "coins by share of cost" stacked bar was tried and removed
+> (2026-06-15): it duplicated information the per-coin breakdown and the timeline
+> already convey.
 
 ## Alternatives Considered
 

@@ -20,13 +20,20 @@ import { formatCoinTitle } from "@/lib/coin-format";
 // never dropped or summed across currencies.
 
 // One acquisition, in the base currency, with the dimension labels the timeline
-// filters by. The cumulative cost trend is built (and filtered) from these in the
-// client; only coins with an acquisition date appear (they need a point in time).
+// filters by and the price-paid split the cost-breakdown chart stacks. The
+// cumulative cost trend is built (and filtered) from these in the client, and the
+// per-coin cost-breakdown columns are drawn from `hammer`/`premium`/`shipping`/
+// `unsplit` (which sum to `amount`). Only coins with an acquisition date appear —
+// they need a point in time to be placed on either chart's date axis.
 export type AcquisitionEvent = {
   id: string; // coin id
   label: string; // derived coin title (coins have no name)
   date: string; // YYYY-MM-DD acquisition date
   amount: number; // final price paid, base currency
+  hammer: number; // base-currency cost components; sum to `amount`. Partitioned
+  premium: number; // coins split across hammer/premium/shipping; final-only coins
+  shipping: number; // carry their whole cost in `unsplit` (the other three are 0).
+  unsplit: number;
   metal: string;
   category: string;
   collection: string;
@@ -165,17 +172,23 @@ export async function getPortfolioSummary(
 
     // Coins with a hammer price were entered as a partition; split the cost into
     // its components. Coins with only a final price stay whole (`unsplit`).
+    let hammer = 0;
+    let premium = 0;
+    let shipping = 0;
+    let unsplit = 0;
     if (row.hammerPrice != null) {
-      breakdown.hammer += convertPrice(row.hammerPrice, currency, auctionDate) ?? 0;
+      hammer = convertPrice(row.hammerPrice, currency, auctionDate) ?? 0;
       if (row.auctionPremium != null)
-        breakdown.premium +=
-          convertPrice(row.auctionPremium, currency, auctionDate) ?? 0;
+        premium = convertPrice(row.auctionPremium, currency, auctionDate) ?? 0;
       if (row.shippingCost != null)
-        breakdown.shipping +=
-          convertPrice(row.shippingCost, currency, auctionDate) ?? 0;
+        shipping = convertPrice(row.shippingCost, currency, auctionDate) ?? 0;
     } else {
-      breakdown.unsplit += final;
+      unsplit = final;
     }
+    breakdown.hammer += hammer;
+    breakdown.premium += premium;
+    breakdown.shipping += shipping;
+    breakdown.unsplit += unsplit;
 
     if (auctionDate) {
       events.push({
@@ -183,6 +196,10 @@ export async function getPortfolioSummary(
         label: formatCoinTitle(row),
         date: auctionDate,
         amount: round2(final),
+        hammer: round2(hammer),
+        premium: round2(premium),
+        shipping: round2(shipping),
+        unsplit: round2(unsplit),
         metal: row.metal ?? "Unknown",
         category: row.category ?? "Uncategorized",
         collection: row.collectionName,

@@ -465,22 +465,11 @@ button:disabled {
   color: var(--muted);
 }
 
-/* ---- Stacked cost-breakdown bar ----------------------------------------- */
+/* ---- Per-coin cost-breakdown columns (SVG) ------------------------------ */
 
-.stack-bar {
-  display: flex;
-  height: 1.4rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  overflow: hidden;
-  background: var(--surface-2);
-}
-.stack-seg {
-  height: 100%;
-  min-width: 2px;
-}
-.stack-seg + .stack-seg {
-  border-left: 1px solid var(--surface);
+.bar-seg {
+  stroke: var(--surface);
+  stroke-width: 0.5;
 }
 
 .legend {
@@ -508,7 +497,9 @@ button:disabled {
   flex: 0 0 auto;
 }
 
-/* Segment colours, shared by the bar and the legend swatches. */
+/* Segment colours. `.seg-*` paint the legend swatches (background); `.bar-*`
+   paint the SVG column segments (fill). Kept in lockstep so the chart and its
+   legend share one palette. */
 .seg-hammer {
   background: var(--accent);
 }
@@ -520,6 +511,18 @@ button:disabled {
 }
 .seg-unsplit {
   background: var(--muted);
+}
+.bar-hammer {
+  fill: var(--accent);
+}
+.bar-premium {
+  fill: color-mix(in srgb, var(--accent) 50%, var(--surface));
+}
+.bar-shipping {
+  fill: color-mix(in srgb, var(--primary) 55%, var(--surface));
+}
+.bar-unsplit {
+  fill: var(--muted);
 }
 
 /* ---- Coin overview (details left, image right) -------------------------- */

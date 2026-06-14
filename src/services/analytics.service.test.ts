@@ -122,10 +122,27 @@ describe("getPortfolioSummary", () => {
     repo.coinsForUser.mockResolvedValue(coins);
     const summary = await getPortfolioSummary("user-1", "USD");
     expect(summary.events).toEqual([
-      { id: "C1", label: "Romans", date: "2024-06-01", amount: 100, metal: "gold", category: "Romans", collection: "Rome", year: "2024", currency: "USD" },
-      { id: "C2", label: "Greek", date: "2025-03-01", amount: 220, metal: "silver", category: "Greek", collection: "Greek", year: "2025", currency: "EUR" },
-      { id: "C3", label: "Romans", date: "2025-06-01", amount: 50, metal: "gold", category: "Romans", collection: "Rome", year: "2025", currency: "USD" },
+      { id: "C1", label: "Romans", date: "2024-06-01", amount: 100, hammer: 80, premium: 15, shipping: 5, unsplit: 0, metal: "gold", category: "Romans", collection: "Rome", year: "2024", currency: "USD" },
+      { id: "C2", label: "Greek", date: "2025-03-01", amount: 220, hammer: 165, premium: 44, shipping: 11, unsplit: 0, metal: "silver", category: "Greek", collection: "Greek", year: "2025", currency: "EUR" },
+      { id: "C3", label: "Romans", date: "2025-06-01", amount: 50, hammer: 0, premium: 0, shipping: 0, unsplit: 50, metal: "gold", category: "Romans", collection: "Rome", year: "2025", currency: "USD" },
     ]);
+  });
+
+  it("attaches per-coin cost components that sum to the coin's total", async () => {
+    repo.coinsForUser.mockResolvedValue(coins);
+    const summary = await getPortfolioSummary("user-1", "USD");
+    for (const e of summary.events) {
+      expect(e.hammer + e.premium + e.shipping + e.unsplit).toBeCloseTo(e.amount);
+    }
+    // Partitioned coins split; final-only coins carry their whole cost in unsplit.
+    const c2 = summary.events.find((e) => e.id === "C2")!;
+    expect(c2.unsplit).toBe(0);
+    const c3 = summary.events.find((e) => e.id === "C3")!;
+    expect({ hammer: c3.hammer, premium: c3.premium, shipping: c3.shipping }).toEqual({
+      hammer: 0,
+      premium: 0,
+      shipping: 0,
+    });
   });
 
   it("labels missing metal/category and excludes undated coins from events", async () => {
@@ -135,7 +152,7 @@ describe("getPortfolioSummary", () => {
     ]);
     const summary = await getPortfolioSummary("user-1", "USD");
     expect(summary.events).toEqual([
-      { id: "D1", label: "Untitled coin", date: "2024-01-01", amount: 10, metal: "Unknown", category: "Uncategorized", collection: "Collection", year: "2024", currency: "USD" },
+      { id: "D1", label: "Untitled coin", date: "2024-01-01", amount: 10, hammer: 0, premium: 0, shipping: 0, unsplit: 10, metal: "Unknown", category: "Uncategorized", collection: "Collection", year: "2024", currency: "USD" },
     ]);
     // Both coins still count toward the total (the undated one just has no point).
     expect(summary.totalFinal).toBe(30);
