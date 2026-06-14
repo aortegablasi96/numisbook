@@ -302,7 +302,7 @@ Current stack:
 - Next.js App Router
 - React
 - TypeScript
-- Tailwind CSS
+- Dependency-free CSS design system (`src/app/globals.css`; no Tailwind/CSS-in-JS)
 
 ## Backend
 

@@ -33,7 +33,7 @@ npm install            # install dependencies
 npm run dev            # start the dev server (http://localhost:3000)
 npm run build          # production build
 npm start              # run the production build
-npm run lint           # eslint (next/core-web-vitals)
+npm run lint           # eslint (next/core-web-vitals) — note: `next lint` is removed in Next 16; see roadmap backlog "Migrate off deprecated next lint"
 npm test               # run unit tests once (Vitest)
 npm run test:watch     # tests in watch mode
 
@@ -207,6 +207,11 @@ desc). Page size is 20
 `{ coins, total, page, pageSize }`.
 
 `GET /api/collections/[id]/coins/facets` returns `{ metals: string[], categories: string[] }` — distinct non-null values for filter dropdowns.
+
+Coins have no `name` column (removed in the Data Model Reform, ADR-006). The
+display title is **derived** from attributes by `formatCoinTitle`
+(`src/lib/coin-format.ts`) — the single source of truth for a coin's title;
+search/sort operate on the underlying attributes, not a stored name.
 
 ## UI / Design system
 
