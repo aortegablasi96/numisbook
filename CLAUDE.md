@@ -408,6 +408,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `005-cloudflare-r2-initial-provider` — Cloudflare R2 as initial provider
 * `006-coin-and-valuation-attribute-rework` — Coin & valuation attribute rework (derived coin title, price paid vs. valuations, grade `pgEnum`, valuation link)
 * `007-portfolio-analytics-upgrade` — Portfolio Analytics Upgrade; the architectural decision within it is multi-currency support: per-user base currency + currency conversion via cached ECB rates (frankfurter.app) behind an `FxRateProvider` interface
+* `008-derived-overview-aggregates` — overview/list views surface derived aggregate fields (e.g. coin count per collection) via repository read-model queries, not denormalized counters
 
 (`template.md` is the scaffold for new ADRs.)
 
