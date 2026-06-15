@@ -1,8 +1,12 @@
 import type { AcquisitionEvent } from "@/services/analytics.service";
 
 // Shared, dependency-free helpers for the two portfolio SVG charts (TrendChart,
-// CostBreakdownChart): currency formatting, rounded y-axis ticks for gridlines,
-// and the date-range presets both charts filter by. Pure — unit-tested.
+// CostBreakdownChart): rounded y-axis ticks for gridlines and the date-range
+// presets both charts filter by. Pure — unit-tested. Currency formatting is the
+// app-wide `formatMoney`, re-exported here as `money` so the charts keep one
+// import site.
+
+export { formatMoney as money } from "@/lib/currencies";
 
 export const RANGES = [
   { label: "3M", days: 90 },
@@ -10,18 +14,6 @@ export const RANGES = [
   { label: "1Y", days: 365 },
   { label: "All", days: Infinity },
 ] as const;
-
-export function money(amount: number, currency: string, compact = false): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-      ...(compact ? { maximumFractionDigits: 0 } : {}),
-    }).format(amount);
-  } catch {
-    return `${compact ? Math.round(amount) : amount.toFixed(2)} ${currency}`;
-  }
-}
 
 // Round, human-friendly y-axis ticks from 0 up to at least `max`, so gridlines
 // land on values collectors can read off (10/20/50/100…). The last tick is the

@@ -220,6 +220,31 @@ main {
   border-color: var(--accent);
 }
 
+/* At-a-glance stat cards (home dashboard). Auto-fit so they sit in a row on
+   desktop and wrap on small screens. */
+.stats {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.stat-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 /* ---- Forms & buttons ---------------------------------------------------- */
 
 input,

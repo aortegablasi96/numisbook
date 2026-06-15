@@ -3,20 +3,9 @@ import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { setBaseCurrency } from "@/services/user.service";
 import { getPortfolioSummary } from "@/services/analytics.service";
-import { COMMON_CURRENCIES } from "@/lib/currencies";
+import { COMMON_CURRENCIES, formatMoney as money } from "@/lib/currencies";
 import { TrendChart } from "@/components/analytics/TrendChart";
 import { CostBreakdownChart } from "@/components/analytics/CostBreakdownChart";
-
-function money(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(2)} ${currency}`;
-  }
-}
 
 function BaseCurrencySelect({ selected }: { selected: string | null }) {
   async function update(formData: FormData) {

@@ -20,3 +20,25 @@ export const COMMON_CURRENCIES = [
 export function isCurrencyCode(value: string): boolean {
   return /^[A-Z]{3}$/.test(value);
 }
+
+/**
+ * Format a numeric amount as currency via `Intl`, falling back to a plain
+ * "amount CODE" string for unknown codes. `compact` drops the minor units
+ * (whole-number display, used by the charts' axis labels). Shared by the
+ * portfolio view, the home dashboard, and the analytics charts.
+ */
+export function formatMoney(
+  amount: number,
+  currency: string,
+  compact = false,
+): string {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      ...(compact ? { maximumFractionDigits: 0 } : {}),
+    }).format(amount);
+  } catch {
+    return `${compact ? Math.round(amount) : amount.toFixed(2)} ${currency}`;
+  }
+}
