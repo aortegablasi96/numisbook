@@ -53,18 +53,30 @@ Goal:
 Bring the existing MVP features and UI to a level of quality and completeness
 suitable for real collectors before preparing to deploy.
 
+## Shipped so far
+
+- Portfolio chart embellishment — side-by-side equal-height charts, gridlines,
+  per-segment allocation labels, coin thumbnails, date-range presets (ADR-007).
+- Coin count per collection on `/collections` (ADR-008).
+- Signed-in **home dashboard** — collection/coin counts and total paid (ADR-008).
+- **Accessibility & responsive pass** — WCAG AA contrast, `:focus-visible`,
+  skip-to-content link, `prefers-reduced-motion`, `.sr-only` labels, and
+  `.table-wrap` mobile scrolling; axe-clean on all pages in both colour schemes.
+
 ## Feature Refinement
 
 - [ ] Review and round out existing MVP features
-- [ ] Address rough edges and missing affordances
+- [ ] Address rough edges and missing affordances *(in progress: coin counts,
+  home dashboard)*
 
 ## UI/UX Polish
 
-- [ ] Enhance style and UX 
-- [ ] Visual consistency across views
+- [ ] Enhance style and UX *(in progress: charts, dashboard)*
+- [ ] Visual consistency across views *(in progress: shared `formatMoney`, stat
+  cards, chart styling)*
 - [ ] Empty / loading / error states
-- [ ] Responsive layout
-- [ ] Accessibility pass
+- [x] Responsive layout
+- [x] Accessibility pass
 
 ## Quality
 

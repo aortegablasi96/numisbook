@@ -7,10 +7,11 @@ Date: 2026-06-15
 ## Context
 
 The Embellishment milestone is rounding out overview/list screens with
-at-a-glance figures collectors expect. The first is a **coin count per
-collection** on `/collections`; more of the same shape are coming (a signed-in
-**home dashboard** with totals, and a per-collection **total value** once
-valuation-based analytics lands — see `docs/roadmap.md`).
+at-a-glance figures collectors expect. The first was a **coin count per
+collection** on `/collections`; the signed-in **home dashboard** (collection and
+coin counts plus total paid) followed, reusing the same `listCollections`
+aggregate. A per-collection **total value** will follow once valuation-based
+analytics lands (see `docs/roadmap.md`).
 
 These are all the same problem: a list (or summary) view needs a figure
 *derived* from a child aggregate (count/sum of `coins`) that the entity's own
@@ -75,8 +76,9 @@ Cons:
 ## Consequences
 
 Positive:
-* One consistent place and shape for overview aggregates; the next consumers
-  (home dashboard totals, per-collection value) follow the same recipe.
+* One consistent place and shape for overview aggregates; consumers follow the
+  same recipe — the `/collections` count and the home dashboard already do, and
+  per-collection value will.
 * No consistency/maintenance burden from denormalized counters.
 * Tenant isolation is inherited from existing owner-scoped queries.
 
