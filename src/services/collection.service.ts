@@ -1,6 +1,7 @@
 import {
   collectionRepository,
   type Collection,
+  type CollectionWithCount,
 } from "@/repositories/collection.repository";
 import { collectionNameSchema } from "@/lib/validation/collection";
 import { NotFoundError, ValidationError } from "@/lib/errors";
@@ -17,8 +18,10 @@ function normalizeName(name: string): string {
   return result.data;
 }
 
-export async function listCollections(userId: string): Promise<Collection[]> {
-  return collectionRepository.listByUser(userId);
+export async function listCollections(
+  userId: string,
+): Promise<CollectionWithCount[]> {
+  return collectionRepository.listByUserWithCounts(userId);
 }
 
 export async function getCollection(

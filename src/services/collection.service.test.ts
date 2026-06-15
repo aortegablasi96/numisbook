@@ -14,7 +14,7 @@ import { NotFoundError, ValidationError } from "@/lib/errors";
 
 vi.mock("@/repositories/collection.repository", () => ({
   collectionRepository: {
-    listByUser: vi.fn(),
+    listByUserWithCounts: vi.fn(),
     findByIdForUser: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -37,10 +37,11 @@ describe("collection.service", () => {
   });
 
   describe("listCollections", () => {
-    it("returns the user's collections", async () => {
-      repo.listByUser.mockResolvedValue([fakeCollection]);
-      expect(await listCollections("user-1")).toEqual([fakeCollection]);
-      expect(repo.listByUser).toHaveBeenCalledWith("user-1");
+    it("returns the user's collections with their coin counts", async () => {
+      const withCount = { ...fakeCollection, coinCount: 3 };
+      repo.listByUserWithCounts.mockResolvedValue([withCount]);
+      expect(await listCollections("user-1")).toEqual([withCount]);
+      expect(repo.listByUserWithCounts).toHaveBeenCalledWith("user-1");
     });
   });
 

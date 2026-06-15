@@ -1,17 +1,31 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { collections } from "@/db/schema";
+import { coins, collections } from "@/db/schema";
 
 export type Collection = typeof collections.$inferSelect;
+export type CollectionWithCount = Collection & { coinCount: number };
 
 // Data access for the collections aggregate. Only this layer touches the
 // database; methods are intention-revealing and return domain-shaped rows.
 export const collectionRepository = {
-  async listByUser(userId: string): Promise<Collection[]> {
+  /**
+   * The user's collections, each with the number of coins it holds. The LEFT
+   * JOIN keeps empty collections (count 0); scoping by `collections.userId`
+   * keeps the counts tenant-isolated (only the owner's collections are joined).
+   */
+  async listByUserWithCounts(userId: string): Promise<CollectionWithCount[]> {
     return db
-      .select()
+      .select({
+        id: collections.id,
+        userId: collections.userId,
+        name: collections.name,
+        createdAt: collections.createdAt,
+        coinCount: sql<number>`count(${coins.id})::int`,
+      })
       .from(collections)
+      .leftJoin(coins, eq(coins.collectionId, collections.id))
       .where(eq(collections.userId, userId))
+      .groupBy(collections.id)
       .orderBy(desc(collections.createdAt));
   },
 

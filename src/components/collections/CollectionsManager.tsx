@@ -7,6 +7,7 @@ import { ConfirmButton } from "@/components/ui/ConfirmButton";
 export type CollectionView = {
   id: string;
   name: string;
+  coinCount: number;
 };
 
 async function readError(response: Response): Promise<string> {
@@ -50,8 +51,11 @@ export function CollectionsManager({
         setError(await readError(response));
         return;
       }
-      const { collection } = (await response.json()) as { collection: CollectionView };
-      setCollections((prev) => [collection, ...prev]);
+      // The API returns the new collection without a count; it has no coins yet.
+      const { collection } = (await response.json()) as {
+        collection: { id: string; name: string };
+      };
+      setCollections((prev) => [{ ...collection, coinCount: 0 }, ...prev]);
       setNewName("");
       setShowAddForm(false);
     } finally {
@@ -80,8 +84,13 @@ export function CollectionsManager({
         setError(await readError(response));
         return;
       }
-      const { collection } = (await response.json()) as { collection: CollectionView };
-      setCollections((prev) => prev.map((c) => (c.id === collection.id ? collection : c)));
+      // Rename returns name only; keep each row's existing coin count.
+      const { collection } = (await response.json()) as {
+        collection: { id: string; name: string };
+      };
+      setCollections((prev) =>
+        prev.map((c) => (c.id === collection.id ? { ...c, name: collection.name } : c)),
+      );
       setEditingId(null);
       setEditingName("");
     } finally {
@@ -160,6 +169,7 @@ export function CollectionsManager({
           <thead>
             <tr>
               <th>Name</th>
+              <th className="td-num">Coins</th>
               <th />
             </tr>
           </thead>
@@ -198,6 +208,9 @@ export function CollectionsManager({
                       {collection.name}
                     </Link>
                   )}
+                </td>
+                <td className="td-num muted">
+                  {collection.coinCount}
                 </td>
                 <td className="td-actions">
                   {editingId !== collection.id && (

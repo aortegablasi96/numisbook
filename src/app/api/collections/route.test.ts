@@ -55,13 +55,16 @@ describe("GET /api/collections", () => {
 
   it("returns the signed-in user's collections", async () => {
     signedIn();
-    const rows = [{ id: "c1", userId: "u1", name: "Rome", createdAt: new Date() }];
+    const rows = [
+      { id: "c1", userId: "u1", name: "Rome", createdAt: new Date(), coinCount: 4 },
+    ];
     vi.mocked(listCollections).mockResolvedValue(rows);
     const res = await GET();
     expect(res.status).toBe(200);
     expect(listCollections).toHaveBeenCalledWith("u1");
     const body = await res.json();
     expect(body.collections).toHaveLength(1);
+    expect(body.collections[0].coinCount).toBe(4);
   });
 });
 

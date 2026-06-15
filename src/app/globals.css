@@ -370,6 +370,14 @@ button:disabled {
   width: 344px;
   padding-right: 0;
 }
+/* Right-aligned numeric column (e.g. coin counts), tabular figures so digits
+   line up; applies to both the header cell and the body cell. */
+.data-table .td-num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  width: 1%;
+}
 .data-table .thumb {
   display: block;
 }
