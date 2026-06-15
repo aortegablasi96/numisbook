@@ -90,8 +90,9 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   import repositories; data comes via props, Server Components, or the API.
   Components are organized by domain: `src/components/{collections,coins,
   valuations,assistant,analytics}/`; shared primitives in `src/components/ui/`;
-  shell in `src/components/layout/`. (`analytics/TrendChart` is the client SVG
-  trend chart rendered by the server `/portfolio` page.) Each domain has a client-side "manager" that owns its
+  shell in `src/components/layout/`. (`analytics/TrendChart` and
+  `analytics/CostBreakdownChart` are dependency-free SVG charts rendered by the
+  server `/portfolio` page.) Each domain has a client-side "manager" that owns its
   view and talks to the API: `CollectionsManager`, `CoinsManager` (+ the
   `CoinDetailsCard` / `CoinImage` detail views), `ValuationsManager`, and
   `AssistantWidget`; `SiteHeader` (layout) and `ConfirmButton` (ui) are the
