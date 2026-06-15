@@ -360,10 +360,13 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
           {total === 0 ? "No coins yet. Use the button above to add one." : "No coins match the current filters."}
         </p>
       ) : (
+        <div className="table-wrap">
         <table className="data-table">
           <thead>
             <tr>
-              <th className="td-thumb" />
+              <th className="td-thumb">
+                <span className="sr-only">Image</span>
+              </th>
               {visibleCols.map((col) => {
                 const def = defFor(col.key);
                 const isDragOver = headerDropKey === col.key && headerDragKey !== col.key;
@@ -391,7 +394,9 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
                   </th>
                 );
               })}
-              <th />
+              <th>
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -417,6 +422,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {totalPages > 1 && (

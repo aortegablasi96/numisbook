@@ -239,6 +239,13 @@ The app uses a **dependency-free CSS design system** defined entirely in
 Do not introduce a CSS-in-JS library or a component framework (e.g. Tailwind,
 shadcn, MUI) — extend `globals.css` instead.
 
+**Accessibility conventions** (in `globals.css`; preserve when adding UI): theme
+tokens meet WCAG AA contrast, `:focus-visible` outlines cover links/buttons/inputs,
+a skip-to-content link targets `#main-content`, animations/transitions honour
+`prefers-reduced-motion`, and `.sr-only` labels icon-only/empty controls. Wrap
+wide data tables in `.table-wrap` (scrolls in-region on mobile). Verify with axe
+(no violations) in both colour schemes.
+
 **Destructive actions** use `<ConfirmButton>` (`src/components/ui/ConfirmButton.tsx`),
 a reusable `<dialog>`-based confirmation prompt. Use it for deletes instead of
 `window.confirm`.

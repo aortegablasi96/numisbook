@@ -165,12 +165,15 @@ export function CollectionsManager({
       ) : visible.length === 0 ? (
         <p className="empty">No collections match &ldquo;{filter}&rdquo;.</p>
       ) : (
+        <div className="table-wrap">
         <table className="data-table">
           <thead>
             <tr>
               <th>Name</th>
               <th className="td-num">Coins</th>
-              <th />
+              <th>
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -238,6 +241,7 @@ export function CollectionsManager({
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </section>
   );
