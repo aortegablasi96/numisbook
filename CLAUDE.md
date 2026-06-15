@@ -46,9 +46,20 @@ npm run db:studio      # open Drizzle Studio
 
 Run a single test file: `npx vitest run path/to/file.test.ts`.
 
-A read-only **`postgres` MCP server** is available in this environment for
-ad-hoc inspection of the dev database (e.g. checking rows during debugging).
-Use it for reads only — never as a substitute for the repository layer.
+### MCP servers
+
+These MCP servers are available in this environment for working on the project:
+
+* **`postgres`** — read-only access to the dev database, for ad-hoc inspection
+  (e.g. checking rows while debugging). Reads only — never a substitute for the
+  repository layer.
+* **`context7`** — fetches current docs for libraries/frameworks (Next, React,
+  Drizzle, Zod, etc.). Prefer it over training memory or web search for
+  library/API/CLI usage.
+* **`playwright`** — drives a real browser; use for end-to-end checks of the
+  running app (`npm run dev`) and screenshots.
+* **`filesystem`** — file operations within allowed directories (the built-in
+  file tools are usually sufficient; this is a fallback).
 
 Local setup: copy `.env.example` to `.env`, set `DATABASE_URL` (and the Auth.js
 vars below to enable sign-in), then
@@ -163,7 +174,8 @@ touch the signed-in user's data. Requires `OPENAI_API_KEY`; without it the route
 returns 503 and the rest of the app works.
 
 The assistant is rendered as a floating widget (`AssistantWidget`) injected into
-the root layout, auth-gated by a Server Component wrapper (`FloatingAssistant`).
+the root layout, auth-gated by a Server Component wrapper (`FloatingAssistant`,
+defined inline in `src/app/layout.tsx`).
 
 ## Coin images
 
