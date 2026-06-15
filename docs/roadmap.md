@@ -46,36 +46,6 @@ Current priorities:
 
 ---
 
-# Completed Milestone — Portfolio Analytics Upgrade
-
-Complete. Analytics is based on the **price paid** per coin (hammer + final
-price), expressed in one base currency: total paid, allocation breakdowns (metal,
-category, acquisition year, collection), per-collection comparison, a cumulative
-acquisition-cost trend chart, and multi-currency support (per-user base currency
-+ ECB FX conversion). See `history.md` (Phase 6) and
-`docs/decisions/007-portfolio-analytics-upgrade.md`.
-
-> Valuation-based current value, gain/loss, and performance indicators were
-> **deferred** to a later stage (they depend on valuation tracking maturing) —
-> see the Valuation-Based Analytics milestone below.
-
----
-
-# Future Milestone — Valuation-Based Analytics
-
-Goal:
-
-Layer market value on top of the price-paid analytics once valuation tracking is
-mature.
-
-## Features
-
-- [ ] Current value from latest valuations (in the base currency)
-- [ ] Gain/loss vs. price paid (absolute + %), portfolio and per collection
-- [ ] Performance indicators and value-over-time (market) trend
-
----
-
 # Next Milestone — Embellishment
 
 Goal:
@@ -100,6 +70,21 @@ suitable for real collectors before preparing to deploy.
 
 - [ ] Bug fixing
 - [ ] Usability improvements
+
+---
+
+# Future Milestone — Valuation-Based Analytics
+
+Goal:
+
+Layer market value on top of the price-paid analytics once valuation tracking is
+mature.
+
+## Features
+
+- [ ] Current value from latest valuations (in the base currency)
+- [ ] Gain/loss vs. price paid (absolute + %), portfolio and per collection
+- [ ] Performance indicators and value-over-time (market) trend
 
 ---
 
