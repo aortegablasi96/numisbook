@@ -1,6 +1,6 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { coins, collections } from "@/db/schema";
+import { coins, coinImages, collections } from "@/db/schema";
 
 // One coin with the data the portfolio read-model needs, scoped to a user. The
 // service derives portfolio figures (totals, allocation, acquisition-cost trend)
@@ -25,6 +25,7 @@ export type PortfolioCoinRow = {
   finalPrice: string | null;
   priceCurrency: string | null;
   auctionDate: string | null; // YYYY-MM-DD
+  firstImageId: string | null; // oldest coin image, for the cost-breakdown avatar
 };
 
 // Read-model data access for analytics. Joins across aggregates for reporting;
@@ -50,6 +51,14 @@ export const analyticsRepository = {
         finalPrice: coins.finalPrice,
         priceCurrency: coins.priceCurrency,
         auctionDate: coins.auctionDate,
+        // Oldest image per coin (NULL when the coin has none); the cost-breakdown
+        // chart draws it as an avatar above the coin's column.
+        firstImageId: sql<string | null>`(
+          SELECT ci.id FROM ${coinImages} ci
+          WHERE ci.coin_id = ${coins.id}
+          ORDER BY ci.created_at ASC, ci.id ASC
+          LIMIT 1
+        )`,
       })
       .from(coins)
       .innerJoin(collections, eq(coins.collectionId, collections.id))

@@ -2,19 +2,13 @@
 
 import { useMemo, useState } from "react";
 import type { AcquisitionEvent } from "@/services/analytics.service";
+import { RANGES, money, niceTicks } from "./chart-utils";
 
 // Dependency-free SVG area chart for the cumulative acquisition-cost trend, with
 // date-range presets and per-dimension multi-select filters (metal, category,
 // collection, year, currency). Conversion to the base currency happens in the
 // analytics service; this component only filters the already-converted events
 // and accumulates them into a running total — presentational view logic.
-
-const RANGES = [
-  { label: "3M", days: 90 },
-  { label: "6M", days: 182 },
-  { label: "1Y", days: 365 },
-  { label: "All", days: Infinity },
-] as const;
 
 const DIMENSIONS = [
   { key: "metal", label: "Metal" },
@@ -34,26 +28,16 @@ const emptySelection = (): Selection => ({
   currency: [],
 });
 
-const W = 720;
-const H = 220;
+// Same aspect ratio as the cost-breakdown chart so the two render at equal height
+// when laid out side by side at equal column widths.
+const W = 480;
+const H = 300;
 const PAD = { top: 16, right: 16, bottom: 28, left: 64 };
 const INNER_W = W - PAD.left - PAD.right;
 const INNER_H = H - PAD.top - PAD.bottom;
 
 const ms = (date: string): number => Date.parse(date);
 const round2 = (n: number): number => Math.round(n * 100) / 100;
-
-function money(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `${Math.round(amount)} ${currency}`;
-  }
-}
 
 type TrendPoint = { date: string; total: number };
 
@@ -262,7 +246,12 @@ function ChartSvg({
       : "";
 
   const last = data[data.length - 1];
-  const label = `${title}. Latest ${money(last.total, currency)} on ${last.date}.`;
+  const label = `${title}. Latest ${money(last.total, currency, true)} on ${last.date}.`;
+
+  // Horizontal gridlines at rounded values, mirroring the cost-breakdown chart so
+  // the cumulative total is as easy to read off. yMin is 0 for real data; clamp
+  // ticks to the visible band so a degenerate (single-point) range stays sane.
+  const gridTicks = niceTicks(yMax).filter((t) => t >= yMin && t <= yMax);
 
   return (
     <svg
@@ -272,12 +261,14 @@ function ChartSvg({
       aria-label={label}
       style={{ height: "auto", display: "block" }}
     >
-      <text x={PAD.left - 8} y={PAD.top + 4} textAnchor="end" className="chart-axis">
-        {money(yMax, currency)}
-      </text>
-      <text x={PAD.left - 8} y={baseline} textAnchor="end" className="chart-axis">
-        {money(yMin, currency)}
-      </text>
+      {gridTicks.map((t) => (
+        <g key={t}>
+          <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} className="chart-grid" />
+          <text x={PAD.left - 8} y={y(t) + 3} textAnchor="end" className="chart-axis">
+            {money(t, currency, true)}
+          </text>
+        </g>
+      ))}
       <text x={PAD.left} y={H - 8} textAnchor="start" className="chart-axis">
         {data[0].date}
       </text>

@@ -39,6 +39,7 @@ export type AcquisitionEvent = {
   collection: string;
   year: string; // acquisition year
   currency: string; // native price currency
+  imageId: string | null; // oldest coin image id, for the cost-breakdown avatar
 };
 
 // Total cost split into its components, base currency. Coins entered with the
@@ -205,6 +206,7 @@ export async function getPortfolioSummary(
         collection: row.collectionName,
         year: auctionDate.slice(0, 4),
         currency: currency!,
+        imageId: row.firstImageId,
       });
     }
   }

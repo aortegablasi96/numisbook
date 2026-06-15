@@ -33,6 +33,7 @@ function row(
     finalPrice: null,
     priceCurrency: null,
     auctionDate: null,
+    firstImageId: null,
     ...partial,
   };
 }
@@ -122,10 +123,19 @@ describe("getPortfolioSummary", () => {
     repo.coinsForUser.mockResolvedValue(coins);
     const summary = await getPortfolioSummary("user-1", "USD");
     expect(summary.events).toEqual([
-      { id: "C1", label: "Romans", date: "2024-06-01", amount: 100, hammer: 80, premium: 15, shipping: 5, unsplit: 0, metal: "gold", category: "Romans", collection: "Rome", year: "2024", currency: "USD" },
-      { id: "C2", label: "Greek", date: "2025-03-01", amount: 220, hammer: 165, premium: 44, shipping: 11, unsplit: 0, metal: "silver", category: "Greek", collection: "Greek", year: "2025", currency: "EUR" },
-      { id: "C3", label: "Romans", date: "2025-06-01", amount: 50, hammer: 0, premium: 0, shipping: 0, unsplit: 50, metal: "gold", category: "Romans", collection: "Rome", year: "2025", currency: "USD" },
+      { id: "C1", label: "Romans", date: "2024-06-01", amount: 100, hammer: 80, premium: 15, shipping: 5, unsplit: 0, metal: "gold", category: "Romans", collection: "Rome", year: "2024", currency: "USD", imageId: null },
+      { id: "C2", label: "Greek", date: "2025-03-01", amount: 220, hammer: 165, premium: 44, shipping: 11, unsplit: 0, metal: "silver", category: "Greek", collection: "Greek", year: "2025", currency: "EUR", imageId: null },
+      { id: "C3", label: "Romans", date: "2025-06-01", amount: 50, hammer: 0, premium: 0, shipping: 0, unsplit: 50, metal: "gold", category: "Romans", collection: "Rome", year: "2025", currency: "USD", imageId: null },
     ]);
+  });
+
+  it("carries each coin's first image id onto its event (null when none)", async () => {
+    repo.coinsForUser.mockResolvedValue([
+      row({ coinId: "I1", finalPrice: "10.00", priceCurrency: "USD", auctionDate: "2024-01-01", firstImageId: "img-1" }),
+      row({ coinId: "I2", finalPrice: "20.00", priceCurrency: "USD", auctionDate: "2024-02-01" }),
+    ]);
+    const summary = await getPortfolioSummary("user-1", "USD");
+    expect(summary.events.map((e) => e.imageId)).toEqual(["img-1", null]);
   });
 
   it("attaches per-coin cost components that sum to the coin's total", async () => {
@@ -152,7 +162,7 @@ describe("getPortfolioSummary", () => {
     ]);
     const summary = await getPortfolioSummary("user-1", "USD");
     expect(summary.events).toEqual([
-      { id: "D1", label: "Untitled coin", date: "2024-01-01", amount: 10, hammer: 0, premium: 0, shipping: 0, unsplit: 10, metal: "Unknown", category: "Uncategorized", collection: "Collection", year: "2024", currency: "USD" },
+      { id: "D1", label: "Untitled coin", date: "2024-01-01", amount: 10, hammer: 0, premium: 0, shipping: 0, unsplit: 10, metal: "Unknown", category: "Uncategorized", collection: "Collection", year: "2024", currency: "USD", imageId: null },
     ]);
     // Both coins still count toward the total (the undated one just has no point).
     expect(summary.totalFinal).toBe(30);

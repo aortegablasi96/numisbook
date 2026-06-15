@@ -422,7 +422,7 @@ button:disabled {
 
 .chart-axis {
   fill: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.58rem; /* small enough that wide labels (e.g. "CHF 3,000") fit */
 }
 .chart-line {
   stroke: var(--accent);
@@ -465,29 +465,81 @@ button:disabled {
   color: var(--muted);
 }
 
+/* ---- Side-by-side analytics layout -------------------------------------- */
+
+/* Trend chart (left) and cost breakdown (right) at the same level; collapses to
+   a single column when there isn't room for two. */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+.analytics-grid > * {
+  min-width: 0; /* let the SVGs shrink with the column instead of overflowing */
+}
+@media (max-width: 860px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---- Per-coin cost-breakdown columns (SVG) ------------------------------ */
 
 .bar-seg {
   stroke: var(--surface);
   stroke-width: 0.5;
 }
+.chart-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  opacity: 0.6;
+}
+/* Coin's total cost, above its column. */
+.bar-total {
+  fill: var(--text);
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+/* Per-segment share, drawn inside the segment. The surface-coloured outline
+   (paint-order: stroke) keeps it legible on any segment fill and in both themes,
+   where the accent/primary fills swap lightness. */
+.bar-seg-label {
+  fill: var(--text);
+  stroke: var(--surface);
+  stroke-width: 2.5px;
+  paint-order: stroke;
+  font-size: 0.55rem;
+  font-weight: 700;
+}
+.bar-avatar-ring {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
 
-.legend {
+/* Cost-breakdown segment legend, sitting top-right under the title row. Compact
+   and horizontal so it occupies the header band (aligning the plot start with the
+   trend chart) rather than a tall block below the chart. */
+.legend-top {
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.legend-inline {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.8rem;
 }
-.legend > li {
+.legend-inline > li {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-}
-.legend .grow {
-  flex: 1;
-  min-width: 0;
+  gap: 0.3rem;
 }
 .swatch {
   display: inline-block;

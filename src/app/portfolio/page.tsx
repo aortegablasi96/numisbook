@@ -109,9 +109,10 @@ export default async function PortfolioPage() {
             </span>
           </section>
 
-          <CostBreakdownChart events={summary.events} currency={baseCurrency} />
-
-          <TrendChart events={summary.events} currency={baseCurrency} />
+          <div className="analytics-grid">
+            <TrendChart events={summary.events} currency={baseCurrency} />
+            <CostBreakdownChart events={summary.events} currency={baseCurrency} />
+          </div>
         </>
       )}
     </main>

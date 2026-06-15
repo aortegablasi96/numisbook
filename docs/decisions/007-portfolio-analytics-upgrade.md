@@ -12,7 +12,8 @@
 
 Status: Accepted
 
-Date: 2026-06-10 (updated 2026-06-11; presentation revised 2026-06-15)
+Date: 2026-06-10 (updated 2026-06-11; presentation revised 2026-06-15,
+embellished 2026-06-15)
 
 > **Revision (2026-06-15).** The presentation was refined after review: the
 > redundant "Coins by share of cost" chart was removed, and the cost breakdown
@@ -21,6 +22,27 @@ Date: 2026-06-10 (updated 2026-06-11; presentation revised 2026-06-15)
 > conversion decision below is unchanged — so this ADR is updated in place rather
 > than superseded. The "Analytics & presentation" subsection records the current
 > shape.
+>
+> **Embellishment (2026-06-15).** During the Embellishment milestone the two
+> charts were placed **side by side** at **equal height** (acquisition-cost
+> timeline left, cost breakdown right; both SVGs share one aspect ratio so equal
+> columns render the same height; collapses to one column on narrow screens). The
+> cost breakdown gained **horizontal gridlines** at rounded values, **per-segment
+> allocation labels** (each segment's share of that coin's cost — e.g. 80% hammer
+> / 18% premium), the **coin's total price** above each column, and a **coin
+> thumbnail** crowning it. The thumbnail required one read-model addition — the
+> coin's first image id (`AcquisitionEvent.imageId`, sourced by
+> `analyticsRepository`) — so the chart can address the existing cached
+> image-resize endpoint; no schema change.
+>
+> A follow-up pass aligned the two charts more closely: the **timeline gained the
+> same rounded gridlines**, the cost breakdown gained the **same date-range
+> presets** (3M/6M/1Y/All) and moved its segment **legend to a compact top-right
+> row** (so its plot starts at roughly the trend chart's height), axis-label text
+> was shrunk to fit wide currency labels, and the shared chart helpers (currency
+> formatting, `niceTicks`, range filtering) were extracted to
+> `components/analytics/chart-utils.ts`. Still a UI refinement: the conversion
+> decision is unchanged.
 
 ## Context
 
@@ -135,21 +157,40 @@ Risks:
 The `/portfolio` view is built from the converted figures the service produces —
 `totalFinal`, an aggregate `costBreakdown` (for the header line), and a list of
 per-coin `AcquisitionEvent`s (date + base-currency amount + its hammer / premium /
-shipping / "final only" split + dimension labels):
+shipping / "final only" split + dimension labels + the coin's first `imageId`).
+Below the header total the two charts sit **side by side** at **equal height** —
+acquisition-cost timeline on the left, cost breakdown on the right — collapsing to
+a single column on narrow screens (`.analytics-grid`). The two SVGs share one
+aspect ratio so, at equal column widths, they render the same height.
 
 * **Cost breakdown** — a **per-coin** chart: one vertical column per coin,
   ordered left→right by acquisition (hammer) date, each column stacked into its
   price-paid components (hammer, premium, shipping) or a single "final only"
   segment for coins entered with just a final price. Column height is the coin's
-  total cost; a legend reports each component's total across the shown coins.
-  Dependency-free SVG, mirroring the trend chart. Only dated, convertible coins
-  appear (undated coins have no place on the date axis but still count toward the
-  header `totalFinal`).
-* **Acquisition-cost timeline** — the cumulative cost trend, with multi-select
-  per-dimension filters (metal, category, collection, year, currency). The
-  filters and the running total are computed client-side from the events; they
-  **replace** the previous static allocation and per-collection comparison
-  tables (those dimensions are now the timeline's filters).
+  total cost. **Horizontal gridlines** at rounded values (`niceTicks`) make
+  columns comparable. Each segment is labelled with its **share of that coin's
+  cost** (e.g. 80% hammer / 18% premium / 2% shipping) — drawn with a
+  surface-coloured text outline (`paint-order: stroke`) so it stays legible on any
+  segment fill and in both themes, and skipped for segments too short to hold the
+  text (still in the hover tooltip, which also lists the per-segment amounts). The
+  coin's **total price** sits above each column, and — when columns are wide
+  enough — a circular **coin thumbnail** crowns it (served from the cached
+  `/api/coins/[id]/images/[imageId]?w=…` endpoint via `AcquisitionEvent.imageId`;
+  coins without an image simply show none). Thumbnails and labels are dropped
+  automatically when columns get too thin to avoid clutter. A **date-range preset**
+  (3M/6M/1Y/All) narrows the coins shown, and a compact **segment legend** sits
+  top-right reporting each component's share across them. Dependency-free SVG,
+  mirroring the trend chart. Only dated, convertible coins appear (undated coins
+  have no place on the date axis but still count toward the header `totalFinal`).
+* **Acquisition-cost timeline** — the cumulative cost trend, with the same rounded
+  **gridlines** and multi-select per-dimension filters (metal, category,
+  collection, year, currency). The filters and the running total are computed
+  client-side from the events; they **replace** the previous static allocation and
+  per-collection comparison tables (those dimensions are now the timeline's
+  filters).
+
+Both charts share the currency formatting, `niceTicks` gridline values, and
+date-range filtering from `components/analytics/chart-utils.ts`.
 
 > A separate "coins by share of cost" stacked bar was tried and removed
 > (2026-06-15): it duplicated information the per-coin breakdown and the timeline
