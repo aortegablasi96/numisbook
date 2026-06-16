@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Coin } from "@/repositories/coin.repository";
 import { COIN_GRADES } from "@/lib/validation/coin";
 import { formatCoinTitle, formatCoinCharacteristics } from "@/lib/coin-format";
+import { readError, NETWORK_ERROR } from "@/lib/http";
 
 type CoinFields = Pick<
   Coin,
@@ -187,13 +188,14 @@ export function CoinDetailsCard({
         body: JSON.stringify(toPayload(form)),
       });
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(data.error ?? "Save failed. Please try again.");
+        setError(await readError(res, "Save failed. Please try again."));
         return;
       }
       const { coin: updated } = (await res.json()) as { coin: CoinFields };
       setCurrent(updated);
       setEditing(false);
+    } catch {
+      setError(NETWORK_ERROR);
     } finally {
       setBusy(false);
     }

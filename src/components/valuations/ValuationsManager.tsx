@@ -36,15 +36,19 @@ export function ValuationsManager({
   coinId,
   initialValuations,
   className = "card stack",
+  defaultCurrency = "USD",
 }: {
   coinId: string;
   initialValuations: ValuationView[];
   className?: string;
+  // Pre-selects the currency for a new valuation; the coin's price currency (or
+  // the user's base currency) is a far better default than a hard-coded USD.
+  defaultCurrency?: string;
 }) {
   const [valuations, setValuations] =
     useState<ValuationView[]>(initialValuations);
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(defaultCurrency);
   const [source, setSource] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [valuedAt, setValuedAt] = useState(today());

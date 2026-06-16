@@ -75,16 +75,19 @@ suitable for real collectors before preparing to deploy.
   collection's cost (base currency) beside the coin count, via `getCollectionCosts`
   (monetary rollups extend the ADR-008 pattern: counts in SQL, converted sums in
   the service over the shared FX converter).
+- **Bug fix & usability** — `CoinDetailsCard` save was missing network-error
+  handling (silent failure); brought it onto the shared `readError`/`NETWORK_ERROR`.
+  New valuations now default the currency to the coin's price currency (or the
+  user's base currency) instead of a hard-coded USD.
 
 ## Feature Refinement
 
-- [ ] Review and round out existing MVP features
-- [ ] Address rough edges and missing affordances *(in progress: coin counts,
-  home dashboard)*
+- [x] Review and round out existing MVP features
+- [x] Address rough edges and missing affordances
 
 ## UI/UX Polish
 
-- [ ] Enhance style and UX *(in progress: charts, dashboard)*
+- [x] Enhance style and UX
 - [x] Visual consistency across views
 - [x] Empty / loading / error states
 - [x] Responsive layout
@@ -92,8 +95,8 @@ suitable for real collectors before preparing to deploy.
 
 ## Quality
 
-- [ ] Bug fixing
-- [ ] Usability improvements
+- [x] Bug fixing
+- [x] Usability improvements
 
 ---
 

@@ -67,7 +67,12 @@ export default async function CoinDetailPage({
       </p>
       <div className="coin-overview">
         <CoinDetailsCard coin={coin} coinId={id}>
-          <ValuationsManager coinId={id} initialValuations={valuationViews} className="stack" />
+          <ValuationsManager
+            coinId={id}
+            initialValuations={valuationViews}
+            className="stack"
+            defaultCurrency={coin.priceCurrency ?? user.baseCurrency ?? "USD"}
+          />
           <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>Added {addedLabel}</p>
         </CoinDetailsCard>
         <CoinImage coinId={id} />
