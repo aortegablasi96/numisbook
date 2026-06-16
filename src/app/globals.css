@@ -857,6 +857,29 @@ button:disabled {
   border-radius: 6px;
   border: 1px solid var(--border);
   flex: none;
+  background: var(--surface-2); /* neutral box shows behind an image while it loads */
+}
+/* A no-image coin shows a neutral placeholder box (same footprint as a thumb)
+   so the column reads as intentional rather than blank. */
+.thumb-empty {
+  background: var(--surface-2);
+}
+
+/* Loading placeholder: a subtly pulsing neutral block, used while client-fetched
+   images resolve (coin list thumbnails and the detail image card) so they don't
+   flash blank. The pulse is disabled under prefers-reduced-motion (see below). */
+.skeleton {
+  background: var(--surface-2);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 /* ---- Lightbox ----------------------------------------------------------- */

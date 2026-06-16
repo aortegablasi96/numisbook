@@ -135,7 +135,18 @@ export function CoinImage({ coinId }: { coinId: string }) {
     }
   }
 
-  if (!loaded) return <section className="card coin-image-card" />;
+  if (!loaded)
+    return (
+      <section className="card coin-image-card" aria-busy="true">
+        <div className="coin-photo-wrap">
+          <span
+            className="skeleton"
+            style={{ width: "100%", height: "100%", minHeight: "12rem" }}
+            aria-hidden
+          />
+        </div>
+      </section>
+    );
 
   return (
     <section className="card coin-image-card">

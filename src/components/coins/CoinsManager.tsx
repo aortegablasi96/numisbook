@@ -257,8 +257,8 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
 
   return (
     <section className="stack">
-      {/* Toolbar */}
-      <div className="filters" style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
+      {/* Toolbar: filters on the left, actions on the right (wraps on narrow screens) */}
+      <div className="toolbar" style={{ justifyContent: "space-between" }}>
         <div className="row" style={{ flexWrap: "wrap", gap: "0.5rem", flex: 1, alignItems: "flex-end" }}>
           <label>
             Search
@@ -509,8 +509,11 @@ const CoinThumb = memo(function CoinThumb({ coinId }: { coinId: string }) {
       .catch(() => setImageIds([]));
   }, [coinId]);
 
-  if (!imageIds?.length)
-    return <span style={{ display: "block", width: 160, height: 160 }} />;
+  // null = still loading (pulsing skeleton); [] = coin has no image (static box).
+  if (imageIds === null)
+    return <span className="thumb skeleton" aria-hidden />;
+  if (imageIds.length === 0)
+    return <span className="thumb thumb-empty" aria-hidden />;
 
   return (
     <span style={{ display: "flex", gap: "0.4rem" }}>

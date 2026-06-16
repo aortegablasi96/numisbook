@@ -57,7 +57,8 @@ export default async function CoinDetailPage({
     valuedAt: v.valuedAt.toISOString(),
   }));
 
-  const addedLabel = coin.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  // ISO date to match the app's convention (valuation dates, chart axes).
+  const addedLabel = coin.createdAt.toISOString().slice(0, 10);
 
   return (
     <main className="stack">

@@ -65,6 +65,12 @@ suitable for real collectors before preparing to deploy.
 - **Error-state resilience** — shared `lib/http` (`readError` + `NETWORK_ERROR`);
   every client manager now surfaces a friendly message on network failure instead
   of failing silently.
+- **Visual-consistency pass** — fixed the coin-list toolbar (a real layout bug:
+  reused the column-flex `.filters`; now a horizontal `.toolbar`), added loading
+  skeletons / neutral placeholders for coin thumbnails and the detail image card
+  (no more blank flash), and aligned the coin "Added" date to the app's ISO
+  convention. Builds on the earlier shared `formatMoney`/`readError` and stat-card
+  styling.
 
 ## Feature Refinement
 
@@ -75,8 +81,7 @@ suitable for real collectors before preparing to deploy.
 ## UI/UX Polish
 
 - [ ] Enhance style and UX *(in progress: charts, dashboard)*
-- [ ] Visual consistency across views *(in progress: shared `formatMoney`, stat
-  cards, chart styling, shared `readError`)*
+- [x] Visual consistency across views
 - [x] Empty / loading / error states
 - [x] Responsive layout
 - [x] Accessibility pass
