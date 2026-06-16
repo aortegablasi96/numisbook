@@ -3,21 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import { readError, NETWORK_ERROR } from "@/lib/http";
 
 export type CollectionView = {
   id: string;
   name: string;
   coinCount: number;
 };
-
-async function readError(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string };
-    return body.error ?? "Something went wrong";
-  } catch {
-    return "Something went wrong";
-  }
-}
 
 export function CollectionsManager({
   initialCollections,
@@ -58,6 +50,8 @@ export function CollectionsManager({
       setCollections((prev) => [{ ...collection, coinCount: 0 }, ...prev]);
       setNewName("");
       setShowAddForm(false);
+    } catch {
+      setError(NETWORK_ERROR);
     } finally {
       setBusy(false);
     }
@@ -93,6 +87,8 @@ export function CollectionsManager({
       );
       setEditingId(null);
       setEditingName("");
+    } catch {
+      setError(NETWORK_ERROR);
     } finally {
       setBusy(false);
     }
@@ -108,6 +104,8 @@ export function CollectionsManager({
         return;
       }
       setCollections((prev) => prev.filter((c) => c.id !== id));
+    } catch {
+      setError(NETWORK_ERROR);
     } finally {
       setBusy(false);
     }

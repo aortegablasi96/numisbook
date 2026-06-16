@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { readError, NETWORK_ERROR } from "@/lib/http";
 
 // Client-side shape of a valuation. `amount` is numeric(12,2), serialized as a
 // string; the timestamps arrive as ISO strings.
@@ -28,15 +29,6 @@ function formatAmount(value: string, currency: string): string {
   } catch {
     // Unknown currency code: fall back to a plain amount.
     return `${n.toFixed(2)} ${currency}`;
-  }
-}
-
-async function readError(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string };
-    return body.error ?? "Something went wrong";
-  } catch {
-    return "Something went wrong";
   }
 }
 
@@ -91,6 +83,8 @@ export function ValuationsManager({
       setAmount("");
       setSource("");
       setSourceUrl("");
+    } catch {
+      setError(NETWORK_ERROR);
     } finally {
       setBusy(false);
     }

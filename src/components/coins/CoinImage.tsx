@@ -3,15 +3,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { ALLOWED_IMAGE_TYPES } from "@/lib/images";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
-
-async function readError(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string };
-    return body.error ?? "Upload failed";
-  } catch {
-    return "Upload failed";
-  }
-}
+import { readError, NETWORK_ERROR } from "@/lib/http";
 
 function IconExpand() {
   return (
@@ -101,7 +93,7 @@ export function CoinImage({ coinId }: { coinId: string }) {
         body,
       });
       if (!response.ok) {
-        setError(await readError(response));
+        setError(await readError(response, "Upload failed."));
         return;
       }
       const { id: newId } = (await response.json()) as { id: string };
@@ -110,6 +102,8 @@ export function CoinImage({ coinId }: { coinId: string }) {
         setCurrentIndex(updated.length - 1);
         return updated;
       });
+    } catch {
+      setError(NETWORK_ERROR);
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -125,7 +119,7 @@ export function CoinImage({ coinId }: { coinId: string }) {
         method: "DELETE",
       });
       if (!response.ok) {
-        setError(await readError(response));
+        setError(await readError(response, "Couldn’t remove the image."));
         return;
       }
       const removedId = currentId;
@@ -134,6 +128,8 @@ export function CoinImage({ coinId }: { coinId: string }) {
         setCurrentIndex((idx) => Math.min(idx, Math.max(0, updated.length - 1)));
         return updated;
       });
+    } catch {
+      setError(NETWORK_ERROR);
     } finally {
       setBusy(false);
     }

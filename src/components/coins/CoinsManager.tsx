@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { COIN_GRADES } from "@/lib/validation/coin";
 import { formatYearRange, formatCoinTitle } from "@/lib/coin-format";
+import { readError, NETWORK_ERROR } from "@/lib/http";
 
 export type CoinView = {
   id: string;
@@ -133,13 +134,6 @@ function toPayload(form: FormState): Record<string, string | number | null> {
   return payload;
 }
 
-async function readError(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string };
-    return body.error ?? "Something went wrong";
-  } catch { return "Something went wrong"; }
-}
-
 // ---- Main component ------------------------------------------------------
 
 export function CoinsManager({ collectionId, initial }: { collectionId: string; initial: SearchResult }) {
@@ -212,7 +206,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
       if (!res.ok) { setError(await readError(res)); return; }
       const data = (await res.json()) as SearchResult;
       setCoins(data.coins); setTotal(data.total); setPage(data.page); setPageSize(data.pageSize);
-    } finally { setLoading(false); }
+    } catch { setError(NETWORK_ERROR); } finally { setLoading(false); }
   }, [collectionId]);
 
   const firstRender = useRef(true);
@@ -248,7 +242,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
       const wasEditing = editingId !== null;
       resetForm();
       await Promise.all([load(wasEditing ? page : 1, filters), fetchFacets()]);
-    } finally { setBusy(false); }
+    } catch { setError(NETWORK_ERROR); } finally { setBusy(false); }
   }
 
   async function handleDelete(coin: CoinView) {
@@ -258,7 +252,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
       if (!response.ok) { setError(await readError(response)); return; }
       if (editingId === coin.id) resetForm();
       await Promise.all([load(page, filters), fetchFacets()]);
-    } finally { setBusy(false); }
+    } catch { setError(NETWORK_ERROR); } finally { setBusy(false); }
   }
 
   return (

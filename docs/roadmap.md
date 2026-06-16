@@ -62,6 +62,9 @@ suitable for real collectors before preparing to deploy.
 - **Accessibility & responsive pass** — WCAG AA contrast, `:focus-visible`,
   skip-to-content link, `prefers-reduced-motion`, `.sr-only` labels, and
   `.table-wrap` mobile scrolling; axe-clean on all pages in both colour schemes.
+- **Error-state resilience** — shared `lib/http` (`readError` + `NETWORK_ERROR`);
+  every client manager now surfaces a friendly message on network failure instead
+  of failing silently.
 
 ## Feature Refinement
 
@@ -73,8 +76,8 @@ suitable for real collectors before preparing to deploy.
 
 - [ ] Enhance style and UX *(in progress: charts, dashboard)*
 - [ ] Visual consistency across views *(in progress: shared `formatMoney`, stat
-  cards, chart styling)*
-- [ ] Empty / loading / error states
+  cards, chart styling, shared `readError`)*
+- [x] Empty / loading / error states
 - [x] Responsive layout
 - [x] Accessibility pass
 
