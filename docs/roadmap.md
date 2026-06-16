@@ -33,7 +33,7 @@ comparison, and an SVG trend chart (see `history.md` Phase 6 and
 `docs/decisions/007-portfolio-analytics-upgrade.md`) — and the **Embellishment**
 milestone has shipped: the MVP features and UI were polished against the final
 data shape (see `history.md` Phase 7 and
-`docs/decisions/008-derived-overview-aggregates.md`). The next milestone is the
+`docs/decisions/008-ui-embellishment.md`). The next milestone is the
 **Figma UI Redesign**: re-skinning the app to the agreed "stone & gold" spec.
 
 Primary objective:

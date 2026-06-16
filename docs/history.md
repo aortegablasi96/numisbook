@@ -334,7 +334,7 @@ See:
 - `docs/decisions/005-cloudflare-r2-initial-provider.md`
 - `docs/decisions/006-coin-and-valuation-attribute-rework.md`
 - `docs/decisions/007-portfolio-analytics-upgrade.md`
-- `docs/decisions/008-derived-overview-aggregates.md`
+- `docs/decisions/008-ui-embellishment.md`
 
 ---
 
