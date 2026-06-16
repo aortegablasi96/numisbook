@@ -101,19 +101,21 @@ function emptySummary(
   };
 }
 
-export async function getPortfolioSummary(
-  userId: string,
-  baseCurrencyPref: string | null,
-): Promise<PortfolioSummary> {
-  const rows = await analyticsRepository.coinsForUser(userId);
-  const totalCoins = rows.length;
-  const priced = rows.filter((r) => r.finalPrice != null);
+// Converts a price in its native currency to the base currency at the
+// acquisition-day rate (falling back to the current rate), or null when ECB does
+// not quote the currency at all. Built once over a set of priced rows so the FX
+// cache spans every currency/date they use. Shared by the portfolio summary and
+// the per-collection cost rollup.
+type PriceConverter = (
+  amount: string,
+  currency: string | null,
+  auctionDate: string | null,
+) => number | null;
 
-  const baseCurrency = baseCurrencyPref ?? dominantCurrency(priced);
-  if (priced.length === 0 || !baseCurrency) {
-    return emptySummary(totalCoins, baseCurrency);
-  }
-
+async function buildPriceConverter(
+  priced: PortfolioCoinRow[],
+  baseCurrency: string,
+): Promise<PriceConverter> {
   // The converter must span every price currency and acquisition date.
   const currencies = new Set<string>();
   let minDate: Date | null = null;
@@ -133,16 +135,7 @@ export async function getPortfolioSummary(
     minDate ?? today,
     maxDate ?? today,
   );
-
-  // Convert at the acquisition-day rate; if no rate covers that date (or the
-  // coin has no acquisition date) fall back to the current rate. A coin is only
-  // counted unconvertible when even the current rate is unavailable — i.e. ECB
-  // does not quote the currency at all.
-  const convertPrice = (
-    amount: string,
-    currency: string | null,
-    auctionDate: string | null,
-  ): number | null => {
+  return (amount, currency, auctionDate) => {
     if (!currency) return null;
     const amt = toNumber(amount);
     if (auctionDate) {
@@ -151,6 +144,22 @@ export async function getPortfolioSummary(
     }
     return converter.convertLatest(amt, currency);
   };
+}
+
+export async function getPortfolioSummary(
+  userId: string,
+  baseCurrencyPref: string | null,
+): Promise<PortfolioSummary> {
+  const rows = await analyticsRepository.coinsForUser(userId);
+  const totalCoins = rows.length;
+  const priced = rows.filter((r) => r.finalPrice != null);
+
+  const baseCurrency = baseCurrencyPref ?? dominantCurrency(priced);
+  if (priced.length === 0 || !baseCurrency) {
+    return emptySummary(totalCoins, baseCurrency);
+  }
+
+  const convertPrice = await buildPriceConverter(priced, baseCurrency);
 
   let totalFinal = 0;
   let unconvertible = 0;
@@ -225,4 +234,35 @@ export async function getPortfolioSummary(
     },
     events,
   };
+}
+
+// Total price paid per collection, in the base currency, for the collections
+// overview (ADR-008). Coin *counts* are a pure SQL aggregate in the repository,
+// but a converted money total is business logic — it is rolled up here from the
+// same acquisition-day FX conversion the portfolio uses. Collections with no
+// priced coins are simply absent from the map (the UI shows "—"); unconvertible
+// prices are left out of the total.
+export type CollectionCosts = {
+  baseCurrency: string | null;
+  totalPaid: Record<string, number>; // collectionId -> base-currency cost
+};
+
+export async function getCollectionCosts(
+  userId: string,
+  baseCurrencyPref: string | null,
+): Promise<CollectionCosts> {
+  const rows = await analyticsRepository.coinsForUser(userId);
+  const priced = rows.filter((r) => r.finalPrice != null);
+  const baseCurrency = baseCurrencyPref ?? dominantCurrency(priced);
+  if (priced.length === 0 || !baseCurrency) return { baseCurrency, totalPaid: {} };
+
+  const convertPrice = await buildPriceConverter(priced, baseCurrency);
+  const totalPaid: Record<string, number> = {};
+  for (const row of priced) {
+    const value = convertPrice(row.finalPrice!, row.priceCurrency, row.auctionDate);
+    if (value == null) continue; // unconvertible — leave it out of the rollup
+    totalPaid[row.collectionId] = (totalPaid[row.collectionId] ?? 0) + value;
+  }
+  for (const id of Object.keys(totalPaid)) totalPaid[id] = round2(totalPaid[id]);
+  return { baseCurrency, totalPaid };
 }

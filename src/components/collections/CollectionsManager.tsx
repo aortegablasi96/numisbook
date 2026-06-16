@@ -4,17 +4,21 @@ import Link from "next/link";
 import { useState } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { readError, NETWORK_ERROR } from "@/lib/http";
+import { formatMoney } from "@/lib/currencies";
 
 export type CollectionView = {
   id: string;
   name: string;
   coinCount: number;
+  totalPaid: number | null; // converted cost (base currency), null when none
 };
 
 export function CollectionsManager({
   initialCollections,
+  baseCurrency,
 }: {
   initialCollections: CollectionView[];
+  baseCurrency: string | null;
 }) {
   const [collections, setCollections] = useState<CollectionView[]>(initialCollections);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -47,7 +51,7 @@ export function CollectionsManager({
       const { collection } = (await response.json()) as {
         collection: { id: string; name: string };
       };
-      setCollections((prev) => [{ ...collection, coinCount: 0 }, ...prev]);
+      setCollections((prev) => [{ ...collection, coinCount: 0, totalPaid: null }, ...prev]);
       setNewName("");
       setShowAddForm(false);
     } catch {
@@ -169,6 +173,7 @@ export function CollectionsManager({
             <tr>
               <th>Name</th>
               <th className="td-num">Coins</th>
+              <th className="td-num">Paid</th>
               <th>
                 <span className="sr-only">Actions</span>
               </th>
@@ -212,6 +217,11 @@ export function CollectionsManager({
                 </td>
                 <td className="td-num muted">
                   {collection.coinCount}
+                </td>
+                <td className="td-num muted">
+                  {collection.totalPaid !== null && baseCurrency
+                    ? formatMoney(collection.totalPaid, baseCurrency)
+                    : "—"}
                 </td>
                 <td className="td-actions">
                   {editingId !== collection.id && (

@@ -1,6 +1,7 @@
 import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { listCollections } from "@/services/collection.service";
+import { getCollectionCosts } from "@/services/analytics.service";
 import { CollectionsManager } from "@/components/collections/CollectionsManager";
 
 // Server Component: guards on auth and loads the initial list directly through
@@ -30,12 +31,23 @@ export default async function CollectionsPage() {
     );
   }
 
-  const collections = await listCollections(user.id);
+  // Counts come from the repository aggregate; the converted cost per collection
+  // is business logic from the analytics service (ADR-008).
+  const [collections, costs] = await Promise.all([
+    listCollections(user.id),
+    getCollectionCosts(user.id, user.baseCurrency),
+  ]);
+  const views = collections.map((c) => ({
+    id: c.id,
+    name: c.name,
+    coinCount: c.coinCount,
+    totalPaid: costs.totalPaid[c.id] ?? null,
+  }));
 
   return (
     <main className="stack">
       <h1>Collections</h1>
-      <CollectionsManager initialCollections={collections} />
+      <CollectionsManager initialCollections={views} baseCurrency={costs.baseCurrency} />
     </main>
   );
 }

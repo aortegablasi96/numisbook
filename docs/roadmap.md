@@ -71,6 +71,10 @@ suitable for real collectors before preparing to deploy.
   (no more blank flash), and aligned the coin "Added" date to the app's ISO
   convention. Builds on the earlier shared `formatMoney`/`readError` and stat-card
   styling.
+- **Total paid per collection** — the `/collections` list now shows each
+  collection's cost (base currency) beside the coin count, via `getCollectionCosts`
+  (monetary rollups extend the ADR-008 pattern: counts in SQL, converted sums in
+  the service over the shared FX converter).
 
 ## Feature Refinement
 

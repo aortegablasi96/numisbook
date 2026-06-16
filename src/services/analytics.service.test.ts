@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getPortfolioSummary } from "./analytics.service";
+import { getPortfolioSummary, getCollectionCosts } from "./analytics.service";
 import {
   analyticsRepository,
   type PortfolioCoinRow,
@@ -205,5 +205,31 @@ describe("getPortfolioSummary", () => {
     // Same total as the all-rates case: 100 + 220 + 50 = 370.
     expect(summary.totalFinal).toBe(370);
     expect(summary.unconvertible).toBe(0);
+  });
+});
+
+describe("getCollectionCosts", () => {
+  it("rolls up the converted cost paid per collection", async () => {
+    repo.coinsForUser.mockResolvedValue(coins);
+    const result = await getCollectionCosts("user-1", "USD");
+    expect(result.baseCurrency).toBe("USD");
+    // rome: C1 100 + C3 50 = 150; greek: C2 200€ → 220.
+    expect(result.totalPaid).toEqual({ rome: 150, greek: 220 });
+  });
+
+  it("returns empty totals (and skips FX) when nothing is priced", async () => {
+    repo.coinsForUser.mockResolvedValue([row({ coinId: "X", metal: "gold" })]);
+    const result = await getCollectionCosts("user-1", "USD");
+    expect(result.totalPaid).toEqual({});
+    expect(fx).not.toHaveBeenCalled();
+  });
+
+  it("leaves unconvertible prices out of a collection's total", async () => {
+    repo.coinsForUser.mockResolvedValue([
+      row({ coinId: "A", finalPrice: "10.00", priceCurrency: "USD", collectionId: "rome", auctionDate: "2024-01-01" }),
+      row({ coinId: "B", finalPrice: "99.00", priceCurrency: "XYZ", collectionId: "rome", auctionDate: "2024-01-01" }),
+    ]);
+    const result = await getCollectionCosts("user-1", "USD");
+    expect(result.totalPaid).toEqual({ rome: 10 });
   });
 });

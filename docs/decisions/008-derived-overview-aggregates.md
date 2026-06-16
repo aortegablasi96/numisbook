@@ -2,96 +2,129 @@
 
 Status: Accepted
 
-Date: 2026-06-15
+Date: 2026-06-15 (extended 2026-06-16 with monetary rollups)
 
 ## Context
 
-The Embellishment milestone is rounding out overview/list screens with
-at-a-glance figures collectors expect. The first was a **coin count per
-collection** on `/collections`; the signed-in **home dashboard** (collection and
-coin counts plus total paid) followed, reusing the same `listCollections`
-aggregate. A per-collection **total value** will follow once valuation-based
-analytics lands (see `docs/roadmap.md`).
+The Embellishment milestone rounds out overview/list screens with at-a-glance
+figures collectors expect. Three have shipped, all the same shape — a list or
+summary view needs a figure *derived* from a child aggregate (count or sum of a
+collection's `coins`) that the entity's own table does not store:
 
-These are all the same problem: a list (or summary) view needs a figure
-*derived* from a child aggregate (count/sum of `coins`) that the entity's own
-table does not store. We need a consistent answer for **where that derivation
-lives** before the pattern is copied several more times, so we don't drift into
-ad-hoc choices (a denormalized counter here, a service-side loop there).
+* **coin count per collection** on `/collections`;
+* the signed-in **home dashboard** — collection and coin counts plus total paid;
+* **total paid per collection** on `/collections` (the cost column beside the
+  count).
+
+A per-collection **market value** will follow once valuation-based analytics
+lands (see `docs/roadmap.md`); it reuses the monetary-rollup path below.
+
+We need a consistent answer for **where each derivation lives** before the
+pattern is copied further, so we don't drift into ad-hoc choices (a denormalized
+counter here, a service-side N+1 loop there, a currency-mixing SQL `SUM`
+elsewhere).
 
 ## Decision
 
-Compute overview aggregates as **derived read-model fields in the repository**,
-not as stored/denormalized columns.
+Compute overview aggregates as **derived read-model fields, never stored or
+denormalized columns.** Where the work happens depends on whether the figure
+needs currency conversion:
 
-* A repository exposes a purpose-built read method that returns the entity
-  shape plus the derived field(s), produced by aggregate SQL in a single query
-  — e.g. `collectionRepository.listByUserWithCounts` does
-  `LEFT JOIN coins … GROUP BY collections.id` with `count(coins.id)` (the
-  `LEFT JOIN` keeps empty collections at 0). The derived type is the base type
-  intersected with the extra field(s): `CollectionWithCount = Collection &
-  { coinCount: number }`.
-* The aggregation stays in the **repository** (it is data access / a query),
-  reached by the service and surfaced unchanged through the API and UI. No new
-  service-layer fan-out (N+1 count calls) and no business logic in the route.
-* **Tenant isolation is preserved by the existing scoping**: the query filters
-  by the owner (`collections.userId = userId`), so only the owner's rows — and
-  therefore only their children — are aggregated. No new isolation surface.
-* **No denormalized counters.** We do not add a `coin_count` column (or similar)
-  kept in sync by triggers/application code.
+### Currency-agnostic aggregates (counts) → repository, in SQL
 
-This generalises the precedent already set in ADR-007, where the analytics read
-model added a derived `imageId` to each `AcquisitionEvent` via a correlated
-subquery rather than a stored field.
+A purpose-built repository method returns the entity shape plus the derived
+field via a single aggregate query — e.g. `collectionRepository.listByUserWithCounts`
+does `LEFT JOIN coins … GROUP BY collections.id` with `count(coins.id)` (the
+`LEFT JOIN` keeps empty collections at 0). The derived type is the base type
+intersected with the extra field: `CollectionWithCount = Collection &
+{ coinCount: number }`. Scoping by `collections.userId` keeps it tenant-isolated
+(only the owner's rows — and therefore their children — are aggregated).
+
+### Monetary rollups (sums that need FX) → service layer
+
+A multi-currency total **cannot** be a pure SQL `SUM`: converting each price to
+the base currency is business logic (ADR-007, behind the `FxRateProvider`, using
+the acquisition-day rate with a current-rate fallback). So these rollups are
+computed in `analytics.service` over the **already-converted** per-coin figures,
+reusing the one converter the portfolio uses (`buildPriceConverter`, shared with
+`getPortfolioSummary`):
+
+* `getCollectionCosts(userId, baseCurrencyPref)` returns base-currency **cost per
+  collection** (`{ baseCurrency, totalPaid: Record<collectionId, number> }`);
+  collections with no priced coins are absent (the UI shows "—") and
+  unconvertible prices are left out of the total.
+* the home dashboard's **total paid** is the same conversion summed without
+  grouping (via `getPortfolioSummary`).
+
+The page **merges** the repository counts with the service totals (the
+`/collections` server component calls `listCollections` and `getCollectionCosts`
+in parallel and zips them by id).
+
+### Common to both
+
+* **No denormalized counters/sums** kept in sync by triggers or app code.
+* The aggregate is produced in the repository (counts) or service (money) and
+  surfaced **unchanged** through the API/route and UI — no business logic in
+  routes, no DB access outside repositories.
+* Tenant isolation rides on the existing owner-scoped queries; no new surface.
+
+This generalises the precedent from ADR-007, where the analytics read model
+added a derived `imageId` to each `AcquisitionEvent` rather than a stored field.
 
 ## Alternatives Considered
 
-### Option A — Denormalized counter column (e.g. `collections.coin_count`)
+### Denormalized counter/total columns (e.g. `collections.coin_count`)
 
-Pros:
-* O(1) read; no join.
+Pros: O(1) read, no join.
+Cons: must be kept consistent on every coin insert/delete/move (and every FX
+re-sync, for a cached total) — a class of drift bugs for figures that are cheap
+to derive. Premature optimization at this scale (hundreds of coins, not
+millions). Rejected.
 
-Cons:
-* Must be kept consistent on every coin insert/delete/move (triggers or
-  app-level bookkeeping) — a new class of drift bugs for a figure that is cheap
-  to compute. Premature optimization at this scale (a collector's coins number
-  in the hundreds, not millions). Rejected.
+### Count/sum in the service, per entity
 
-### Option B — Count in the service per collection
+Pros: repository methods stay tiny.
+Cons: N+1 queries (one per collection). Rejected for counts in favour of one
+aggregate query. (Money rollups *do* live in the service — but as a single pass
+over all priced rows, not per-collection queries.)
 
-Pros:
-* Repository methods stay tiny and single-purpose.
+### SQL `SUM` for monetary totals
 
-Cons:
-* N+1 queries (one count per collection), and aggregation logic leaking toward
-  the service for what is plainly data access. Rejected in favour of one
-  aggregate query in the repository.
+Pros: one query, like counts.
+Cons: would sum raw amounts across mixed currencies — meaningless without
+conversion, and conversion (ADR-007) is business logic that doesn't belong in
+SQL. Rejected: monetary rollups belong in the service.
 
-### Option C — Compute in the API route / component
+### Compute in the API route / component
 
-Cons:
-* Violates the layering rules (no DB access or business logic outside
-  repositories/services). Rejected outright.
+Violates the layering rules (no DB access or business logic outside
+repositories/services). Rejected outright.
 
 ## Consequences
 
 Positive:
-* One consistent place and shape for overview aggregates; consumers follow the
-  same recipe — the `/collections` count and the home dashboard already do, and
-  per-collection value will.
-* No consistency/maintenance burden from denormalized counters.
-* Tenant isolation is inherited from existing owner-scoped queries.
 
-Negative:
-* Each derived figure costs a join/aggregate at read time. Acceptable for the
-  app's data volumes and the always-indexed owner scoping; if a future view ever
-  proves hot, it can adopt a materialized count *then*, as a deliberate change.
-* Aggregate SQL (`GROUP BY`, `count(...)::int`) is slightly more involved than a
-  plain select — mitigated by keeping it in a clearly named repository method.
+* One consistent, predictable shape for overview aggregates; the next consumer
+  (per-collection market value) reuses the monetary-rollup path.
+* No consistency/maintenance burden from denormalized counters or cached sums.
+* Tenant isolation inherited from existing owner-scoped queries.
+* The shared `buildPriceConverter` keeps the portfolio and the per-collection
+  rollup on identical FX semantics.
+
+Negative / tradeoffs:
+
+* Counts cost a join/aggregate, and monetary rollups cost one FX conversion pass
+  (the rate cache makes this cheap and offline-safe — ADR-007). Acceptable at the
+  app's data volumes and always-indexed owner scoping; a genuinely hot view could
+  adopt a materialized figure later, as a deliberate change.
+* Overview pages that show a money total now depend on the analytics service /
+  FX cache, not just the repository — a wider dependency for the `/collections`
+  page, mirrored on the home dashboard.
 
 ## Related Documents
 
 * docs/architecture.md — layering rules (UI → services → repositories → db)
 * docs/database.md
-* ADR-006 — coin & valuation attribute rework (the `coins` shape being counted)
-* ADR-007 — portfolio analytics upgrade (derived `imageId` read-model precedent)
+* ADR-006 — coin & valuation attribute rework (the `coins` shape being aggregated)
+* ADR-007 — portfolio analytics upgrade (FX conversion / `buildPriceConverter`,
+  and the derived `imageId` read-model precedent)
