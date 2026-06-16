@@ -48,7 +48,8 @@ Run a single test file: `npx vitest run path/to/file.test.ts`.
 
 ### MCP servers
 
-These MCP servers are available in this environment for working on the project:
+These MCP servers are wired up via the committed `.mcp.json` and available in
+this environment for working on the project:
 
 * **`postgres`** — read-only access to the dev database, for ad-hoc inspection
   (e.g. checking rows while debugging). Reads only — never a substitute for the
@@ -262,6 +263,11 @@ changes.
 Mock all repositories with `vi.mock()`; test business logic in isolation.
 `describe` / `it` / `expect` are global (Vitest `globals: true`).
 
+There is **no DOM environment** — `vitest.config.ts` runs `environment: "node"`,
+so components are not rendered in tests (no `@testing-library/react`). Test
+component logic by extracting it into pure helpers and testing those (e.g.
+`src/components/analytics/chart-utils.test.ts`, `src/lib/coin-format.test.ts`).
+
 ### API route tests
 
 Mock `@/auth`, `@/services/auth.service`, and the called service module; use
@@ -415,7 +421,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `005-cloudflare-r2-initial-provider` — Cloudflare R2 as initial provider
 * `006-coin-and-valuation-attribute-rework` — Coin & valuation attribute rework (derived coin title, price paid vs. valuations, grade `pgEnum`, valuation link)
 * `007-portfolio-analytics-upgrade` — Portfolio Analytics Upgrade; the architectural decision within it is multi-currency support: per-user base currency + currency conversion via cached ECB rates (frankfurter.app) behind an `FxRateProvider` interface
-* `008-derived-overview-aggregates` — overview/list views surface derived aggregate fields (e.g. coin count per collection) via repository read-model queries, not denormalized counters
+* `008-derived-overview-aggregates` — UI Embellishment: cross-cutting milestone decisions — derived overview aggregates (counts in SQL, FX money rollups in the service; not denormalized), uniform client error surfacing (`lib/http`), accessibility as a `globals.css` baseline, loading/placeholder conventions, and derived currency defaults
 
 (`template.md` is the scaffold for new ADRs.)
 
@@ -432,11 +438,13 @@ Do not silently override accepted decisions.
 ## Current Priority
 
 The core collection-management platform is functionally complete; the project is
-in a **pre-deployment** phase. The **Data Model Reform** (Phase 5) and the
+in a **pre-deployment** phase. The **Data Model Reform** (Phase 5), the
 **Portfolio Analytics Upgrade** (Phase 6 — multi-currency base currency + ECB FX
 conversion, gain/loss, deeper allocation, per-collection comparison, SVG trend
-chart; see `docs/history.md` and ADRs 006–007) are both done. The active
-milestone is now **Embellishment**: polishing the MVP features and UI against the
-final data shape before production readiness. Production deployment remains a
-later milestone. See `docs/roadmap.md` for the current milestone tasks and the
-Technical Backlog — check it before starting anything new.
+chart), and **Embellishment** (Phase 7 — overview aggregates, UI/UX polish,
+error-state resilience; see `docs/history.md` and ADRs 006–008) are all done. The
+active milestone is now the **Figma UI Redesign**: re-skinning the app to the
+agreed "stone & gold" spec without changing the routes, data model, or API.
+Production deployment remains a later milestone. See `docs/roadmap.md` for the
+current milestone tasks and the Technical Backlog — check it before starting
+anything new.

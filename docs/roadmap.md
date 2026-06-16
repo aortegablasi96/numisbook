@@ -23,80 +23,130 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Pre-deployment — Embellishment**
+Current maturity: **Pre-deployment — Figma UI Redesign**
 
 The core collection-management platform is functionally complete, the coin and
-valuation data models have been reformed (see `history.md` Phase 5), and the
-**Portfolio Analytics Upgrade** is now complete — portfolio figures are
+valuation data models have been reformed (see `history.md` Phase 5), the
+**Portfolio Analytics Upgrade** is complete — portfolio figures are
 multi-currency aware, with gain/loss, deeper allocation, per-collection
 comparison, and an SVG trend chart (see `history.md` Phase 6 and
-`docs/decisions/007-portfolio-analytics-upgrade.md`). The next milestone is
-**Embellishment**: polishing the MVP features and UI against the final data
-shape before preparing for deployment.
+`docs/decisions/007-portfolio-analytics-upgrade.md`) — and the **Embellishment**
+milestone has shipped: the MVP features and UI were polished against the final
+data shape (see `history.md` Phase 7 and
+`docs/decisions/008-derived-overview-aggregates.md`). The next milestone is the
+**Figma UI Redesign**: re-skinning the app to the agreed "stone & gold" spec.
 
 Primary objective:
 
-**Polish the MVP features and UI to a quality bar suitable for real collectors
-before preparing for production deployment.**
+**Re-skin the existing app to the agreed Figma design without changing the
+routes, data model, or API, then prepare for production deployment.**
 
 Current priorities:
 
-- Feature and UI/UX polish (Embellishment)
+- UI redesign to the Figma spec (next)
 - (then) production readiness
 
 ---
 
-# Next Milestone — Embellishment
+# Next Milestone — Figma UI Redesign
 
 Goal:
 
-Bring the existing MVP features and UI to a level of quality and completeness
-suitable for real collectors before preparing to deploy.
+Re-skin the existing app to the agreed **Figma design**
+([Coin Collection Management SaaS](https://www.figma.com/make/3whQq5SMmW1rjEn4ZwOc0G/Coin-Collection-Management-SaaS)) —
+a warm, editorial "stone & gold" look with serif display type. This is a
+**visual** redesign only: the App-Router routes, the `app → services →
+repositories → db` flow, the data model (derived coin title, price-paid +
+valuations, multi-currency base currency), and the API stay as they are. Every
+screen the Figma covers already exists in the app.
 
-## Shipped so far
+The Figma source is built in Tailwind + shadcn/ui + recharts + lucide-react.
+**We do not adopt that stack.** Per `CLAUDE.md` / the design-system rules, we
+translate its *visual language* into the existing dependency-free
+`globals.css` system and keep the dependency-free SVG charts
+(`analytics/TrendChart`, `analytics/CostBreakdownChart`). The Figma's code is a
+reference for look-and-feel and tokens, not a component library to import.
 
-- Portfolio chart embellishment — side-by-side equal-height charts, gridlines,
-  per-segment allocation labels, coin thumbnails, date-range presets (ADR-007).
-- Coin count per collection on `/collections` (ADR-008).
-- Signed-in **home dashboard** — collection/coin counts and total paid (ADR-008).
-- **Accessibility & responsive pass** — WCAG AA contrast, `:focus-visible`,
-  skip-to-content link, `prefers-reduced-motion`, `.sr-only` labels, and
-  `.table-wrap` mobile scrolling; axe-clean on all pages in both colour schemes.
-- **Error-state resilience** — shared `lib/http` (`readError` + `NETWORK_ERROR`);
-  every client manager now surfaces a friendly message on network failure instead
-  of failing silently.
-- **Visual-consistency pass** — fixed the coin-list toolbar (a real layout bug:
-  reused the column-flex `.filters`; now a horizontal `.toolbar`), added loading
-  skeletons / neutral placeholders for coin thumbnails and the detail image card
-  (no more blank flash), and aligned the coin "Added" date to the app's ISO
-  convention. Builds on the earlier shared `formatMoney`/`readError` and stat-card
-  styling.
-- **Total paid per collection** — the `/collections` list now shows each
-  collection's cost (base currency) beside the coin count, via `getCollectionCosts`
-  (monetary rollups extend the ADR-008 pattern: counts in SQL, converted sums in
-  the service over the shared FX converter).
-- **Bug fix & usability** — `CoinDetailsCard` save was missing network-error
-  handling (silent failure); brought it onto the shared `readError`/`NETWORK_ERROR`.
-  New valuations now default the currency to the coin's price currency (or the
-  user's base currency) instead of a hard-coded USD.
+## Design Tokens & Foundations
 
-## Feature Refinement
+Re-map `globals.css` theme tokens to the Figma variables:
 
-- [x] Review and round out existing MVP features
-- [x] Address rough edges and missing affordances
+- [ ] Palette — background `#ECEAE5` (warm stone), foreground `#1C1917`, card
+      `#FFFFFF`, **primary/accent `#B8871E` (gold)**, muted `#F4F1EC` /
+      muted-foreground `#78716C`, destructive `#DC2626`, border
+      `rgba(28,25,23,0.10)`, focus ring `rgba(184,135,30,0.35)`
+- [ ] Chart palette — `#B8871E`, `#5A8A6A`, `#4A7A9B`, `#8A4A3A`, `#6A4A8A`
+- [ ] Radii — base `0.625rem` (10px) with sm/md/lg/xl steps; cards use ~`xl`
+- [ ] **Typography** — add web fonts: **Fraunces** (serif) for `h1–h3` /
+      display numerals at weight ~400/`font-light`, **DM Sans** for body/UI,
+      **DM Mono** for the uppercase letter-spaced micro-labels (stat captions,
+      table headers, filter chips). Self-host or load efficiently.
+- [ ] **Dark mode decision** — the Figma is light-only (its `.dark` tokens
+      duplicate light). The app currently themes via `prefers-color-scheme`;
+      decide whether to derive a proper dark variant or drop dark mode. The
+      accessibility pass below must still pass in whatever schemes ship.
 
-## UI/UX Polish
+## Shared Shell & Primitives
 
-- [x] Enhance style and UX
-- [x] Visual consistency across views
-- [x] Empty / loading / error states
-- [x] Responsive layout
-- [x] Accessibility pass
+- [ ] `SiteHeader` — sticky 56px bar, max-width 1200px; gold circular "N" logo +
+      Fraunces wordmark; minimal nav (Collections, Portfolio) with active-state
+      pill; "Sign out" with icon
+- [ ] Buttons — primary (gold, subtle shadow), outline, ghost, and danger
+      variants; sizes sm/md
+- [ ] Inputs / search fields, filter **chips/tags** (active = gold-tint bg +
+      gold border + gold text), and **breadcrumbs** (chevron separators,
+      gold links)
+- [ ] Card / table shells — white cards, hairline borders, rounded-xl; tables as
+      bordered grids with mono uppercase headers, row hover, and actions that
+      reveal on hover (keep keyboard/focus access — not hover-only)
+- [ ] Icon set — adopt a lightweight icon approach consistent with the Figma
+      (lucide-style line icons); keep `.sr-only` labels on icon-only controls
 
-## Quality
+## Screen-by-Screen Re-skin
 
-- [x] Bug fixing
-- [x] Usability improvements
+Map each Figma screen onto its existing manager/route:
+
+- [ ] **Home dashboard** (`/`) — Fraunces hero, three stat cards (Collections,
+      Coins, Total paid · base currency) with mono captions + big serif
+      numerals, and two feature cards (Collections, Portfolio) with icon tiles
+- [ ] **Collections** (`CollectionsManager`) — filter field + "New collection";
+      card-wrapped table with Name / Coins / Paid columns and inline
+      rename + delete (delete via `ConfirmButton`, not the Figma's bare button)
+- [ ] **Collection detail / coin list** (`CoinsManager`) — search + category
+      chips + filter toggles toolbar, result count, and the card table with
+      **dual obverse/reverse thumbnails**, derived coin title
+      (`formatCoinTitle`) as the gold link, attributes, and paid column
+- [ ] **Coin detail** (`CoinDetailsCard` / `CoinImage`) — two-column layout:
+      left = title + attribute tiles + Description/Provenance/Notes/References
+      cards + valuations table; right = large square image with
+      obverse/reverse toggle + thumbnail carousel. Keep edit + remove
+      (`ConfirmButton`). Respect the real image API (carousel, not a fixed
+      two-sided model)
+- [ ] **Valuations** (`ValuationsManager`) — restyle to the card/table +
+      mono-label language (no direct Figma frame; follow the system)
+- [ ] **Portfolio** (`/portfolio`) — total-paid header stat card (with
+      hammer/ECB note), then two side-by-side chart cards: acquisition cost
+      over time (gold gradient area) and cost breakdown (stacked bars), each
+      with 3M/6M/1Y/All presets and category filters. Re-skin the **existing
+      SVG charts** to the gold/stone palette + DM Mono axis labels — do not pull
+      in recharts
+- [ ] **Assistant** (`AssistantWidget`) — floating bottom-right widget: dark
+      (`#1C1917`) header with gold Sparkles avatar + online dot, message
+      bubbles (user = gold), starter suggestion chips, gold send button, and an
+      "N" toggle FAB
+
+## Quality Gates
+
+- [ ] Visual parity review against the Figma frames (per screen)
+- [ ] Preserve accessibility conventions (WCAG AA contrast — re-verify gold-on-
+      white and the new tokens; `:focus-visible`, skip-to-content,
+      `prefers-reduced-motion`, `.sr-only`, `.table-wrap`) — **axe-clean in
+      every scheme that ships**
+- [ ] Responsive behaviour verified at mobile / tablet / desktop
+- [ ] No new UI dependency added (no Tailwind / shadcn / recharts / CSS-in-JS);
+      changes stay within `globals.css` + existing components
+- [ ] Data-model integrity preserved — derived titles, price-paid + valuations,
+      and base-currency conversion render correctly under the new skin
 
 ---
 

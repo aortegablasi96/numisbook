@@ -279,6 +279,50 @@ Implemented:
 
 ---
 
+# Phase 7 — Embellishment
+
+Status: Complete
+
+Polished the MVP features and UI to a quality bar suitable for real collectors,
+against the final (post-reform) data shape, before the visual redesign and
+production readiness. No new domains — refinement across the existing slices.
+
+## Overview aggregates
+
+Implemented:
+
+- Coin count per collection on `/collections`, the signed-in **home dashboard**
+  (collection/coin counts and total paid), and **total paid per collection**
+  (base-currency cost beside the count) — all as derived read-model fields
+  (counts in SQL, FX-converted sums in the service over the shared converter);
+  see ADR-008
+
+## UI/UX polish
+
+Implemented:
+
+- Portfolio chart embellishment — side-by-side equal-height charts, gridlines,
+  per-segment allocation labels, coin thumbnails, date-range presets (ADR-007)
+- Visual-consistency pass — fixed the coin-list toolbar layout bug (horizontal
+  `.toolbar` instead of the reused column-flex `.filters`), loading skeletons /
+  neutral placeholders for coin thumbnails and the detail image card (no blank
+  flash), and ISO-aligned the coin "Added" date
+- **Accessibility & responsive pass** — WCAG AA contrast, `:focus-visible`,
+  skip-to-content link, `prefers-reduced-motion`, `.sr-only` labels, and
+  `.table-wrap` mobile scrolling; axe-clean on all pages in both colour schemes
+
+## Quality
+
+Implemented:
+
+- Error-state resilience — shared `lib/http` (`readError` + `NETWORK_ERROR`);
+  every client manager surfaces a friendly message on network failure instead of
+  failing silently (incl. a `CoinDetailsCard` save that previously failed silently)
+- Usability — new valuations default the currency to the coin's price currency
+  (or the user's base currency) instead of a hard-coded USD
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -290,6 +334,7 @@ See:
 - `docs/decisions/005-cloudflare-r2-initial-provider.md`
 - `docs/decisions/006-coin-and-valuation-attribute-rework.md`
 - `docs/decisions/007-portfolio-analytics-upgrade.md`
+- `docs/decisions/008-derived-overview-aggregates.md`
 
 ---
 
