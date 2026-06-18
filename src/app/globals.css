@@ -1,40 +1,89 @@
 /* ---- NumisBook design system -------------------------------------------- */
+/* "Stone & gold" — a warm, editorial light theme translated from the Figma
+   redesign (ADR-009). Light-only by design: the Figma defines no real dark
+   variant, so we ship a single scheme. Fonts arrive as CSS variables from
+   next/font (see src/app/layout.tsx): Fraunces (serif), DM Sans, DM Mono. */
 
 :root {
-  --bg: #f5f4f1;
-  --surface: #ffffff;
-  --surface-2: #faf9f6;
-  --text: #1f2328;
-  --muted: #5e6872; /* darkened for WCAG AA (4.5:1) on the light surfaces */
-  --border: #e3e1da;
-  --accent: #8a5f15; /* antique gold — darkened for AA contrast as link/badge text */
-  --accent-weak: #f0e6d2;
-  --primary: #232a33; /* slate */
-  --primary-text: #ffffff;
-  --danger: #b42318;
-  --ok: #2e7d32;
-  --radius: 10px;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.05);
-  --space: 1rem;
-  color-scheme: light dark;
-}
+  --bg: #ECEAE5; /* warm stone */
+  --surface: #ffffff; /* card */
+  --surface-2: #f4f1ec; /* muted / secondary */
+  --text: #1c1917; /* foreground (near-black ink) */
+  --muted: #6a635d; /* muted-foreground — darkened from the Figma's #78716c so
+                       secondary text clears WCAG AA (4.5:1) on the stone bg */
+  --border: rgba(28, 25, 23, 0.1); /* hairline */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14161a;
-    --surface: #1c1f24;
-    --surface-2: #20242a;
-    --text: #e6e7e9;
-    --muted: #9aa0a6;
-    --border: #2c3036;
-    --accent: #d4a64a;
-    --accent-weak: #2a2418;
-    --primary: #e6e7e9;
-    --primary-text: #14161a;
-    --danger: #f17163;
-    --ok: #6cc070;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.35);
-  }
+  /* Gold. The bright brand gold (#B8871E) fails AA as text on light, so it is
+     reserved for fills, tints, borders, charts and the logo; a deeper gold
+     (#8a5f15, ~5.6:1 on white) carries gold *text* (links, labels, badges). */
+  --gold: #b8871e;
+  --accent: #8a5f15;
+  --accent-weak: rgba(184, 135, 30, 0.12);
+
+  /* Primary action = white text on the deeper gold --accent (#8a5f15, ~5.6:1 AA),
+     keeping the Figma's white-on-gold look; white on the bright #B8871E is ~3.2:1
+     and would fail. The bright --primary/--gold stays the fill colour (logo,
+     tints, borders, charts). See ADR-009 §4 + addenda. */
+  --primary: #b8871e;
+
+  /* Dark ink surfaces (assistant header + FAB) — near-black per the Figma. */
+  --ink: #1c1917;
+  --ink-text: #ffffff;
+
+  --stone: #c4bfb8; /* light stone (cost-breakdown "shipping" segment) */
+  --danger: #dc2626;
+  --ok: #5a8a6a;
+
+  /* Chart series palette (from the Figma). The dependency-free SVG charts pick
+     their fills from the bar / seg / chart rules below; these tokens document
+     the full palette and are available for future multi-series use. */
+  --chart-1: #b8871e;
+  --chart-2: #5a8a6a;
+  --chart-3: #4a7a9b;
+  --chart-4: #8a4a3a;
+  --chart-5: #6a4a8a;
+
+  --radius: 0.625rem; /* 10px base */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px); /* cards */
+  --radius-2xl: calc(var(--radius) + 6px); /* image / chat surfaces */
+
+  /* Elevation scale — warm-ink tinted, ascending. One source of truth so every
+     raised surface reads on the same ladder: cards sit at --shadow, popovers/
+     dialogs at --shadow-lg, the chat panel at --shadow-xl. */
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05);
+  --shadow: 0 1px 2px rgba(28, 25, 23, 0.04), 0 4px 14px rgba(28, 25, 23, 0.05);
+  --shadow-md: 0 4px 8px -2px rgba(28, 25, 23, 0.08), 0 2px 4px -2px rgba(28, 25, 23, 0.06);
+  --shadow-lg: 0 12px 28px -6px rgba(28, 25, 23, 0.14), 0 4px 10px -4px rgba(28, 25, 23, 0.08);
+  --shadow-xl: 0 24px 56px -12px rgba(28, 25, 23, 0.22), 0 8px 20px -8px rgba(28, 25, 23, 0.12);
+
+  /* Spacing scale — 4px grid (the Figma/Tailwind rhythm). Prefer these over
+     ad-hoc rem values so spacing stays on one ladder across screens. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space: var(--space-4); /* legacy alias */
+
+  /* Motion — shared easing + durations so transitions feel uniform everywhere. */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 150ms;
+  --dur-slow: 200ms;
+
+  --font-body: var(--font-sans), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-serif), Georgia, "Times New Roman", serif;
+  --font-micro: var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  color-scheme: light;
 }
 
 * {
@@ -47,30 +96,63 @@ html {
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body);
   line-height: 1.55;
   color: var(--text);
   background: var(--bg);
 }
 
+/* Thin, unobtrusive scrollbars (Figma detail) — keeps chrome out of the warm,
+   editorial surfaces without hiding the affordance entirely. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(28, 25, 23, 0.18) transparent;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(28, 25, 23, 0.16);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(28, 25, 23, 0.28);
+}
+
 h1,
 h2,
 h3 {
-  line-height: 1.25;
-  font-weight: 650;
+  font-family: var(--font-display);
+  line-height: 1.2;
+  font-weight: 400; /* Fraunces light — editorial display weight */
   margin: 0 0 0.6rem;
 }
 h1 {
-  font-size: 1.7rem;
-  letter-spacing: -0.01em;
+  font-size: 2rem;
+  letter-spacing: -0.005em;
 }
 h2 {
-  font-size: 1.2rem;
+  font-size: 1.35rem;
 }
 h3 {
   font-size: 1rem;
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 500;
+}
+
+/* Uppercase letter-spaced micro-label (DM Mono). Stat captions, table headers,
+   filter labels, breadcrumb-adjacent metadata, chart axes. */
+.mono-label {
+  font-family: var(--font-micro);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
 }
 
 p {
@@ -87,35 +169,58 @@ a:hover {
 
 /* ---- Layout ------------------------------------------------------------- */
 
+/* Spacious shell (ADR-009 full-bleed addendum): the page uses the viewport rather
+   than a narrow centred column, but keeps comfortable breathing room from the
+   window edges. The gutter scales with viewport width (clamp) so it grows on big
+   displays instead of staying a thin 48px sliver, and a generous max-width keeps
+   ultra-wide screens balanced rather than grotesquely stretched. The header bar
+   and page content share this one container, so both align to the same gutter. */
+/* Full-width shell with the Figma's flat 48px gutter (`px-[48px]`, no max-width).
+   The header bar and page content share this one container, so both align to the
+   same gutter. Gutter narrows on small screens where 48px would be too much. */
 .container {
   width: 100%;
-  padding: 0 1.5rem;
+  /* Page gutter. Figma's literal gutter is 48px (px-[48px]) on its ~1524px-wide
+     frame; on wider monitors a flat 48px reads as a thin margin because content
+     stretches near the edges. So scale the gutter with the viewport: 48px up to
+     ~1200px (matching Figma), then growing to keep Figma-like breathing room on
+     large screens (capped at 128px). Phones drop to 20px (media query below). */
+  padding-inline: clamp(2rem, 2.6vw, 5.5rem);
 }
 
-@media (min-width: 768px) {
+@media (max-width: 768px) {
   .container {
-    padding: 0 2rem;
-  }
-}
-
-@media (min-width: 1280px) {
-  .container {
-    padding: 0 3rem;
-  }
-}
-
-@media (min-width: 1600px) {
-  .container {
-    padding: 0 4rem;
+    padding-inline: 1.25rem;
   }
 }
 
 main {
-  padding: 1.75rem 0 4rem;
+  padding: var(--space-10) 0 var(--space-16);
+}
+/* Portfolio is a dense, chart-led page; tighten the gap between the header bar
+   and the "Portfolio" title so the charts sit higher in the viewport. */
+.portfolio-page {
+  padding-top: var(--space-4);
 }
 
 .stack > * + * {
-  margin-top: 1rem;
+  margin-top: var(--space-4);
+}
+
+/* Dashboard (home) — mirrors the Figma block structure: a header block, then the
+   stat row, then the feature-card row, with the Figma's 32 / 24px block spacing. */
+.dash-head {
+  margin-bottom: var(--space-8); /* 32px to the stat row (Figma mb-[32px]) */
+}
+.dash-head h1 {
+  margin-bottom: 0.25rem; /* Figma mb-[4px] */
+}
+.dash-sub {
+  margin: 0;
+}
+.dash-signed {
+  margin: 0.25rem 0 0; /* Figma mt-[4px] */
+  font-size: 0.9rem;
 }
 
 .row {
@@ -137,17 +242,35 @@ main {
   color: var(--muted);
 }
 
+/* Breadcrumb trail: gold links, chevron separators, muted current page. */
 .crumbs {
-  font-size: 0.9rem;
-  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  margin: 0 0 0.25rem;
+}
+.crumbs a {
+  color: var(--accent);
+  font-weight: 500;
+}
+.crumb-current {
+  color: var(--muted);
+  min-width: 0;
+}
+.crumb-sep {
+  color: color-mix(in srgb, var(--muted) 50%, transparent);
+  font-size: 0.9em;
 }
 
 /* ---- Header ------------------------------------------------------------- */
 
+/* Solid (opaque) sticky header — matches the revised Figma's flat bg-card nav.
+   No translucency / backdrop blur. */
 .site-header {
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
-  backdrop-filter: saturate(1.1) blur(6px);
+  background: var(--surface);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -157,39 +280,83 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding-top: 0.7rem;
-  padding-bottom: 0.7rem;
+  min-height: 84px;
   flex-wrap: wrap;
 }
 .brand {
-  font-weight: 700;
-  font-size: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.35rem;
   color: var(--text);
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 .brand:hover {
   text-decoration: none;
 }
-.brand::before {
-  content: "◉";
-  color: var(--accent);
-  margin-right: 0.4rem;
+/* Gold circular "N" mark. The letter is a large, bold brand glyph (not body
+   text), so white-on-gold reads fine here. */
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.82rem;
+  line-height: 1;
+  box-shadow: var(--shadow);
 }
 .nav {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   flex-wrap: wrap;
 }
 .nav a {
-  color: var(--text);
-  padding: 0.35rem 0.65rem;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  color: var(--muted);
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-size: 1.05rem;
+  font-weight: 500;
+  transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 .nav a:hover {
-  background: var(--surface-2);
+  color: var(--text);
   text-decoration: none;
+}
+/* Active-state pill (set by HeaderNav via aria-current). */
+.nav a[aria-current="page"] {
+  color: var(--text);
+  background: var(--surface-2);
+}
+/* Sign-out: muted text + icon, no chrome until hover. */
+.nav-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  padding: 0.35rem 0.6rem;
+}
+.nav-signout:hover:not(:disabled) {
+  color: var(--text);
+  background: transparent;
+  border-color: transparent;
+}
+.nav-divider {
+  width: 1px;
+  height: 1rem;
+  background: var(--border);
+  margin: 0 0.35rem;
 }
 
 /* ---- Cards -------------------------------------------------------------- */
@@ -197,52 +364,112 @@ main {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.1rem 1.2rem;
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
   box-shadow: var(--shadow);
 }
 
 .cards {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem; /* Figma gap-[16px] */
+  /* auto-fit (not auto-fill) so two feature cards stretch to fill the row
+     instead of hugging the left behind empty phantom tracks. */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
+/* Feature card (dashboard): icon tile top-left, chevron top-right, hover lifts
+   the gold border. */
 .card-link {
   display: block;
   color: inherit;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
 }
 .card-link:hover {
   text-decoration: none;
-  border-color: var(--accent);
+  border-color: color-mix(in srgb, var(--gold) 40%, var(--border));
+  box-shadow: var(--shadow-md);
+}
+.feature-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+.feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+.feature-chevron {
+  color: color-mix(in srgb, var(--muted) 55%, transparent);
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+.card-link:hover .feature-chevron {
+  color: var(--accent);
+  transform: translateX(2px);
+}
+.card-link h2 {
+  font-weight: 500;
+  font-size: 1.05rem;
+  margin: 0 0 0.25rem;
 }
 
 /* At-a-glance stat cards (home dashboard). Auto-fit so they sit in a row on
    desktop and wrap on small screens. */
 .stats {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem; /* Figma gap-[16px] */
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 0 0 var(--space-6); /* 24px below, to the feature cards (Figma mb-[24px]) */
 }
 .stat {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-3);
 }
+/* Top row of a stat card: mono caption on the left, a muted glyph on the right
+   (Figma) — gives the wide cards a second anchor so they don't read as empty. */
+.stat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.stat-icon {
+  display: inline-flex;
+  color: color-mix(in srgb, var(--muted) 55%, transparent);
+}
+/* Mono caption above, large light serif numeral below (Figma stat card). */
 .stat-value {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+/* The money stat (formatted base-currency total) is a longer string than the
+   plain count numerals, so it renders smaller — keeping all three stat cards on
+   one baseline row (Figma). */
+.stat-value.is-money {
   font-size: 1.6rem;
-  font-weight: 700;
-  line-height: 1.15;
 }
 .stat-label {
+  font-family: var(--font-micro);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   color: var(--muted);
-  font-size: 0.85rem;
 }
 
 /* ---- Forms & buttons ---------------------------------------------------- */
@@ -254,9 +481,13 @@ textarea {
   color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 0.45rem 0.6rem;
   max-width: 100%;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
 }
 input:focus,
 select:focus,
@@ -265,7 +496,7 @@ button:focus-visible,
 a:focus-visible,
 summary:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--gold);
   outline-offset: 1px;
   border-radius: 2px;
 }
@@ -310,44 +541,95 @@ label {
   color: var(--muted);
 }
 
+/* Default button = outline variant: card surface, hairline border, muted hover. */
 button {
   font: inherit;
+  font-weight: 500;
   cursor: pointer;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  padding: 0.45rem 0.85rem;
-  border-radius: 8px;
-  transition: background 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-md);
+  transition: background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
 }
 button:hover:not(:disabled) {
   background: var(--surface-2);
-  border-color: var(--muted);
+  border-color: color-mix(in srgb, var(--text) 22%, var(--border));
 }
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
+/* Primary = white text on the deeper gold (--accent #8a5f15, ~5.6:1 AA), keeping
+   the Figma's white-on-gold look while clearing contrast. The bright --primary
+   gold stays reserved for fills/tints/borders. See ADR-009 §4. */
 .btn-primary {
-  background: var(--primary);
-  color: var(--primary-text);
-  border-color: var(--primary);
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
 }
 .btn-primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--primary) 85%, #000);
-  border-color: var(--primary);
+  background: color-mix(in srgb, var(--accent) 88%, #000);
+  border-color: color-mix(in srgb, var(--accent) 88%, #000);
 }
 .btn-danger {
   color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
 }
 .btn-danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
 }
 .btn-sm {
-  padding: 0.25rem 0.55rem;
-  font-size: 0.85rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+/* Ghost = no chrome until hover (Figma's ghost buttons, e.g. the create-bar
+   icon-only cancel). */
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: transparent;
+}
+
+/* Icon + label buttons (row action controls): keep the glyph and text aligned on
+   one baseline with a small gap (Figma's icon buttons). */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.btn-icon svg {
+  flex-shrink: 0;
+}
+
+/* Coin-detail title edit pencil: borderless icon-only control. No background on
+   hover — instead the glyph itself thickens (bolder stroke) and deepens to the
+   accent gold, so the affordance reads as emphasis rather than a button chip. */
+.coin-edit-btn {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  padding: 0.3rem;
+}
+.coin-edit-btn:hover:not(:disabled),
+.coin-edit-btn:focus-visible {
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent);
+}
+.coin-edit-btn:hover:not(:disabled) svg {
+  stroke-width: 2.75;
 }
 
 .toolbar {
@@ -355,6 +637,20 @@ button:disabled {
   gap: 0.5rem;
   align-items: flex-end;
   flex-wrap: wrap;
+}
+
+/* Inline "create" bar revealed by a primary action (Figma collections "New
+   collection"): card surface with a faint gold hairline; the input grows, with a
+   compact confirm + ghost-cancel on the right. */
+.create-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem; /* 10px */
+  margin-bottom: 0.75rem; /* 12px */
+  padding: 0.875rem 1.25rem; /* 14px 20px */
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  border-radius: var(--radius-xl);
 }
 
 /* ---- Lists / rows ------------------------------------------------------- */
@@ -412,12 +708,13 @@ button:disabled {
 }
 .data-table thead th {
   text-align: left;
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-family: var(--font-micro);
+  font-size: 0.72rem;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
   color: var(--muted);
-  padding: 0.55rem 0.9rem;
+  padding: 0.7rem 0.9rem;
   background: var(--surface-2);
   border-bottom: 1px solid var(--border);
 }
@@ -435,9 +732,40 @@ button:disabled {
   white-space: nowrap;
   text-align: right;
 }
+/* Row actions reveal on row hover (Figma's group-hover). They stay shown while a
+   control inside has keyboard focus (so they're reachable by Tab), and stay shown
+   on touch devices where there is no hover. */
+.row-actions {
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.data-table tr:hover .row-actions,
+.row-actions:focus-within {
+  opacity: 1;
+}
+@media (hover: none) {
+  .row-actions {
+    opacity: 1;
+  }
+}
+/* Thumb column hugs its image(s) (kept at full 160px each) rather than reserving
+   a fixed two-thumb width, so a coin with one/no image leaves no dead gap before
+   the title. */
+.data-table th.td-thumb,
 .data-table td.td-thumb {
-  width: 344px;
-  padding-right: 0;
+  width: 1%;
+  white-space: nowrap;
+}
+/* Title column gets a sensible cap and truncates rather than absorbing all the
+   slack — the leftover width then distributes across the attribute columns so the
+   table reads as balanced instead of name-dominated. Long derived titles ellipsis. */
+.data-table .col-title {
+  max-width: 18rem;
+}
+.data-table td.col-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* Right-aligned numeric column (e.g. coin counts), tabular figures so digits
    line up; applies to both the header cell and the body cell. */
@@ -454,10 +782,39 @@ button:disabled {
 .badge {
   display: inline-block;
   font-size: 0.75rem;
+  font-weight: 500;
   color: var(--accent);
   background: var(--accent-weak);
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
   border-radius: 999px;
   padding: 0.05rem 0.5rem;
+}
+
+/* Filter chip / tag. Inactive = card surface + hairline; active = gold-tint bg +
+   gold border + gold text. Toggle with aria-pressed (buttons) or .is-active. */
+.chip {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+.chip:hover:not(:disabled) {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--text) 20%, var(--border));
+  background: var(--surface);
+}
+.chip[aria-pressed="true"],
+.chip.is-active {
+  color: var(--accent);
+  background: var(--accent-weak);
+  border-color: color-mix(in srgb, var(--gold) 40%, transparent);
 }
 
 /* Gain/loss text colours (portfolio performance). */
@@ -497,49 +854,157 @@ button:disabled {
 
 /* ---- Trend chart (SVG) -------------------------------------------------- */
 
+/* Chart card heading — a touch larger and in the text colour (vs the muted 1rem
+   default h3) so the two portfolio charts read as titled panels. */
+.chart-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--text);
+}
+
 .chart-axis {
   fill: var(--muted);
-  font-size: 0.58rem; /* small enough that wide labels (e.g. "CHF 3,000") fit */
+  font-family: var(--font-micro);
+  font-size: 0.72rem; /* legible value labels; AXIS_W is sized to fit wide ones */
+  letter-spacing: 0.04em;
 }
 .chart-line {
-  stroke: var(--accent);
+  stroke: var(--gold);
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 .chart-area {
-  fill: color-mix(in srgb, var(--accent) 14%, transparent);
+  fill: color-mix(in srgb, var(--gold) 16%, transparent);
   stroke: none;
 }
 .chart-dot {
-  fill: var(--accent);
-}
-.range-btn[aria-pressed="true"] {
-  background: var(--primary);
-  color: var(--primary-text);
-  border-color: var(--primary);
+  fill: var(--gold);
 }
 
-/* ---- Timeline filters --------------------------------------------------- */
+/* ---- Scrollable plot + frozen y-axis (shared by both charts) ------------- */
 
-.filters {
+/* Plot region: a fixed-width y-axis column whose cost labels stay put, plus a
+   horizontally scrollable plot so a long history scrolls instead of squeezing.
+   position: relative anchors the cost-breakdown hover tooltip. */
+.chart-plot {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+.chart-yaxis {
+  flex: 0 0 auto;
+  display: block;
+}
+.chart-scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+}
+.bar-col {
+  cursor: pointer;
+}
+
+/* Floating cost-breakdown tooltip (Figma): a card-surface popover above the
+   cursor with the per-coin segment split. pointer-events: none so it never
+   steals the hover from the column beneath it. */
+.chart-tooltip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  margin-top: -10px;
+  z-index: 5;
+  pointer-events: none;
+  min-width: 11rem;
+  max-width: 16rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 0.6rem 0.7rem;
+}
+.chart-tooltip-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+.chart-tooltip-sub {
+  margin: 0.1rem 0 0.5rem;
+  font-size: 0.62rem;
+}
+.chart-tooltip-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.2rem;
 }
-.filter-group {
+.chart-tooltip-rows > li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+}
+.chart-tooltip-val {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.chart-tooltip-total {
+  margin-top: 0.45rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border);
+  text-align: right;
+  font-weight: 600;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Date-range presets: subtle gold-tint pill when pressed (Figma). */
+.range-btn[aria-pressed="true"] {
+  background: var(--accent-weak);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--gold) 40%, transparent);
+}
+
+/* ---- Portfolio summary --------------------------------------------------- */
+
+/* The "Total paid" hero card (Figma portfolio summary), kept to a single line to
+   save vertical space: the mono caption, the large serif total, and the muted
+   hammer/priced note sit inline on the left, with the base-currency control
+   pushed to the right. Wraps to multiple rows only when the viewport is too
+   narrow to hold it on one line. */
+.portfolio-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+}
+.portfolio-summary-line {
   display: flex;
   align-items: baseline;
-  gap: 0.6rem;
   flex-wrap: wrap;
+  gap: 0.6rem;
 }
-.filter-label {
-  flex: 0 0 5.5rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--muted);
+.portfolio-total {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 2rem; /* Figma text-[32px] */
+  line-height: 1;
+  color: var(--text);
+}
+.portfolio-note {
+  margin: 0;
+}
+/* Base-currency form: compact, right-aligned in the summary so the feature stays
+   discoverable without dominating the card (the Figma mock omits it; it is
+   required for multi-currency portfolios). */
+.base-currency {
+  gap: 0.5rem;
 }
 
 /* ---- Side-by-side analytics layout -------------------------------------- */
@@ -549,7 +1014,7 @@ button:disabled {
 .analytics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 1.25rem; /* Figma gap-[20px] */
   align-items: start;
 }
 .analytics-grid > * {
@@ -575,7 +1040,7 @@ button:disabled {
 /* Coin's total cost, above its column. */
 .bar-total {
   fill: var(--text);
-  font-size: 0.62rem;
+  font-size: 0.8rem;
   font-weight: 600;
 }
 /* Per-segment share, drawn inside the segment. The surface-coloured outline
@@ -584,15 +1049,15 @@ button:disabled {
 .bar-seg-label {
   fill: var(--text);
   stroke: var(--surface);
-  stroke-width: 2.5px;
+  stroke-width: 3px;
   paint-order: stroke;
-  font-size: 0.55rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 .bar-avatar-ring {
   fill: none;
   stroke: var(--border);
-  stroke-width: 1.5;
+  stroke-width: 2;
 }
 
 /* Cost-breakdown segment legend, sitting top-right under the title row. Compact
@@ -630,76 +1095,170 @@ button:disabled {
    paint the SVG column segments (fill). Kept in lockstep so the chart and its
    legend share one palette. */
 .seg-hammer {
-  background: var(--accent);
+  background: var(--gold);
 }
 .seg-premium {
-  background: color-mix(in srgb, var(--accent) 50%, var(--surface));
-}
-.seg-shipping {
-  background: color-mix(in srgb, var(--primary) 55%, var(--surface));
-}
-.seg-unsplit {
   background: var(--muted);
 }
+.seg-shipping {
+  background: var(--stone);
+}
+.seg-unsplit {
+  background: color-mix(in srgb, var(--muted) 45%, var(--surface-2));
+}
 .bar-hammer {
-  fill: var(--accent);
+  fill: var(--gold);
 }
 .bar-premium {
-  fill: color-mix(in srgb, var(--accent) 50%, var(--surface));
+  fill: var(--muted);
 }
 .bar-shipping {
-  fill: color-mix(in srgb, var(--primary) 55%, var(--surface));
+  fill: var(--stone);
 }
 .bar-unsplit {
-  fill: var(--muted);
+  fill: color-mix(in srgb, var(--muted) 45%, var(--surface-2));
 }
 
 /* ---- Coin overview (details left, image right) -------------------------- */
 
+/* Details (fluid) + a fixed-width image rail. The 360px rail (Figma) keeps the
+   photo from ballooning now that the page is full-bleed. */
 .coin-overview {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  align-items: stretch;
-  gap: 1rem;
+  display: flex;
+  align-items: flex-start; /* Figma items-start: top-aligned, not stretched */
+  gap: 3.25rem; /* Figma gap-[40px], widened for more separation between columns */
+  /* Full-width: the flex-1 left column fills the remaining width beside the
+     fixed 460px rail, so the row spans the whole content area (no left-bias /
+     empty right gutter), consistent with the full-width shell (ADR-009). */
 }
 
-/* Left column: single card containing title, attributes, and valuations. */
+/* Left column: a stack of cards. Title + attribute chips sit on the page
+   surface; each notes section and the valuations get their own card, matching
+   the Figma coin-detail layout (ADR-009) rather than one monolithic panel. */
 .coin-overview-left {
+  flex: 1; /* Figma flex-1: takes the remaining width beside the 360px rail */
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-4);
+  min-width: 0;
 }
-/* Visual divider above the embedded valuations section. */
-.coin-overview-left .stack {
-  border-top: 1px solid var(--border);
-  padding-top: 1rem;
+/* Coin title (detail page): Fraunces display, lightweight and sized down from
+   the page hero so the breadcrumb + attribute chips read as the focus (Figma
+   24px / font-light). */
+.coin-detail-title {
+  margin: 0;
+  font-size: 1.875rem;
+  font-weight: 300;
+  line-height: 1.3;
+}
+/* Notes sections: one card each, tighter gap than the surrounding column. */
+.coin-notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.coin-note {
+  padding: var(--space-4) var(--space-5);
+}
+.coin-note .mono-label {
+  margin: 0 0 0.4rem;
+}
+.coin-note p:last-child {
+  margin: 0;
+  line-height: 1.6;
 }
 
-@media (max-width: 640px) {
+/* Stack the two columns below 1160px: a fixed 520px rail would squeeze the left
+   column too thin on small laptops, so collapse to one column there. The stacked
+   image is capped at 520px (full width only on phones) so it doesn't balloon on
+   tablets. */
+@media (max-width: 1160px) {
   .coin-overview {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+  .coin-image-card {
+    flex-basis: auto;
+    width: 100%;
+    max-width: 520px;
   }
 }
 
-/* Image card: photo fills the upper area, controls sit at the bottom. */
+/* Image rail: a borderless column (Figma right column has no card chrome) — a
+   square photo on top, controls below. Widened to 520px (the Figma spec is
+   360px, but on real wide screens a small square reads as stranded; 520px gives
+   the photo the prominence the Figma's short canvas implied while keeping a
+   balanced split against the full-width flex-1 left column). */
 .coin-image-card {
+  flex: 0 0 520px;
+  width: 520px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-3); /* Figma gap-[12px] */
 }
 
-/* Grows to fill remaining card height; provides the relative context for the
-   expand button overlay. */
+/* Square photo (Figma aspect-square, rounded-[16px], muted fill); provides the
+   relative context for the nav/expand overlays. */
 .coin-photo-wrap {
   position: relative;
-  flex: 1;
-  min-height: 0;
+  aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--surface-2);
-  border-radius: calc(var(--radius) - 2px);
+  border-radius: 16px;
   overflow: hidden;
+}
+
+/* Title-with-actions row (card/section headers): title on the left, action
+   buttons on the right. Replaces repeated inline flex/space-between blocks. */
+.head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* Coin attribute tiles (detail page) — compact muted chips of the key
+   attributes, echoing the Figma's attribute grid. Auto-fits and wraps. */
+.attr-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin: 0;
+}
+/* Narrow viewports: step down so tiles never crush. */
+@media (max-width: 900px) {
+  .attr-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .attr-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 400px) {
+  .attr-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.attr-tile {
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+.attr-tile dt {
+  font-family: var(--font-micro);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin: 0 0 0.3rem;
+}
+.attr-tile dd {
+  margin: 0;
+  font-size: 1.05rem;
 }
 
 /* ---- Coin details ------------------------------------------------------- */
@@ -763,46 +1322,45 @@ button:disabled {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  /* Fill the full rounded square (Figma object-cover) rather than letterboxing
+     inside it; the lightbox still shows the whole image uncropped. */
+  object-fit: cover;
 }
 
-.coin-photo-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 2rem;
-  height: 2rem;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
+/* Selectable thumbnail strip below the main photo (Figma): equal squares that
+   fill the rail width and wrap as more pictures are added. */
+.coin-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: var(--space-3); /* 12px */
+}
+.coin-thumb {
+  aspect-ratio: 1 / 1;
   padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface-2);
   cursor: pointer;
-  opacity: 0.8;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition: border-color var(--dur-fast) var(--ease);
 }
-.coin-photo-nav:hover:not(:disabled) {
-  opacity: 1;
-  background: rgba(0, 0, 0, 0.72);
+.coin-thumb:hover:not(.is-active) {
+  border-color: var(--border);
 }
-.coin-photo-prev { left: 0.5rem; }
-.coin-photo-next { right: 0.5rem; }
+.coin-thumb.is-active {
+  border-color: var(--gold);
+}
+.coin-thumb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-.coin-photo-counter {
-  position: absolute;
-  bottom: 0.5rem;
-  left: 0.5rem;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.18rem 0.45rem;
-  border-radius: 4px;
-  line-height: 1.4;
-  pointer-events: none;
+/* "Picture N of M" caption under the photo (replaces the obverse/reverse label). */
+.coin-photo-caption {
+  margin: 0;
+  text-align: center;
 }
 
 .coin-photo-expand {
@@ -931,8 +1489,8 @@ button:disabled {
   height: 52px;
   border-radius: 50%;
   padding: 0;
-  background: var(--primary);
-  color: var(--primary-text);
+  background: var(--ink);
+  color: var(--ink-text);
   border: none;
   display: flex;
   align-items: center;
@@ -943,7 +1501,7 @@ button:disabled {
 .chat-fab:hover:not(:disabled) {
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.34);
   transform: scale(1.08);
-  background: color-mix(in srgb, var(--primary) 82%, #000);
+  background: color-mix(in srgb, var(--ink) 88%, #fff);
   border-color: transparent;
 }
 
@@ -958,8 +1516,8 @@ button:disabled {
   background: var(--surface);
   overflow: hidden;
   max-height: clamp(420px, 65vh, 600px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
-  animation: chat-panel-in 0.18s ease;
+  box-shadow: var(--shadow-xl);
+  animation: chat-panel-in var(--dur-slow) var(--ease);
 }
 
 /* Large desktop (≥ 1280 px) */
@@ -1011,8 +1569,8 @@ button:disabled {
   align-items: center;
   gap: 0.75rem;
   padding: 0.9rem 1rem;
-  background: var(--primary);
-  color: var(--primary-text);
+  background: var(--ink);
+  color: var(--ink-text);
   flex-shrink: 0;
 }
 
@@ -1020,8 +1578,8 @@ button:disabled {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: var(--accent);
-  color: var(--primary-text);
+  background: var(--gold);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1070,7 +1628,7 @@ button:disabled {
 }
 .chat-close-btn:hover:not(:disabled) {
   opacity: 1;
-  background: color-mix(in srgb, var(--primary-text) 12%, transparent);
+  background: color-mix(in srgb, var(--ink-text) 14%, transparent);
   border-color: transparent;
 }
 
@@ -1160,13 +1718,13 @@ button:disabled {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: var(--primary);
-  color: var(--primary-text);
-  border-color: var(--primary);
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
   transition: opacity 0.12s ease, transform 0.12s ease, background 0.12s ease;
 }
 .chat-send-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--primary) 82%, #000);
+  background: color-mix(in srgb, var(--accent) 88%, #000);
   border-color: transparent;
   transform: scale(1.08);
 }
@@ -1256,7 +1814,7 @@ button:disabled {
 .msg-user {
   align-self: flex-end;
   background: var(--accent);
-  color: var(--primary-text);
+  color: #fff;
   border-radius: 16px 16px 4px 16px;
 }
 .msg-assistant {
@@ -1282,7 +1840,7 @@ dialog.modal {
   padding: 1.2rem;
   max-width: 420px;
   width: calc(100% - 2rem);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-lg);
 }
 dialog.modal::backdrop {
   background: rgba(0, 0, 0, 0.4);
@@ -1318,7 +1876,7 @@ dialog.modal::backdrop {
   border-radius: var(--radius);
   padding: 0.4rem;
   min-width: 210px;
-  box-shadow: 0 4px 20px rgb(0 0 0 / 0.15);
+  box-shadow: var(--shadow-lg);
 }
 .col-picker-hint {
   font-size: 0.75rem;

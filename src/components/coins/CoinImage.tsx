@@ -21,22 +21,6 @@ function IconUpload() {
   );
 }
 
-function IconChevronLeft() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-    </svg>
-  );
-}
-
-function IconChevronRight() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-    </svg>
-  );
-}
-
 export function CoinImage({ coinId }: { coinId: string }) {
   const [imageIds, setImageIds] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -69,15 +53,6 @@ export function CoinImage({ coinId }: { coinId: string }) {
       if (e.target === lightboxRef.current) lightboxRef.current?.close();
     },
     [],
-  );
-
-  const prev = useCallback(
-    () => setCurrentIndex((i) => (i - 1 + imageIds.length) % imageIds.length),
-    [imageIds.length],
-  );
-  const next = useCallback(
-    () => setCurrentIndex((i) => (i + 1) % imageIds.length),
-    [imageIds.length],
   );
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -137,7 +112,7 @@ export function CoinImage({ coinId }: { coinId: string }) {
 
   if (!loaded)
     return (
-      <section className="card coin-image-card" aria-busy="true">
+      <section className="coin-image-card" aria-busy="true">
         <div className="coin-photo-wrap">
           <span
             className="skeleton"
@@ -149,35 +124,17 @@ export function CoinImage({ coinId }: { coinId: string }) {
     );
 
   return (
-    <section className="card coin-image-card">
+    <section className="coin-image-card">
       <div className="coin-photo-wrap">
         {hasImages && src ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt="Coin" className="coin-photo" key={currentId} />
-            {hasMultiple && (
-              <>
-                <button
-                  type="button"
-                  className="coin-photo-nav coin-photo-prev"
-                  onClick={prev}
-                  aria-label="Previous photo"
-                >
-                  <IconChevronLeft />
-                </button>
-                <button
-                  type="button"
-                  className="coin-photo-nav coin-photo-next"
-                  onClick={next}
-                  aria-label="Next photo"
-                >
-                  <IconChevronRight />
-                </button>
-                <span className="coin-photo-counter">
-                  {currentIndex + 1} / {imageIds.length}
-                </span>
-              </>
-            )}
+            <img
+              src={src}
+              alt={`Coin picture ${currentIndex + 1}`}
+              className="coin-photo"
+              key={currentId}
+            />
             <button
               type="button"
               className="coin-photo-expand"
@@ -202,6 +159,37 @@ export function CoinImage({ coinId }: { coinId: string }) {
           </p>
         )}
       </div>
+
+      {/* Selectable thumbnail strip — pick which picture to view. Only useful
+          with more than one image. */}
+      {hasMultiple && (
+        <div className="coin-thumbs" role="group" aria-label="Coin pictures">
+          {imageIds.map((id, i) => (
+            <button
+              key={id}
+              type="button"
+              className={`coin-thumb${i === currentIndex ? " is-active" : ""}`}
+              onClick={() => setCurrentIndex(i)}
+              aria-label={`Show picture ${i + 1}`}
+              aria-current={i === currentIndex}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/api/coins/${coinId}/images/${id}?w=160`}
+                alt=""
+                className="coin-thumb-img"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {hasImages && (
+        <p className="coin-photo-caption mono-label">
+          Picture {currentIndex + 1}
+          {hasMultiple ? ` of ${imageIds.length}` : ""}
+        </p>
+      )}
 
       <div className="row">
         <input

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import { IconPencil, IconTrash } from "@/components/ui/icons";
 import { COIN_GRADES } from "@/lib/validation/coin";
 import { formatYearRange, formatCoinTitle } from "@/lib/coin-format";
 import { readError, NETWORK_ERROR } from "@/lib/http";
@@ -370,7 +371,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
                   onDragOver: (e: React.DragEvent) => { e.preventDefault(); setHeaderDropKey(col.key); },
                   onDrop: () => { if (headerDragKey) reorderCols(headerDragKey, col.key); setHeaderDragKey(null); setHeaderDropKey(null); },
                   onDragEnd: () => { setHeaderDragKey(null); setHeaderDropKey(null); },
-                  className: isDragOver ? "th-drop-target" : undefined,
+                  className: [col.key === "title" ? "col-title" : "", isDragOver ? "th-drop-target" : ""].filter(Boolean).join(" ") || undefined,
                   style: { cursor: "grab", userSelect: "none" as const, whiteSpace: "nowrap" as const },
                 };
                 return def.sortable ? (
@@ -398,17 +399,20 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
               <tr key={coin.id}>
                 <td className="td-thumb"><CoinThumb coinId={coin.id} /></td>
                 {visibleCols.map((col) => (
-                  <td key={col.key} className={col.key !== "title" ? "muted" : undefined}>
+                  <td key={col.key} className={col.key === "title" ? "col-title" : "muted"}>
                     {renderCell(coin, col.key)}
                   </td>
                 ))}
                 <td className="td-actions">
-                  <span className="row" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
-                    <button type="button" className="btn-sm" onClick={() => startEdit(coin)} disabled={busy}>Edit</button>
-                    <ConfirmButton className="btn-sm btn-danger" disabled={busy}
+                  <span className="row row-actions" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
+                    <button type="button" className="btn-sm btn-icon" onClick={() => startEdit(coin)} disabled={busy}
+                      aria-label="Edit coin" title="Edit">
+                      <IconPencil />
+                    </button>
+                    <ConfirmButton className="btn-sm btn-danger btn-icon" disabled={busy} title="Delete"
                       message={`Delete "${formatCoinTitle(coin)}" and its valuations? This cannot be undone.`}
                       onConfirm={() => handleDelete(coin)}>
-                      Delete
+                      <IconTrash /><span className="sr-only">Delete coin</span>
                     </ConfirmButton>
                   </span>
                 </td>

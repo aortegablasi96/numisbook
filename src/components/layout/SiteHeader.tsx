@@ -1,8 +1,30 @@
 import Link from "next/link";
 import { auth, signIn, signOut } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
+import { HeaderNav } from "./HeaderNav";
 
-// Global app header: brand, primary nav, and auth controls. Server Component so
+function IconSignOut() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
+// Global app header: gold "N" mark + Fraunces wordmark, primary nav (with an
+// active pill via the client HeaderNav), and auth controls. Server Component so
 // it can read the session and run the sign in/out server actions.
 export async function SiteHeader() {
   const session = await auth();
@@ -12,27 +34,33 @@ export async function SiteHeader() {
     <header className="site-header">
       <div className="container bar">
         <Link href="/" className="brand">
+          <span className="brand-logo" aria-hidden="true">
+            N
+          </span>
           NumisBook
         </Link>
 
-        <nav className="nav">
-          {user && (
-            <>
-              <Link href="/collections">Collections</Link>
-              <Link href="/portfolio">Portfolio</Link>
-            </>
-          )}
+        <nav className="nav" aria-label="Primary">
+          {user && <HeaderNav />}
           {user ? (
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
-            >
-              <button type="submit" className="btn-sm" title={user.email ?? ""}>
-                Sign out
-              </button>
-            </form>
+            <>
+              <span className="nav-divider" aria-hidden="true" />
+              <form
+                action={async () => {
+                  "use server";
+                  await signOut({ redirectTo: "/" });
+                }}
+              >
+                <button
+                  type="submit"
+                  className="nav-signout"
+                  title={user.email ?? ""}
+                >
+                  <IconSignOut />
+                  Sign out
+                </button>
+              </form>
+            </>
           ) : (
             <form
               action={async () => {

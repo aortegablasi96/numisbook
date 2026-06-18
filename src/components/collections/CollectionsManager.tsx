@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import { IconPencil, IconTrash, IconPlus, IconCheck, IconX } from "@/components/ui/icons";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { formatMoney } from "@/lib/currencies";
 
@@ -117,45 +118,51 @@ export function CollectionsManager({
 
   return (
     <section className="stack">
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        {collections.length > 1 ? (
+      <div className="row" style={{ gap: "0.75rem" }}>
+        {collections.length > 1 && (
           <input
             type="text"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter collections…"
             aria-label="Filter collections"
-            style={{ maxWidth: "18rem" }}
+            style={{ maxWidth: "220px" }}
           />
-        ) : (
-          <span />
         )}
         <button
           type="button"
-          className="btn-primary btn-sm"
-          onClick={() => { setShowAddForm((v) => !v); setNewName(""); setError(null); }}
+          className="btn-primary btn-sm btn-icon"
+          onClick={() => { setShowAddForm(true); setNewName(""); setError(null); }}
         >
-          {showAddForm ? "Cancel" : "+ New collection"}
+          <IconPlus size={13} /> New collection
         </button>
       </div>
 
       {showAddForm && (
-        <form onSubmit={handleCreate} className="card toolbar">
+        <form onSubmit={handleCreate} className="create-bar">
           <input
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Collection name"
+            placeholder="Collection name…"
             aria-label="New collection name"
             autoFocus
             style={{ flex: 1 }}
           />
           <button
             type="submit"
-            className="btn-primary"
+            className="btn-sm btn-primary btn-icon"
             disabled={busy || newName.trim() === ""}
           >
-            Create
+            <IconCheck size={12} /> Create
+          </button>
+          <button
+            type="button"
+            className="btn-sm btn-ghost btn-icon"
+            onClick={() => { setShowAddForm(false); setNewName(""); setError(null); }}
+            aria-label="Cancel"
+          >
+            <IconX size={12} />
           </button>
         </form>
       )}
@@ -225,22 +232,22 @@ export function CollectionsManager({
                 </td>
                 <td className="td-actions">
                   {editingId !== collection.id && (
-                    <span className="row" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
+                    <span className="row row-actions" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
                       <button
                         type="button"
-                        className="btn-sm"
+                        className="btn-sm btn-icon"
                         onClick={() => startRename(collection)}
                         disabled={busy}
                       >
-                        Rename
+                        <IconPencil /> Rename
                       </button>
                       <ConfirmButton
-                        className="btn-sm btn-danger"
+                        className="btn-sm btn-danger btn-icon"
                         disabled={busy}
                         message={`Delete "${collection.name}" and all of its coins? This cannot be undone.`}
                         onConfirm={() => handleDelete(collection.id)}
                       >
-                        Delete
+                        <IconTrash /> Delete
                       </ConfirmButton>
                     </span>
                   )}

@@ -323,6 +323,78 @@ Implemented:
 
 ---
 
+# Phase 8 — Figma UI Redesign
+
+Status: Complete
+
+Re-skinned the app to the agreed **Figma "stone & gold"** design — a warm,
+editorial look with serif display type — without changing routes, services,
+repositories, the API, or the data model. The Figma source (Tailwind + shadcn +
+recharts) was a visual reference only; the look was translated into the existing
+dependency-free `globals.css` system. See ADR-009.
+
+## Foundations
+
+Implemented:
+
+- Re-mapped `globals.css` to the stone & gold palette, `0.625rem`-based radii,
+  and the Figma chart colours; **dropped dark mode** (light-only — the Figma
+  defines no real dark variant)
+- Typography via `next/font` (self-hosted, no layout shift): **Fraunces**
+  (display/numerals), **DM Sans** (body/UI), **DM Mono** (the new `.mono-label`
+  uppercase micro-labels)
+
+## Shell & primitives
+
+Implemented:
+
+- `SiteHeader` — gold circular "N" logo, Fraunces wordmark, icon sign-out, and a
+  new client `HeaderNav` with an active-state pill
+- Gold primary buttons (ink text for AA), `.chip` filter tags, chevron
+  breadcrumbs with gold links, rounded-xl cards, mono-header tables
+
+## Screen re-skin
+
+Implemented:
+
+- Dashboard (Fraunces hero, mono-caption stat cards with serif numerals, icon
+  feature cards), collections, coin list (dual obverse/reverse thumbnails), coin
+  detail (mono field labels, image card), portfolio (gold/stone SVG charts with
+  DM Mono axes), and the assistant (dark ink header, gold avatar, gold bubbles)
+
+## Accessibility
+
+Implemented:
+
+- **axe-clean (WCAG 2.1 AA)** on dashboard, portfolio, and coin detail in the
+  shipped light scheme; gold-on-white resolved by reserving the bright gold for
+  fills and using a deeper gold / ink-on-gold for text, plus a darkened `--muted`
+  (ADR-009 §4); responsive verified at mobile and desktop
+
+## Layout matched to the Figma (2026-06-17)
+
+After the initial re-skin read as too narrow on desktop, the shell and dashboard
+were aligned **directly to the Figma's exact spacing** (ADR-009 addendum, shell
+geometry only — no logic, route, or data-model change):
+
+- `.container` made **full-width with a flat 48px gutter** (Figma `w-full
+  px-[48px]`, no max-width; 20px below 768px) instead of a centred
+  `max-width:1320px` column; header and content share the one gutter
+- **dashboard restructured to the Figma block layout** — header block (`.dash-head`,
+  `mb-32`) → stat row (`.stats`, `gap-16 mb-24`) → feature row (`.cards`, `gap-16`);
+  this fixed a `margin:0` override on `.stats`/`.cards` that had collapsed the
+  stat-row → feature-row gap to ~0px
+- **stat cards gained the Figma's top-right icons** (`.stat-head` / `.stat-icon`)
+- `.site-header` made opaque (dropped the translucent blur) per the flat Figma nav
+- money stat sized down (`.stat-value.is-money`); coin-detail `minmax(0,1fr) 360px`
+  image rail with a `40px` gap; portfolio chart row gap `20px`
+- **rename/delete icons** added to the collection and coin list rows (the Figma's
+  `Pencil`/`Trash2`) via a shared dependency-free `components/ui/icons.tsx` primitive
+  and a `.btn-icon` utility; labels kept for accessibility
+- values verified pixel-for-pixel (Playwright) at desktop (1680px) and mobile (390px)
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -335,6 +407,7 @@ See:
 - `docs/decisions/006-coin-and-valuation-attribute-rework.md`
 - `docs/decisions/007-portfolio-analytics-upgrade.md`
 - `docs/decisions/008-ui-embellishment.md`
+- `docs/decisions/009-figma-ui-redesign.md`
 
 ---
 
@@ -347,7 +420,8 @@ Current stack:
 - Next.js App Router
 - React
 - TypeScript
-- Dependency-free CSS design system (`src/app/globals.css`; no Tailwind/CSS-in-JS)
+- Dependency-free CSS design system (`src/app/globals.css`; no Tailwind/CSS-in-JS) —
+  "stone & gold" theme, light-only, `next/font` typography (ADR-009)
 
 ## Backend
 

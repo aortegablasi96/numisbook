@@ -3,8 +3,9 @@
 import { useState } from "react";
 import type { Coin } from "@/repositories/coin.repository";
 import { COIN_GRADES } from "@/lib/validation/coin";
-import { formatCoinTitle, formatCoinCharacteristics } from "@/lib/coin-format";
+import { formatCoinTitle, formatYearRange } from "@/lib/coin-format";
 import { readError, NETWORK_ERROR } from "@/lib/http";
+import { IconPencil } from "@/components/ui/icons";
 
 type CoinFields = Pick<
   Coin,
@@ -73,7 +74,6 @@ function buildBlocks(coin: CoinFields): Block[] {
   ].filter(Boolean);
 
   return [
-    coin.grade && { label: "Condition", value: coin.grade },
     coin.obverseDescription && { label: "Obverse", value: coin.obverseDescription, multiline: true },
     coin.reverseDescription && { label: "Reverse", value: coin.reverseDescription, multiline: true },
     coin.catalogueReferences && { label: "Catalogue references", value: coin.catalogueReferences },
@@ -215,16 +215,28 @@ export function CoinDetailsCard({
   const finalPriceValue = hasComponent ? componentsSum : form.finalPrice;
 
   const title = formatCoinTitle(current);
-  const characteristics = formatCoinCharacteristics(current);
   const blocks = buildBlocks(current);
+  const years = formatYearRange(current.yearFrom, current.yearTo);
+  // Key attributes as compact tiles (Figma attribute grid). Only present fields
+  // are shown; descriptions/price/auction stay in the labelled blocks below.
+  const attributes = [
+    current.metal && ["Metal", current.metal],
+    current.denomination && ["Denomination", current.denomination],
+    current.category && ["Category", current.category],
+    years && ["Year", years],
+    current.mint && ["Mint", current.mint],
+    current.grade && ["Condition", current.grade],
+    current.weight && ["Weight", `${current.weight} g`],
+    current.diameter && ["Diameter", `${current.diameter} mm`],
+  ].filter(Boolean) as [string, string][];
 
   return (
-    <div className="card coin-overview-left">
+    <div className="coin-overview-left">
       {editing ? (
-        <form onSubmit={handleSave} className="stack" style={{ gap: "0.75rem" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
-            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 600, color: "var(--muted)" }}>Edit coin</h2>
-            <div className="row" style={{ gap: "0.5rem" }}>
+        <form onSubmit={handleSave} className="card stack" style={{ gap: "var(--space-3)" }}>
+          <div className="head-row" style={{ alignItems: "center" }}>
+            <h2 className="mono-label" style={{ margin: 0, fontSize: "0.8rem" }}>Edit coin</h2>
+            <div className="row" style={{ gap: "var(--space-2)" }}>
               <button type="button" className="btn-sm" onClick={() => setEditing(false)} disabled={busy}>
                 Cancel
               </button>
@@ -350,30 +362,42 @@ export function CoinDetailsCard({
         </form>
       ) : (
         <>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem" }}>
-            <div>
-              <h1 style={{ margin: 0 }}>{title}</h1>
-              {characteristics && (
-                <p style={{ margin: "0.25rem 0 0", color: "var(--muted)" }}>{characteristics}</p>
-              )}
-            </div>
-            <button type="button" className="btn-sm" onClick={startEdit} style={{ flexShrink: 0 }}>
-              Edit
+          <div className="head-row">
+            <h1 className="coin-detail-title">{title}</h1>
+            <button
+              type="button"
+              className="btn-sm btn-icon coin-edit-btn"
+              onClick={startEdit}
+              style={{ flexShrink: 0 }}
+              aria-label="Edit coin"
+              title="Edit"
+            >
+              <IconPencil size={20} />
             </button>
           </div>
-          {blocks.length > 0 && (
-            <section className="coin-notes stack" style={{ gap: "0.6rem" }}>
-              {blocks.map(({ label, value, multiline }) => (
-                <div key={label}>
-                  <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.85rem" }}>{label}</p>
-                  <p style={{ margin: 0, whiteSpace: multiline ? "pre-wrap" : undefined }}>{value}</p>
+          {attributes.length > 0 && (
+            <dl className="attr-grid">
+              {attributes.map(([label, value]) => (
+                <div key={label} className="attr-tile">
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
                 </div>
               ))}
-            </section>
+            </dl>
+          )}
+          {blocks.length > 0 && (
+            <div className="coin-notes">
+              {blocks.map(({ label, value, multiline }) => (
+                <section key={label} className="card coin-note">
+                  <p className="mono-label">{label}</p>
+                  <p style={{ whiteSpace: multiline ? "pre-wrap" : undefined }}>{value}</p>
+                </section>
+              ))}
+            </div>
           )}
         </>
       )}
-      {children}
+      {children && <div className="card coin-valuations">{children}</div>}
     </div>
   );
 }

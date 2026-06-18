@@ -3,38 +3,26 @@
 import { useMemo, useState } from "react";
 import type { AcquisitionEvent } from "@/services/analytics.service";
 import { RANGES, money, niceTicks } from "./chart-utils";
+import {
+  AXIS_W,
+  PAD,
+  plotWidth,
+  useChartHeight,
+  useMeasuredWidth,
+} from "./chart-layout";
 
 // Dependency-free SVG area chart for the cumulative acquisition-cost trend, with
-// date-range presets and per-dimension multi-select filters (metal, category,
-// collection, year, currency). Conversion to the base currency happens in the
-// analytics service; this component only filters the already-converted events
-// and accumulates them into a running total — presentational view logic.
+// date-range presets (3M / 6M / 1Y / All). Conversion to the base currency
+// happens in the analytics service; this component only accumulates the
+// already-converted events into a running total — presentational view logic.
+//
+// The plot scrolls horizontally (a fixed slot per point) so a long history reads
+// as an evolution over time rather than a compressed line; the y-axis (cost)
+// labels are frozen to the left so they stay visible while scrolling, and the
+// chart shares one viewport-derived height with the cost-breakdown chart.
 
-const DIMENSIONS = [
-  { key: "metal", label: "Metal" },
-  { key: "category", label: "Category" },
-  { key: "collection", label: "Collection" },
-  { key: "year", label: "Year" },
-  { key: "currency", label: "Currency" },
-] as const;
-type DimKey = (typeof DIMENSIONS)[number]["key"];
-type Selection = Record<DimKey, string[]>;
-
-const emptySelection = (): Selection => ({
-  metal: [],
-  category: [],
-  collection: [],
-  year: [],
-  currency: [],
-});
-
-// Same aspect ratio as the cost-breakdown chart so the two render at equal height
-// when laid out side by side at equal column widths.
-const W = 480;
-const H = 300;
-const PAD = { top: 16, right: 16, bottom: 28, left: 64 };
-const INNER_W = W - PAD.left - PAD.right;
-const INNER_H = H - PAD.top - PAD.bottom;
+const PAD_LEFT = 6; // small left inset inside the (frozen-axis-free) plot
+const PAD_RIGHT = 14;
 
 const ms = (date: string): number => Date.parse(date);
 const round2 = (n: number): number => Math.round(n * 100) / 100;
@@ -64,38 +52,6 @@ function filterByRange(points: TrendPoint[], days: number): TrendPoint[] {
   return within.length > 0 ? within : points.slice(-1);
 }
 
-function FilterGroup({
-  label,
-  values,
-  selected,
-  onToggle,
-}: {
-  label: string;
-  values: string[];
-  selected: string[];
-  onToggle: (value: string) => void;
-}) {
-  if (values.length < 2) return null; // nothing to filter on
-  return (
-    <div className="filter-group">
-      <span className="filter-label">{label}</span>
-      <div className="row" role="group" aria-label={label}>
-        {values.map((value) => (
-          <button
-            key={value}
-            type="button"
-            className="btn-sm range-btn"
-            aria-pressed={selected.includes(value)}
-            onClick={() => onToggle(value)}
-          >
-            {value}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function TrendChart({
   events,
   currency,
@@ -106,57 +62,18 @@ export function TrendChart({
   title?: string;
 }) {
   const [rangeIdx, setRangeIdx] = useState(RANGES.length - 1); // default: All
-  const [selected, setSelected] = useState<Selection>(emptySelection);
-
-  const options = useMemo(() => {
-    const sets: Record<DimKey, Set<string>> = {
-      metal: new Set(),
-      category: new Set(),
-      collection: new Set(),
-      year: new Set(),
-      currency: new Set(),
-    };
-    for (const e of events)
-      for (const { key } of DIMENSIONS) sets[key].add(e[key]);
-    return Object.fromEntries(
-      DIMENSIONS.map(({ key }) => [key, [...sets[key]].sort()]),
-    ) as Record<DimKey, string[]>;
-  }, [events]);
-
-  const filtered = useMemo(
-    () =>
-      events.filter((e) =>
-        DIMENSIONS.every(
-          ({ key }) =>
-            selected[key].length === 0 || selected[key].includes(e[key]),
-        ),
-      ),
-    [events, selected],
-  );
 
   const data = useMemo(
-    () => filterByRange(buildTrend(filtered), RANGES[rangeIdx].days),
-    [filtered, rangeIdx],
+    () => filterByRange(buildTrend(events), RANGES[rangeIdx].days),
+    [events, rangeIdx],
   );
-
-  const active = DIMENSIONS.some(({ key }) => selected[key].length > 0);
-  const toggle = (key: DimKey, value: string) =>
-    setSelected((prev) => {
-      const cur = prev[key];
-      return {
-        ...prev,
-        [key]: cur.includes(value)
-          ? cur.filter((v) => v !== value)
-          : [...cur, value],
-      };
-    });
 
   if (events.length === 0) return null;
 
   return (
     <section className="card stack">
       <div className="spread">
-        <h3 style={{ margin: 0 }}>{title}</h3>
+        <h3 className="chart-title">{title}</h3>
         <div className="row" role="group" aria-label="Date range">
           {RANGES.map((r, i) => (
             <button
@@ -172,35 +89,16 @@ export function TrendChart({
         </div>
       </div>
 
-      <div className="filters">
-        {DIMENSIONS.map(({ key, label }) => (
-          <FilterGroup
-            key={key}
-            label={label}
-            values={options[key]}
-            selected={selected[key]}
-            onToggle={(value) => toggle(key, value)}
-          />
-        ))}
-        <div className="spread">
-          <span className="muted">
-            {filtered.length} of {events.length} acquisition
-            {events.length === 1 ? "" : "s"}
-          </span>
-          {active && (
-            <button
-              type="button"
-              className="btn-sm"
-              onClick={() => setSelected(emptySelection())}
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
+      {/* Caption row mirroring the cost-breakdown legend row so the two chart
+          cards share identical vertical rhythm and line up at equal height. */}
+      <div className="spread legend-top">
+        <span className="muted">
+          {events.length} acquisition{events.length === 1 ? "" : "s"} · cumulative
+        </span>
       </div>
 
       {data.length === 0 ? (
-        <p className="empty">No acquisitions match the selected filters.</p>
+        <p className="empty">No acquisitions in this range.</p>
       ) : (
         <ChartSvg data={data} currency={currency} title={title} />
       )}
@@ -217,6 +115,13 @@ function ChartSvg({
   currency: string;
   title: string;
 }) {
+  const [scrollRef, viewport] = useMeasuredWidth<HTMLDivElement>();
+  const chartH = useChartHeight();
+  const plotW = plotWidth(data.length, viewport);
+  const innerW = plotW - PAD_LEFT - PAD_RIGHT;
+  const innerH = chartH - PAD.top - PAD.bottom;
+  const baseline = PAD.top + innerH;
+
   const xMin = ms(data[0].date);
   const xMax = ms(data[data.length - 1].date);
   const totals = data.map((p) => p.total);
@@ -229,12 +134,11 @@ function ChartSvg({
 
   const x = (date: string): number =>
     xMax === xMin
-      ? PAD.left + INNER_W / 2
-      : PAD.left + ((ms(date) - xMin) / (xMax - xMin)) * INNER_W;
+      ? PAD_LEFT + innerW / 2
+      : PAD_LEFT + ((ms(date) - xMin) / (xMax - xMin)) * innerW;
   const y = (value: number): number =>
-    PAD.top + ((yMax - value) / (yMax - yMin)) * INNER_H;
+    PAD.top + ((yMax - value) / (yMax - yMin)) * innerH;
 
-  const baseline = PAD.top + INNER_H;
   const line = data
     .map((p, i) => `${i ? "L" : "M"}${x(p.date).toFixed(1)} ${y(p.total).toFixed(1)}`)
     .join(" ");
@@ -254,32 +158,53 @@ function ChartSvg({
   const gridTicks = niceTicks(yMax).filter((t) => t >= yMin && t <= yMax);
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      width="100%"
-      role="img"
-      aria-label={label}
-      style={{ height: "auto", display: "block" }}
-    >
-      {gridTicks.map((t) => (
-        <g key={t}>
-          <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} className="chart-grid" />
-          <text x={PAD.left - 8} y={y(t) + 3} textAnchor="end" className="chart-axis">
+    <div className="chart-plot">
+      {/* Frozen y-axis: cost labels stay visible while the plot scrolls. */}
+      <svg className="chart-yaxis" width={AXIS_W} height={chartH} aria-hidden="true">
+        {gridTicks.map((t) => (
+          <text
+            key={t}
+            x={AXIS_W - 6}
+            y={y(t) + 3}
+            textAnchor="end"
+            className="chart-axis"
+          >
             {money(t, currency, true)}
           </text>
-        </g>
-      ))}
-      <text x={PAD.left} y={H - 8} textAnchor="start" className="chart-axis">
-        {data[0].date}
-      </text>
-      {data.length > 1 && (
-        <text x={W - PAD.right} y={H - 8} textAnchor="end" className="chart-axis">
-          {last.date}
-        </text>
-      )}
-      {area && <path d={area} className="chart-area" />}
-      <path d={line} className="chart-line" fill="none" />
-      <circle cx={x(last.date)} cy={y(last.total)} r={3.5} className="chart-dot" />
-    </svg>
+        ))}
+      </svg>
+
+      <div className="chart-scroll" ref={scrollRef}>
+        <svg
+          width={plotW}
+          height={chartH}
+          role="img"
+          aria-label={label}
+          style={{ display: "block" }}
+        >
+          {gridTicks.map((t) => (
+            <line
+              key={t}
+              x1={0}
+              x2={plotW}
+              y1={y(t)}
+              y2={y(t)}
+              className="chart-grid"
+            />
+          ))}
+          <text x={4} y={chartH - 8} textAnchor="start" className="chart-axis">
+            {data[0].date}
+          </text>
+          {data.length > 1 && (
+            <text x={plotW - 4} y={chartH - 8} textAnchor="end" className="chart-axis">
+              {last.date}
+            </text>
+          )}
+          {area && <path d={area} className="chart-area" />}
+          <path d={line} className="chart-line" fill="none" />
+          <circle cx={x(last.date)} cy={y(last.total)} r={3.5} className="chart-dot" />
+        </svg>
+      </div>
+    </div>
   );
 }

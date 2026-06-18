@@ -107,8 +107,9 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   server `/portfolio` page.) Each domain has a client-side "manager" that owns its
   view and talks to the API: `CollectionsManager`, `CoinsManager` (+ the
   `CoinDetailsCard` / `CoinImage` detail views), `ValuationsManager`, and
-  `AssistantWidget`; `SiteHeader` (layout) and `ConfirmButton` (ui) are the
-  shared shell/primitive.
+  `AssistantWidget`; `SiteHeader` (layout; a Server Component that delegates the
+  active-state primary nav to the client `HeaderNav`) and `ConfirmButton` (ui)
+  are the shared shell/primitive.
 * **Drizzle schema** lives in `src/db/schema`; migrations are generated into
   `drizzle/` and are **not** hand-edited. `src/db/schema/index.ts` re-exports
   all table definitions.
@@ -230,12 +231,19 @@ search/sort operate on the underlying attributes, not a stored name.
 ## UI / Design system
 
 The app uses a **dependency-free CSS design system** defined entirely in
-`src/app/globals.css`. It provides:
+`src/app/globals.css`, themed to the "stone & gold" Figma spec (ADR-009). It
+provides:
 
-* CSS custom-property theme tokens (light/dark via `prefers-color-scheme`):
-  `--color-*`, `--radius-*`, `--font-*`, etc.
-* Utility component classes: `.card`, `.row`, `.badge`, `.alert`,
-  `.analytics-bar`, `.chat-bubble`, and themed buttons/inputs/tables.
+* CSS custom-property theme tokens (**light-only** — dark mode was dropped in
+  ADR-009): palette (`--bg`, `--surface`, `--text`, `--muted`, `--border`, the
+  golds `--gold`/`--accent`, `--primary`, `--ink`), `--radius-*`, and the font
+  variables `--font-display` (Fraunces), `--font-body` (DM Sans), `--font-micro`
+  (DM Mono, the `.mono-label` utility). Fonts load via `next/font` in `layout.tsx`.
+* Utility component classes: `.card`, `.row`, `.badge`, `.chip`, `.alert`,
+  `.mono-label`, `.crumbs`, `.analytics-bar`, and themed buttons/inputs/tables.
+
+Gold (`--gold #B8871E`) is for **fills only**; gold **text** uses the deeper
+`--accent`, and primary buttons use ink-on-gold — all for WCAG AA (see ADR-009).
 
 Do not introduce a CSS-in-JS library or a component framework (e.g. Tailwind,
 shadcn, MUI) — extend `globals.css` instead.
@@ -442,9 +450,10 @@ in a **pre-deployment** phase. The **Data Model Reform** (Phase 5), the
 **Portfolio Analytics Upgrade** (Phase 6 — multi-currency base currency + ECB FX
 conversion, gain/loss, deeper allocation, per-collection comparison, SVG trend
 chart), and **Embellishment** (Phase 7 — overview aggregates, UI/UX polish,
-error-state resilience; see `docs/history.md` and ADRs 006–008) are all done. The
-active milestone is now the **Figma UI Redesign**: re-skinning the app to the
-agreed "stone & gold" spec without changing the routes, data model, or API.
-Production deployment remains a later milestone. See `docs/roadmap.md` for the
-current milestone tasks and the Technical Backlog — check it before starting
+error-state resilience; see `docs/history.md` and ADRs 006–008), and the
+**Figma UI Redesign** (Phase 8 — the "stone & gold" re-skin via `globals.css`
+tokens; light-only; `next/font` typography; see ADR-009) are all done. The next
+milestone is **Production Readiness** (deployment, CI/CD, observability);
+**Valuation-Based Analytics** is the other planned milestone. See `docs/roadmap.md`
+for the current milestone tasks and the Technical Backlog — check it before starting
 anything new.

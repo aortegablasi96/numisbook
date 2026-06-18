@@ -30,8 +30,15 @@ coverage/
 # Claude Code agent worktrees
 .claude/worktrees/
 
+# Playwright MCP scratch output (screenshots, logs, snapshots)
+.playwright-mcp/
+
 # Claude Code project MCP config (contains secrets; keep local, do not commit)
 .mcp.json
+
+# Figma design references (local-only working copies, not source of truth)
+docs/figma-desing.tsx
+docs/figma_coindetail_screenshot.png
 
 # OS / editor
 .DS_Store

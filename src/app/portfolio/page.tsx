@@ -17,8 +17,8 @@ function BaseCurrencySelect({ selected }: { selected: string | null }) {
     revalidatePath("/portfolio");
   }
   return (
-    <form action={update} className="row">
-      <label htmlFor="baseCurrency" className="muted">
+    <form action={update} className="row base-currency">
+      <label htmlFor="baseCurrency" className="mono-label">
         Base currency
       </label>
       <select id="baseCurrency" name="baseCurrency" defaultValue={selected ?? ""}>
@@ -29,7 +29,9 @@ function BaseCurrencySelect({ selected }: { selected: string | null }) {
           </option>
         ))}
       </select>
-      <button type="submit">Apply</button>
+      <button type="submit" className="btn-sm">
+        Apply
+      </button>
     </form>
   );
 }
@@ -63,39 +65,37 @@ export default async function PortfolioPage() {
   const { baseCurrency } = summary;
 
   return (
-    <main className="stack">
-      <div className="spread">
-        <h1 style={{ margin: 0 }}>Portfolio</h1>
-        <span className="muted">
-          {summary.pricedCoins} of {summary.totalCoins} coin
-          {summary.totalCoins === 1 ? "" : "s"} priced
-        </span>
-      </div>
-
-      <BaseCurrencySelect selected={user.baseCurrency} />
+    <main className="stack portfolio-page">
+      <h1 style={{ margin: 0 }}>Portfolio</h1>
 
       {summary.pricedCoins === 0 || !baseCurrency ? (
-        <p className="empty">
-          No prices yet. Add coins with a price paid to see your portfolio cost,
-          breakdown, and acquisition trend. (Market valuations and gain/loss come
-          in a later stage.)
-        </p>
+        <>
+          <BaseCurrencySelect selected={user.baseCurrency} />
+          <p className="empty">
+            No prices yet. Add coins with a price paid to see your portfolio cost,
+            breakdown, and acquisition trend. (Market valuations and gain/loss come
+            in a later stage.)
+          </p>
+        </>
       ) : (
         <>
-          <section className="card stack">
-            <h2 style={{ margin: 0 }}>Total paid</h2>
-            <strong style={{ fontSize: "1.6rem" }}>
-              {money(summary.totalFinal, baseCurrency)}
-            </strong>
-            <span className="muted">
-              of which hammer {money(summary.costBreakdown.hammer, baseCurrency)} —
-              converted to <span className="badge">{baseCurrency}</span> using ECB
-              rates.
-              {summary.unconvertible > 0 &&
-                ` ${summary.unconvertible} coin${
-                  summary.unconvertible === 1 ? "" : "s"
-                } could not be converted.`}
-            </span>
+          <section className="card portfolio-summary">
+            <div className="portfolio-summary-line">
+              <span className="mono-label">Total paid</span>
+              <span className="portfolio-total">
+                {money(summary.totalFinal, baseCurrency)}
+              </span>
+              <span className="muted portfolio-note">
+                of which hammer {money(summary.costBreakdown.hammer, baseCurrency)} ·{" "}
+                {summary.pricedCoins} of {summary.totalCoins} coin
+                {summary.totalCoins === 1 ? "" : "s"} priced
+                {summary.unconvertible > 0 &&
+                  ` · ${summary.unconvertible} coin${
+                    summary.unconvertible === 1 ? "" : "s"
+                  } not converted`}
+              </span>
+            </div>
+            <BaseCurrencySelect selected={user.baseCurrency} />
           </section>
 
           <div className="analytics-grid">

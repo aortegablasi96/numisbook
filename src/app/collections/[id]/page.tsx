@@ -49,9 +49,15 @@ export default async function CollectionDetailPage({
 
   return (
     <main className="stack">
-      <p className="crumbs">
-        <Link href="/collections">← Collections</Link>
-      </p>
+      <nav className="crumbs" aria-label="Breadcrumb">
+        <Link href="/collections">Collections</Link>
+        <span className="crumb-sep" aria-hidden="true">
+          ›
+        </span>
+        <span className="crumb-current" aria-current="page">
+          {collection.name}
+        </span>
+      </nav>
       <h1>{collection.name}</h1>
       <CoinsManager collectionId={id} initial={initial} />
     </main>

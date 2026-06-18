@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { getCoin } from "@/services/coin.service";
+import { getCollection } from "@/services/collection.service";
 import { listValuations } from "@/services/valuation.service";
+import { formatCoinTitle } from "@/lib/coin-format";
 import { NotFoundError } from "@/lib/errors";
 import { ValuationsManager } from "@/components/valuations/ValuationsManager";
 import { CoinImage } from "@/components/coins/CoinImage";
@@ -47,6 +49,12 @@ export default async function CoinDetailPage({
   });
   if (!coin) notFound();
 
+  // Collection name for the breadcrumb (owner-scoped; the coin belongs to the
+  // user so this resolves, but fall back gracefully if it ever doesn't).
+  const collection = await getCollection(user.id, coin.collectionId).catch(
+    () => null,
+  );
+
   const valuations = await listValuations(user.id, id);
   const valuationViews = valuations.map((v) => ({
     id: v.id,
@@ -62,9 +70,21 @@ export default async function CoinDetailPage({
 
   return (
     <main className="stack">
-      <p className="crumbs">
-        <Link href={`/collections/${coin.collectionId}`}>← Collection</Link>
-      </p>
+      <nav className="crumbs" aria-label="Breadcrumb">
+        <Link href="/collections">Collections</Link>
+        <span className="crumb-sep" aria-hidden="true">
+          ›
+        </span>
+        <Link href={`/collections/${coin.collectionId}`}>
+          {collection?.name ?? "Collection"}
+        </Link>
+        <span className="crumb-sep" aria-hidden="true">
+          ›
+        </span>
+        <span className="crumb-current" aria-current="page">
+          {formatCoinTitle(coin)}
+        </span>
+      </nav>
       <div className="coin-overview">
         <CoinDetailsCard coin={coin} coinId={id}>
           <ValuationsManager
