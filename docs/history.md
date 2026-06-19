@@ -393,6 +393,31 @@ geometry only — no logic, route, or data-model change):
   and a `.btn-icon` utility; labels kept for accessibility
 - values verified pixel-for-pixel (Playwright) at desktop (1680px) and mobile (390px)
 
+## Post-redesign polish (2026-06-18)
+
+A refinement pass over coin detail and the portfolio after the layout match —
+still UI-layer only (no logic, route, or data-model change), verified via
+Playwright with tsc/lint and the full test suite (121) passing:
+
+- **Coin detail** (`/coins/[id]`) — the photo fills its rounded square
+  (`object-fit: cover`); the prev/next carousel became a **selectable thumbnail
+  gallery** with a "Picture N of M" caption; the split is full-width flexbox
+  (`flex:1` left + a **520px** image rail, stacking below 1160px); 30px title; a
+  borderless 20px edit pencil that bolds on hover; key attributes in a larger
+  **4-column** tile grid (3/2/1 on narrower viewports)
+- **App shell** — header bar **84px** tall with a larger wordmark/nav; the page
+  gutter (`.container`) made viewport-scaled `clamp(2rem, 2.6vw, 5.5rem)`
+- **Portfolio** (`/portfolio`) — restructured to the Figma block layout: a
+  single-line **"Total paid" summary card** (mono caption + base-currency
+  control, serif total with the hammer/ECB note inline, `N of M coins priced`
+  below). Both SVG charts reworked (still dependency-free, no recharts) to
+  **equal, viewport-fitted height** (shared `useChartHeight()`), a
+  **horizontally scrollable** plot with a **frozen y-axis** and a **floating
+  per-coin tooltip** on the cost-breakdown columns, coin thumbnails crowning the
+  columns; the "Acquisition cost over time" chart trimmed to just the
+  3M/6M/1Y/All range presets; shared `chart-layout.ts` (slot constants +
+  `useMeasuredWidth`)
+
 ---
 
 # Major Architectural Decisions
