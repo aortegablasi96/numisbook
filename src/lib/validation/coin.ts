@@ -53,11 +53,12 @@ export const coinAttributesSchema = z
       .date()
       .refine((d) => d.getTime() <= Date.now(), "Auction date cannot be in the future")
       .nullish(),
-    // Price paid. hammer/premium/shipping form the partition; finalPrice is the
-    // total — computed from the partition in the service, or set directly.
+    // Price paid. hammer/premium/shipping/tax form the partition; finalPrice is
+    // the total — computed from the partition in the service, or set directly.
     hammerPrice: optionalMoney,
     auctionPremium: optionalMoney,
     shippingCost: optionalMoney,
+    taxCost: optionalMoney,
     finalPrice: optionalMoney,
     priceCurrency: z
       .string()

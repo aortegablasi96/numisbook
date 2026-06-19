@@ -7,15 +7,16 @@ import {
 } from "./coin-format";
 
 describe("formatYear / formatYearRange", () => {
-  it("renders BC for negative years", () => {
+  it("renders BC for negative years and AD for positive ones", () => {
     expect(formatYear(-44)).toBe("44 BC");
-    expect(formatYear(14)).toBe("14");
+    expect(formatYear(14)).toBe("14 AD");
   });
 
-  it("collapses equal bounds and renders open ranges", () => {
-    expect(formatYearRange(-27, 14)).toBe("27 BC – 14");
-    expect(formatYearRange(50, 50)).toBe("50");
-    expect(formatYearRange(null, 100)).toBe("100");
+  it("collapses equal bounds and renders open + divide-spanning ranges", () => {
+    expect(formatYearRange(-27, 14)).toBe("27 BC – 14 AD");
+    expect(formatYearRange(-5, 5)).toBe("5 BC – 5 AD");
+    expect(formatYearRange(50, 50)).toBe("50 AD");
+    expect(formatYearRange(null, 100)).toBe("100 AD");
     expect(formatYearRange(null, null)).toBeNull();
   });
 });
@@ -30,7 +31,7 @@ describe("formatCoinTitle", () => {
         yearTo: 14,
         mint: "Rome",
       }),
-    ).toBe("Romans. Augustus (27 BC – 14), Rome");
+    ).toBe("Romans. Augustus (27 BC – 14 AD), Rome");
   });
 
   it("drops missing pieces and their separators", () => {

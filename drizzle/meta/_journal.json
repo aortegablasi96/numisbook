@@ -15,6 +15,20 @@
       "when": 1781102528617,
       "tag": "0001_clammy_piledriver",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781863670467,
+      "tag": "0002_serious_mindworm",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781879335905,
+      "tag": "0003_graceful_ultron",
+      "breakpoints": true
     }
   ]
 }

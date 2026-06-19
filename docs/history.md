@@ -420,6 +420,77 @@ Playwright with tsc/lint and the full test suite (121) passing:
 
 ---
 
+# Phase 9 — UX & Feature Refinement
+
+Status: Complete
+
+A focused round of everyday-UX polish across the coin and portfolio slices ahead
+of Production Readiness, plus the one supporting data-model change those
+refinements required. No new domains or dependencies; UI extends the existing
+`globals.css` system. Built through the standard workflow
+(product → UI → architecture → DB → implementation → testing). See ADR-010.
+
+## Price paid
+
+Implemented:
+
+- Added **tax** as a fourth price-paid partition component (`coins.tax_cost`,
+  additive migration `0002`): included in the computed `final_price` sum
+  (schema → validation → `coin.service` → coin edit form + breakdown line) and
+  threaded through the cost analytics — `analytics.service` adds `tax` to
+  `CostBreakdown`/`AcquisitionEvent` and the cost-breakdown chart renders a
+  fourth `tax` segment, preserving `hammer + premium + tax + shipping + unsplit
+  == totalFinal`. The split now triggers on any component (not only hammer)
+
+## Coin detail
+
+Implemented:
+
+- **Era suffix** — `formatYear` now appends `AD` to positive years (keeping `BC`
+  for negative); a divide-spanning range shows both ends (e.g. `5 BC – 5 AD`)
+- **Attribute chips reordered** to a fixed semantic sequence: Category, Metal,
+  Denomination, Condition, Weight, Diameter, Mint, Year
+
+## Portfolio
+
+Implemented:
+
+- `/collections` per-collection comparison **table replaced by a card grid** —
+  each card optionally carries the first image of the collection's oldest coin as
+  a dimmed full-bleed background (resolved in the repository read-model via
+  correlated subqueries, not denormalized), with a legibility scrim for AA
+- Cost-breakdown chart sizes columns so **~5 coins fit the visible width**
+  (scrolled to the newest by default), the rest reachable by horizontal scroll
+- **Expand** control on each portfolio chart — opens the enlarged chart in a
+  near-full-viewport `<dialog>` (an independent `inModal` instance) that keeps the
+  per-coin width, so it fits proportionally more coins and stays scrollable
+
+## Follow-up round
+
+A second pass within the same milestone (also through the standard workflow):
+
+- **Tax before shipping** fixed as the canonical partition order
+  (`hammer → premium → tax → shipping`) across the coin-detail breakdown + edit
+  form, the cost-breakdown chart stack/legend/tooltip, and the analytics shapes
+- Cost-breakdown chart: **bigger coin avatars and wider bars**; the per-segment
+  **percentages moved off the bars into the hover tooltip**, which now always
+  lists all four partition components (even 0s) for a partitioned coin and ends
+  with a labelled **Total** row
+- **Trend chart hover tooltip** — scrubbing the plot drops a dashed guide +
+  marker and floats the nearest day's cumulative total and date
+- Collections cards **much larger**, the cover photo shown at near-full strength,
+  the name/meta **centred** in a translucent blurred panel **anchored to the bottom edge**,
+  and the **whole card a stretched link** (clicking the cover navigates, not just
+  the text); rename/delete pinned to the top-right, hover-revealed
+- **Coin bills (PDF receipts)** — a new vertical slice mirroring coin images:
+  `coin_bills` table (additive migration `0003`) for metadata, bytes in object
+  storage behind `src/lib/storage`, `coinBill.repository`/`coinBill.service`,
+  `GET`/`POST`/`DELETE` routes under `/api/coins/[id]/bills`, and a
+  `CoinBills` upload/list/view/download/delete card on the coin detail page.
+  PDF-only, max 15 MB
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -433,6 +504,7 @@ See:
 - `docs/decisions/007-portfolio-analytics-upgrade.md`
 - `docs/decisions/008-ui-embellishment.md`
 - `docs/decisions/009-figma-ui-redesign.md`
+- `docs/decisions/010-ux-and-feature-refinement.md`
 
 ---
 

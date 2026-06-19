@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { AcquisitionEvent } from "@/services/analytics.service";
 import { RANGES, money, niceTicks } from "./chart-utils";
+import { ExpandChartButton } from "./ExpandChartButton";
 import {
   AXIS_W,
   PAD,
+  clamp,
   plotWidth,
   useChartHeight,
   useMeasuredWidth,
@@ -56,10 +58,12 @@ export function TrendChart({
   events,
   currency,
   title = "Acquisition cost over time",
+  inModal = false,
 }: {
   events: AcquisitionEvent[];
   currency: string;
   title?: string;
+  inModal?: boolean;
 }) {
   const [rangeIdx, setRangeIdx] = useState(RANGES.length - 1); // default: All
 
@@ -74,18 +78,25 @@ export function TrendChart({
     <section className="card stack">
       <div className="spread">
         <h3 className="chart-title">{title}</h3>
-        <div className="row" role="group" aria-label="Date range">
-          {RANGES.map((r, i) => (
-            <button
-              key={r.label}
-              type="button"
-              className="btn-sm range-btn"
-              aria-pressed={i === rangeIdx}
-              onClick={() => setRangeIdx(i)}
-            >
-              {r.label}
-            </button>
-          ))}
+        <div className="row" style={{ gap: "var(--space-2)" }}>
+          <div className="row" role="group" aria-label="Date range">
+            {RANGES.map((r, i) => (
+              <button
+                key={r.label}
+                type="button"
+                className="btn-sm range-btn"
+                aria-pressed={i === rangeIdx}
+                onClick={() => setRangeIdx(i)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          {!inModal && (
+            <ExpandChartButton label={title}>
+              <TrendChart events={events} currency={currency} title={title} inModal />
+            </ExpandChartButton>
+          )}
         </div>
       </div>
 
@@ -100,7 +111,7 @@ export function TrendChart({
       {data.length === 0 ? (
         <p className="empty">No acquisitions in this range.</p>
       ) : (
-        <ChartSvg data={data} currency={currency} title={title} />
+        <ChartSvg data={data} currency={currency} title={title} inModal={inModal} />
       )}
     </section>
   );
@@ -110,13 +121,18 @@ function ChartSvg({
   data,
   currency,
   title,
+  inModal,
 }: {
   data: TrendPoint[];
   currency: string;
   title: string;
+  inModal: boolean;
 }) {
   const [scrollRef, viewport] = useMeasuredWidth<HTMLDivElement>();
-  const chartH = useChartHeight();
+  const chartH = useChartHeight(inModal);
+  const plotRef = useRef<HTMLDivElement>(null);
+  // Index of the point under the cursor (hover scrubbing) + the tooltip anchor.
+  const [hover, setHover] = useState<{ idx: number; left: number; top: number } | null>(null);
   const plotW = plotWidth(data.length, viewport);
   const innerW = plotW - PAD_LEFT - PAD_RIGHT;
   const innerH = chartH - PAD.top - PAD.bottom;
@@ -157,8 +173,34 @@ function ChartSvg({
   // ticks to the visible band so a degenerate (single-point) range stays sane.
   const gridTicks = niceTicks(yMax).filter((t) => t >= yMin && t <= yMax);
 
+  // Hover scrubbing: map the cursor's x within the SVG to the nearest data point
+  // and float a tooltip with that day's cumulative total (positioned over the
+  // surrounding .chart-plot, like the cost-breakdown chart).
+  function onMove(ev: React.MouseEvent<SVGSVGElement>): void {
+    const svgRect = ev.currentTarget.getBoundingClientRect();
+    const localX = ev.clientX - svgRect.left;
+    let idx = 0;
+    let best = Infinity;
+    for (let i = 0; i < data.length; i++) {
+      const d = Math.abs(x(data[i].date) - localX);
+      if (d < best) {
+        best = d;
+        idx = i;
+      }
+    }
+    const plotRect = plotRef.current?.getBoundingClientRect();
+    if (!plotRect) return;
+    setHover({
+      idx,
+      left: clamp(ev.clientX - plotRect.left, 90, plotRect.width - 90),
+      top: Math.max(ev.clientY - plotRect.top, 90),
+    });
+  }
+
+  const hoverPoint = hover ? data[hover.idx] : null;
+
   return (
-    <div className="chart-plot">
+    <div className="chart-plot" ref={plotRef}>
       {/* Frozen y-axis: cost labels stay visible while the plot scrolls. */}
       <svg className="chart-yaxis" width={AXIS_W} height={chartH} aria-hidden="true">
         {gridTicks.map((t) => (
@@ -181,6 +223,8 @@ function ChartSvg({
           role="img"
           aria-label={label}
           style={{ display: "block" }}
+          onMouseMove={onMove}
+          onMouseLeave={() => setHover(null)}
         >
           {gridTicks.map((t) => (
             <line
@@ -202,9 +246,38 @@ function ChartSvg({
           )}
           {area && <path d={area} className="chart-area" />}
           <path d={line} className="chart-line" fill="none" />
+          {/* Hover guide + marker for the scrubbed point. */}
+          {hoverPoint && (
+            <>
+              <line
+                x1={x(hoverPoint.date)}
+                x2={x(hoverPoint.date)}
+                y1={PAD.top}
+                y2={baseline}
+                className="chart-guide"
+              />
+              <circle
+                cx={x(hoverPoint.date)}
+                cy={y(hoverPoint.total)}
+                r={4}
+                className="chart-dot"
+              />
+            </>
+          )}
           <circle cx={x(last.date)} cy={y(last.total)} r={3.5} className="chart-dot" />
         </svg>
       </div>
+
+      {hover && hoverPoint && (
+        <div
+          className="chart-tooltip"
+          style={{ left: hover.left, top: hover.top }}
+          role="presentation"
+        >
+          <p className="chart-tooltip-title">{money(hoverPoint.total, currency)}</p>
+          <p className="chart-tooltip-sub mono-label">{hoverPoint.date} · cumulative</p>
+        </div>
+      )}
     </div>
   );
 }

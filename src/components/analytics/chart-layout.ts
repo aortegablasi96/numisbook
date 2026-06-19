@@ -20,18 +20,31 @@ export const CHART_MAX_H = 760;
 // card, chart header/legend, page padding). Tuned so the chart fills the leftover
 // viewport height and the whole page fits without scrolling on a typical screen.
 const CHART_CHROME = 472;
+// In the expand modal the dialog is sized to ~CHART_MODAL_VH of the viewport
+// height; the plot takes that minus CHART_MODAL_INNER_CHROME (dialog padding +
+// close row + chart header/legend + card padding). Keeping the whole dialog
+// under the viewport means it never needs a vertical scrollbar.
+const CHART_MODAL_VH = 0.9;
+const CHART_MODAL_INNER_CHROME = 220;
+const CHART_MODAL_MAX_H = 1400;
 
-// Shared chart height: both charts derive the same value from the viewport, so
-// they stay equal-height while filling most of the screen. Recomputes on resize.
-export function useChartHeight(): number {
+// Shared chart height. Inline charts fill the leftover page height; the expanded
+// (modal) chart fills most of the viewport without overflowing it. Recomputes on
+// resize.
+export function useChartHeight(modal = false): number {
   const [height, setHeight] = useState(CHART_MIN_H);
   useEffect(() => {
-    const compute = () =>
-      setHeight(clamp(window.innerHeight - CHART_CHROME, CHART_MIN_H, CHART_MAX_H));
+    const compute = () => {
+      const h = modal
+        ? Math.round(window.innerHeight * CHART_MODAL_VH) - CHART_MODAL_INNER_CHROME
+        : window.innerHeight - CHART_CHROME;
+      const max = modal ? CHART_MODAL_MAX_H : CHART_MAX_H;
+      setHeight(clamp(h, CHART_MIN_H, max));
+    };
     compute();
     window.addEventListener("resize", compute);
     return () => window.removeEventListener("resize", compute);
-  }, []);
+  }, [modal]);
   return height;
 }
 

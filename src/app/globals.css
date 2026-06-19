@@ -740,6 +740,7 @@ button:disabled {
   transition: opacity var(--dur-fast) var(--ease);
 }
 .data-table tr:hover .row-actions,
+.collection-card:hover .row-actions,
 .row-actions:focus-within {
   opacity: 1;
 }
@@ -777,6 +778,119 @@ button:disabled {
 }
 .data-table .thumb {
   display: block;
+}
+
+/* ---- Collection cards --------------------------------------------------- */
+
+/* Replaces the per-collection comparison table (UX & Feature Refinement): a
+   responsive card grid. Each card optionally carries the first image of the
+   collection's oldest coin as a near-full-strength full-bleed background (set via
+   the --cover custom property), with the name + coin-count/cost in a centred
+   rounded panel so the photo stays prominent while the text keeps WCAG AA. */
+.collection-grid {
+  list-style: none;
+  /* Extra breathing room below the filter / New-collection controls row (on top
+     of the section's stack gap). */
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: var(--space-5);
+}
+.collection-card {
+  position: relative;
+  min-height: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+/* Cover photo behind the card content, at near-full strength so the coin reads
+   clearly; a faint scrim weighted to the bottom keeps the name panel legible. */
+.collection-card.has-cover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--cover);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.82;
+  z-index: 0;
+}
+.collection-card.has-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ink) 4%, transparent) 40%,
+    color-mix(in srgb, var(--ink) 26%, transparent)
+  );
+  z-index: 0;
+}
+.collection-card > * {
+  position: relative;
+  z-index: 1;
+}
+/* The whole card is the link (stretched-link): it fills the card and anchors the
+   name/meta panel to the bottom, so clicking anywhere on the cover navigates. */
+.collection-card-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding: var(--space-4);
+  text-decoration: none;
+  color: inherit;
+}
+.collection-card-link:hover .collection-card-name {
+  text-decoration: underline;
+}
+/* Name + meta in a translucent blurred panel pinned to the card's bottom edge so
+   the text stays at WCAG AA on any cover photo. */
+.collection-card-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.25rem;
+  padding: var(--space-3) var(--space-4);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.collection-card-name {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--text);
+}
+.collection-card-meta {
+  color: var(--muted);
+}
+/* Actions pinned to the top-right corner, above the stretched link (higher
+   z-index) so they stay clickable; revealed on hover (consistent with the table's
+   row-actions; always shown on touch via the @media (hover: none) rule). */
+.collection-card-actions {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 2;
+  justify-content: flex-end;
+}
+/* Rename form sits above the cover and fills the card with its own padding. */
+.collection-card > form {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: var(--space-4);
 }
 
 .badge {
@@ -882,6 +996,13 @@ button:disabled {
 .chart-dot {
   fill: var(--gold);
 }
+/* Vertical guide that tracks the cursor while scrubbing the trend chart. */
+.chart-guide {
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.7;
+}
 
 /* ---- Scrollable plot + frozen y-axis (shared by both charts) ------------- */
 
@@ -957,7 +1078,9 @@ button:disabled {
   margin-top: 0.45rem;
   padding-top: 0.4rem;
   border-top: 1px solid var(--border);
-  text-align: right;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
   font-weight: 600;
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
@@ -1010,12 +1133,14 @@ button:disabled {
 /* ---- Side-by-side analytics layout -------------------------------------- */
 
 /* Trend chart (left) and cost breakdown (right) at the same level; collapses to
-   a single column when there isn't room for two. */
+   a single column when there isn't room for two. The two cards stretch to equal
+   height (the taller wins) so a horizontal scrollbar on one chart — or any other
+   chrome difference — doesn't leave the cards mismatched. */
 .analytics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.25rem; /* Figma gap-[20px] */
-  align-items: start;
+  align-items: stretch;
 }
 .analytics-grid > * {
   min-width: 0; /* let the SVGs shrink with the column instead of overflowing */
@@ -1042,17 +1167,6 @@ button:disabled {
   fill: var(--text);
   font-size: 0.8rem;
   font-weight: 600;
-}
-/* Per-segment share, drawn inside the segment. The surface-coloured outline
-   (paint-order: stroke) keeps it legible on any segment fill and in both themes,
-   where the accent/primary fills swap lightness. */
-.bar-seg-label {
-  fill: var(--text);
-  stroke: var(--surface);
-  stroke-width: 3px;
-  paint-order: stroke;
-  font-size: 0.72rem;
-  font-weight: 700;
 }
 .bar-avatar-ring {
   fill: none;
@@ -1103,6 +1217,9 @@ button:disabled {
 .seg-shipping {
   background: var(--stone);
 }
+.seg-tax {
+  background: var(--chart-4);
+}
 .seg-unsplit {
   background: color-mix(in srgb, var(--muted) 45%, var(--surface-2));
 }
@@ -1114,6 +1231,9 @@ button:disabled {
 }
 .bar-shipping {
   fill: var(--stone);
+}
+.bar-tax {
+  fill: var(--chart-4);
 }
 .bar-unsplit {
   fill: color-mix(in srgb, var(--muted) 45%, var(--surface-2));
@@ -1170,30 +1290,108 @@ button:disabled {
 
 /* Stack the two columns below 1160px: a fixed 520px rail would squeeze the left
    column too thin on small laptops, so collapse to one column there. The stacked
-   image is capped at 520px (full width only on phones) so it doesn't balloon on
+   rail is capped at 520px (full width only on phones) so it doesn't balloon on
    tablets. */
 @media (max-width: 1160px) {
   .coin-overview {
     flex-direction: column;
   }
-  .coin-image-card {
+  .coin-side {
     flex-basis: auto;
     width: 100%;
     max-width: 520px;
   }
 }
 
-/* Image rail: a borderless column (Figma right column has no card chrome) — a
-   square photo on top, controls below. Widened to 520px (the Figma spec is
-   360px, but on real wide screens a small square reads as stranded; 520px gives
-   the photo the prominence the Figma's short canvas implied while keeping a
-   balanced split against the full-width flex-1 left column). */
-.coin-image-card {
+/* Right rail: the coin photo on top, the bills (PDF receipts) card below. The
+   rail owns the fixed 520px width; its children fill it. (Figma right column is
+   borderless; widened to 520px so the photo reads with presence beside the
+   full-width flex-1 left column.) */
+.coin-side {
   flex: 0 0 520px;
   width: 520px;
   display: flex;
   flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Image card: a borderless column — a square photo on top, controls below. */
+.coin-image-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3); /* Figma gap-[12px] */
+}
+
+/* ---- Coin bills (PDF receipts) ------------------------------------------- */
+
+.coin-bills-card {
+  padding: var(--space-4) var(--space-5);
+  gap: var(--space-3);
+}
+.bill-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.bill-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+.bill-icon {
+  display: flex;
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+.bill-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
+.bill-name {
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bill-name:hover {
+  text-decoration: underline;
+}
+.bill-meta {
+  font-size: 0.65rem;
+}
+.bill-actions {
+  flex: 0 0 auto;
+}
+/* The "Download" link rendered as a small outline button (anchors don't inherit
+   the base `button` chrome). Matches .btn-sm sizing and the Delete button beside it. */
+.bill-actions a {
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-md);
+  transition: background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.bill-actions a:hover {
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--text) 22%, var(--border));
 }
 
 /* Square photo (Figma aspect-square, rounded-[16px], muted fill); provides the
@@ -1844,6 +2042,20 @@ dialog.modal {
 }
 dialog.modal::backdrop {
   background: rgba(0, 0, 0, 0.4);
+}
+
+/* Expand-chart dialog: nearly fills the viewport so the enlarged chart has the
+   most room, with a close button pinned top-right above it. */
+dialog.modal.modal-chart {
+  max-width: 96vw;
+  width: 96vw;
+  max-height: 96vh; /* guard; chart height is sized to fit without scrolling */
+  padding: var(--space-5);
+}
+.chart-modal-close {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: calc(-1 * var(--space-2));
 }
 
 /* ---- Filter bar --------------------------------------------------------- */

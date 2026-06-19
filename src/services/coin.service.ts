@@ -100,6 +100,7 @@ const MONEY_FIELDS = [
   "hammerPrice",
   "auctionPremium",
   "shippingCost",
+  "taxCost",
   "finalPrice",
 ] as const;
 
@@ -108,9 +109,9 @@ const MONEY_FIELDS = [
 // (fixed to scale); `auctionDate` is a date column stored as "YYYY-MM-DD". Only
 // keys present on the input are emitted, so PATCH updates stay partial.
 //
-// Price-paid rule: when any of hammer/premium/shipping is provided, finalPrice
-// is their computed sum (missing components count as 0); otherwise a directly
-// provided finalPrice is used as-is.
+// Price-paid rule: when any of hammer/premium/shipping/tax is provided,
+// finalPrice is their computed sum (missing components count as 0); otherwise a
+// directly provided finalPrice is used as-is.
 function toCoinRow(data: Partial<CreateCoinInput>): CoinPatch {
   const row: Record<string, unknown> = { ...data };
   if (data.weight !== undefined)
@@ -126,10 +127,16 @@ function toCoinRow(data: Partial<CreateCoinInput>): CoinPatch {
     if (value !== undefined) row[field] = value === null ? null : value.toFixed(2);
   }
   const hasComponent =
-    data.hammerPrice != null || data.auctionPremium != null || data.shippingCost != null;
+    data.hammerPrice != null ||
+    data.auctionPremium != null ||
+    data.shippingCost != null ||
+    data.taxCost != null;
   if (hasComponent) {
     const sum =
-      (data.hammerPrice ?? 0) + (data.auctionPremium ?? 0) + (data.shippingCost ?? 0);
+      (data.hammerPrice ?? 0) +
+      (data.auctionPremium ?? 0) +
+      (data.shippingCost ?? 0) +
+      (data.taxCost ?? 0);
     row.finalPrice = sum.toFixed(2);
   }
   return row as CoinPatch;

@@ -63,6 +63,7 @@ const fakeCoin: Coin = {
   hammerPrice: null,
   auctionPremium: null,
   shippingCost: null,
+  taxCost: null,
   finalPrice: null,
   priceCurrency: null,
   createdAt: new Date(),
@@ -204,6 +205,25 @@ describe("coin.service", () => {
         shippingCost: "50.00",
         finalPrice: "1250.00",
         priceCurrency: "EUR",
+      });
+    });
+
+    it("includes tax in the computed final_price partition sum", async () => {
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.create.mockResolvedValue(fakeCoin);
+      await addCoin("user-1", "col-1", {
+        hammerPrice: 1000,
+        auctionPremium: 200,
+        shippingCost: 50,
+        taxCost: 100,
+      });
+      expect(coins.create).toHaveBeenCalledWith({
+        collectionId: "col-1",
+        hammerPrice: "1000.00",
+        auctionPremium: "200.00",
+        shippingCost: "50.00",
+        taxCost: "100.00",
+        finalPrice: "1350.00",
       });
     });
 

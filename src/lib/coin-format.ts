@@ -1,8 +1,12 @@
 // Presentation helpers for coin attributes, shared by the list and detail views.
 
-/** Render a single year on the historical scale (negative = BC). */
+/**
+ * Render a single year on the historical scale: negative years carry a `BC`
+ * suffix, positive years an `AD` one (so a range spanning the divide reads e.g.
+ * "5 BC – 5 AD"). Year 0 (no historical year zero) is treated as AD.
+ */
 export function formatYear(year: number): string {
-  return year < 0 ? `${Math.abs(year)} BC` : String(year);
+  return year < 0 ? `${Math.abs(year)} BC` : `${year} AD`;
 }
 
 /**

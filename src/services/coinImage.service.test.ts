@@ -53,6 +53,7 @@ const ownedCoin = {
   hammerPrice: null,
   auctionPremium: null,
   shippingCost: null,
+  taxCost: null,
   finalPrice: null,
   priceCurrency: null,
   createdAt: new Date(),

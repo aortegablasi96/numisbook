@@ -12,6 +12,8 @@ export type CollectionView = {
   name: string;
   coinCount: number;
   totalPaid: number | null; // converted cost (base currency), null when none
+  coverCoinId: string | null; // oldest coin with an image (card background)
+  coverImageId: string | null;
 };
 
 export function CollectionsManager({
@@ -52,7 +54,10 @@ export function CollectionsManager({
       const { collection } = (await response.json()) as {
         collection: { id: string; name: string };
       };
-      setCollections((prev) => [{ ...collection, coinCount: 0, totalPaid: null }, ...prev]);
+      setCollections((prev) => [
+        { ...collection, coinCount: 0, totalPaid: null, coverCoinId: null, coverImageId: null },
+        ...prev,
+      ]);
       setNewName("");
       setShowAddForm(false);
     } catch {
@@ -174,32 +179,28 @@ export function CollectionsManager({
       ) : visible.length === 0 ? (
         <p className="empty">No collections match &ldquo;{filter}&rdquo;.</p>
       ) : (
-        <div className="table-wrap">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th className="td-num">Coins</th>
-              <th className="td-num">Paid</th>
-              <th>
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((collection) => (
-              <tr key={collection.id}>
-                <td>
-                  {editingId === collection.id ? (
-                    <form onSubmit={saveRename} className="row" style={{ gap: "0.5rem" }}>
-                      <input
-                        type="text"
-                        value={editingName}
-                        onChange={(e) => setEditingName(e.target.value)}
-                        aria-label="Collection name"
-                        autoFocus
-                        style={{ flex: 1 }}
-                      />
+        <ul className="collection-grid">
+          {visible.map((collection) => {
+            const cover =
+              collection.coverCoinId && collection.coverImageId
+                ? `/api/coins/${collection.coverCoinId}/images/${collection.coverImageId}?w=512`
+                : null;
+            return (
+              <li
+                key={collection.id}
+                className={`collection-card${cover ? " has-cover" : ""}`}
+                style={cover ? { ["--cover" as string]: `url("${cover}")` } : undefined}
+              >
+                {editingId === collection.id ? (
+                  <form onSubmit={saveRename} className="stack" style={{ gap: "0.5rem" }}>
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      aria-label="Collection name"
+                      autoFocus
+                    />
+                    <div className="row" style={{ gap: "0.5rem", justifyContent: "flex-end" }}>
                       <button
                         type="submit"
                         className="btn-sm btn-primary"
@@ -215,29 +216,28 @@ export function CollectionsManager({
                       >
                         Cancel
                       </button>
-                    </form>
-                  ) : (
-                    <Link href={`/collections/${collection.id}`}>
-                      {collection.name}
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <Link href={`/collections/${collection.id}`} className="collection-card-link">
+                      <span className="collection-card-panel">
+                        <span className="collection-card-name">{collection.name}</span>
+                        <span className="collection-card-meta mono-label">
+                          {collection.coinCount} coin{collection.coinCount === 1 ? "" : "s"}
+                          {collection.totalPaid !== null && baseCurrency
+                            ? ` · ${formatMoney(collection.totalPaid, baseCurrency)}`
+                            : ""}
+                        </span>
+                      </span>
                     </Link>
-                  )}
-                </td>
-                <td className="td-num muted">
-                  {collection.coinCount}
-                </td>
-                <td className="td-num muted">
-                  {collection.totalPaid !== null && baseCurrency
-                    ? formatMoney(collection.totalPaid, baseCurrency)
-                    : "—"}
-                </td>
-                <td className="td-actions">
-                  {editingId !== collection.id && (
-                    <span className="row row-actions" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
+                    <div className="row row-actions collection-card-actions" style={{ gap: "0.4rem" }}>
                       <button
                         type="button"
                         className="btn-sm btn-icon"
                         onClick={() => startRename(collection)}
                         disabled={busy}
+                        aria-label={`Rename ${collection.name}`}
                       >
                         <IconPencil /> Rename
                       </button>
@@ -249,14 +249,13 @@ export function CollectionsManager({
                       >
                         <IconTrash /> Delete
                       </ConfirmButton>
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
+                    </div>
+                  </>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </section>
   );

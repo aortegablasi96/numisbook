@@ -38,7 +38,12 @@ describe("collection.service", () => {
 
   describe("listCollections", () => {
     it("returns the user's collections with their coin counts", async () => {
-      const withCount = { ...fakeCollection, coinCount: 3 };
+      const withCount = {
+        ...fakeCollection,
+        coinCount: 3,
+        coverCoinId: null,
+        coverImageId: null,
+      };
       repo.listByUserWithCounts.mockResolvedValue([withCount]);
       expect(await listCollections("user-1")).toEqual([withCount]);
       expect(repo.listByUserWithCounts).toHaveBeenCalledWith("user-1");

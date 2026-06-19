@@ -31,6 +31,7 @@ type CoinFields = Pick<
   | "hammerPrice"
   | "auctionPremium"
   | "shippingCost"
+  | "taxCost"
   | "finalPrice"
   | "priceCurrency"
 >;
@@ -70,6 +71,7 @@ function buildBlocks(coin: CoinFields): Block[] {
   const breakdown = [
     coin.hammerPrice && `hammer ${formatMoney(coin.hammerPrice, coin.priceCurrency)}`,
     coin.auctionPremium && `premium ${formatMoney(coin.auctionPremium, coin.priceCurrency)}`,
+    coin.taxCost && `tax ${formatMoney(coin.taxCost, coin.priceCurrency)}`,
     coin.shippingCost && `shipping ${formatMoney(coin.shippingCost, coin.priceCurrency)}`,
   ].filter(Boolean);
 
@@ -113,6 +115,7 @@ function toForm(coin: CoinFields): FormState {
     hammerPrice: coin.hammerPrice ?? "",
     auctionPremium: coin.auctionPremium ?? "",
     shippingCost: coin.shippingCost ?? "",
+    taxCost: coin.taxCost ?? "",
     finalPrice: coin.finalPrice ?? "",
     priceCurrency: coin.priceCurrency ?? "",
   };
@@ -147,6 +150,7 @@ function toPayload(form: FormState): Record<string, string | number | null> {
     hammerPrice: num(form.hammerPrice),
     auctionPremium: num(form.auctionPremium),
     shippingCost: num(form.shippingCost),
+    taxCost: num(form.taxCost),
     finalPrice: num(form.finalPrice),
     priceCurrency: text(form.priceCurrency),
   };
@@ -201,16 +205,18 @@ export function CoinDetailsCard({
     }
   }
 
-  // When the hammer/premium/shipping partition is entered, the final price is
-  // their sum (computed server-side); reflect that in a read-only field.
+  // When the hammer/premium/shipping/tax partition is entered, the final price
+  // is their sum (computed server-side); reflect that in a read-only field.
   const hasComponent =
     form.hammerPrice.trim() !== "" ||
     form.auctionPremium.trim() !== "" ||
-    form.shippingCost.trim() !== "";
+    form.shippingCost.trim() !== "" ||
+    form.taxCost.trim() !== "";
   const componentsSum = (
     (Number(form.hammerPrice) || 0) +
     (Number(form.auctionPremium) || 0) +
-    (Number(form.shippingCost) || 0)
+    (Number(form.shippingCost) || 0) +
+    (Number(form.taxCost) || 0)
   ).toFixed(2);
   const finalPriceValue = hasComponent ? componentsSum : form.finalPrice;
 
@@ -220,14 +226,14 @@ export function CoinDetailsCard({
   // Key attributes as compact tiles (Figma attribute grid). Only present fields
   // are shown; descriptions/price/auction stay in the labelled blocks below.
   const attributes = [
+    current.category && ["Category", current.category],
     current.metal && ["Metal", current.metal],
     current.denomination && ["Denomination", current.denomination],
-    current.category && ["Category", current.category],
-    years && ["Year", years],
-    current.mint && ["Mint", current.mint],
     current.grade && ["Condition", current.grade],
     current.weight && ["Weight", `${current.weight} g`],
     current.diameter && ["Diameter", `${current.diameter} mm`],
+    current.mint && ["Mint", current.mint],
+    years && ["Year", years],
   ].filter(Boolean) as [string, string][];
 
   return (
@@ -338,6 +344,10 @@ export function CoinDetailsCard({
             <label className="coin-edit-label">
               Auction premium
               <input type="number" step="0.01" min="0" value={form.auctionPremium} onChange={(e) => set("auctionPremium", e.target.value)} disabled={busy} />
+            </label>
+            <label className="coin-edit-label">
+              Tax cost
+              <input type="number" step="0.01" min="0" value={form.taxCost} onChange={(e) => set("taxCost", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
               Shipping cost

@@ -22,6 +22,7 @@ export type PortfolioCoinRow = {
   hammerPrice: string | null;
   auctionPremium: string | null;
   shippingCost: string | null;
+  taxCost: string | null;
   finalPrice: string | null;
   priceCurrency: string | null;
   auctionDate: string | null; // YYYY-MM-DD
@@ -48,6 +49,7 @@ export const analyticsRepository = {
         hammerPrice: coins.hammerPrice,
         auctionPremium: coins.auctionPremium,
         shippingCost: coins.shippingCost,
+        taxCost: coins.taxCost,
         finalPrice: coins.finalPrice,
         priceCurrency: coins.priceCurrency,
         auctionDate: coins.auctionDate,

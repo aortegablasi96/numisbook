@@ -77,6 +77,7 @@ The adapter also owns `accounts`, `sessions`, and `verification_tokens`
 | hammer_price | numeric(12,2) | nullable; price paid — hammer price |
 | auction_premium | numeric(12,2) | nullable; price paid — buyer's premium |
 | shipping_cost | numeric(12,2) | nullable; price paid — shipping |
+| tax_cost | numeric(12,2) | nullable; price paid — tax (ADR-010) |
 | final_price | numeric(12,2) | nullable; total price paid — computed sum of the partition when any component is set, else entered directly |
 | price_currency | text | nullable; ISO 4217 code for the price-paid amounts |
 | created_at | timestamptz | default now() |
@@ -95,9 +96,9 @@ The adapter also owns `accounts`, `sessions`, and `verification_tokens`
 > search filter matches coins whose range contains it.
 >
 > **Price paid vs. valuations.** The `hammer_price` / `auction_premium` /
-> `shipping_cost` / `final_price` fields record what the collector *paid* (cost
-> basis). This is distinct from `valuations`, which track point-in-time *market
-> value*; comparing the two drives gain/loss analytics.
+> `shipping_cost` / `tax_cost` / `final_price` fields record what the collector
+> *paid* (cost basis). This is distinct from `valuations`, which track
+> point-in-time *market value*; comparing the two drives gain/loss analytics.
 
 ### CoinImage
 One or more images per coin. Only **metadata** lives here — the bytes are kept
@@ -112,6 +113,23 @@ delete; the `coinImage.repository` removes the stored object alongside the row.
 | coin_id | uuid (fk → Coin) | not null; cascade delete |
 | mime_type | text | not null; PNG/JPEG/WebP/GIF |
 | storage_key | text | not null; object-storage key (e.g. `coins/<coinId>/<uuid>`), not a public URL |
+| size_bytes | integer | not null; size of the stored object |
+| created_at | timestamptz | default now(); also the display order |
+
+### CoinBill
+One or more auction/seller **bills** (PDF receipts) per coin (ADR-010). Mirrors
+`CoinImage`: only metadata lives here — the PDF bytes are kept in object storage
+(`src/lib/storage`) and referenced by `storage_key`. The original `filename` is
+kept so downloads get a sensible "Save as" name. Cascades on coin delete; the
+`coinBill.repository` removes the stored object alongside the row.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid (pk) | |
+| coin_id | uuid (fk → Coin) | not null; cascade delete |
+| mime_type | text | not null; always `application/pdf` |
+| filename | text | nullable; original upload filename, for the download name |
+| storage_key | text | not null; object-storage key (e.g. `bills/<coinId>/<uuid>`), not a public URL |
 | size_bytes | integer | not null; size of the stored object |
 | created_at | timestamptz | default now(); also the display order |
 
@@ -168,9 +186,9 @@ Resolved during implementation:
 - **Coins have no `name`.** The display title is derived from the attributes
   (`formatCoinTitle`); search and sort were repointed off `name`. See ADR-006.
 - **Price paid is on the coin, separate from valuations.** The
-  hammer/premium/shipping partition plus `final_price` (computed sum or direct)
-  and `price_currency` record cost basis; `valuations` stay market value. See
-  ADR-006.
+  hammer/premium/shipping/tax partition plus `final_price` (computed sum or
+  direct) and `price_currency` record cost basis; `valuations` stay market value.
+  See ADR-006 (partition) and ADR-010 (tax component).
 - **`pedigree` is free text** (a user-entered list of prior auctions), not a
   structured child table — kept simple until provenance analytics are needed.
 - **Valuations carry a `source_url`** link to the sale/hammer page; `source`

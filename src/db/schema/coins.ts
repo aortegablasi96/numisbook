@@ -62,12 +62,13 @@ export const coins = pgTable(
     auctionLot: text("auction_lot"),
     auctionDate: date("auction_date"),
     // Price the collector paid (distinct from valuations, which track market
-    // value). Either entered as the hammer/premium/shipping partition — in which
-    // case finalPrice is their computed sum — or finalPrice is set directly when
-    // the partition is unknown. priceCurrency (ISO 4217) applies to all four.
+    // value). Either entered as the hammer/premium/shipping/tax partition — in
+    // which case finalPrice is their computed sum — or finalPrice is set directly
+    // when the partition is unknown. priceCurrency (ISO 4217) applies to all.
     hammerPrice: numeric("hammer_price", { precision: 12, scale: 2 }),
     auctionPremium: numeric("auction_premium", { precision: 12, scale: 2 }),
     shippingCost: numeric("shipping_cost", { precision: 12, scale: 2 }),
+    taxCost: numeric("tax_cost", { precision: 12, scale: 2 }),
     finalPrice: numeric("final_price", { precision: 12, scale: 2 }),
     priceCurrency: text("price_currency"),
     createdAt: timestamp("created_at", { withTimezone: true })

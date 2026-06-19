@@ -1,0 +1,1 @@
+ALTER TABLE "coins" ADD COLUMN "tax_cost" numeric(12, 2);

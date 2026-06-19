@@ -42,6 +42,8 @@ export default async function CollectionsPage() {
     name: c.name,
     coinCount: c.coinCount,
     totalPaid: costs.totalPaid[c.id] ?? null,
+    coverCoinId: c.coverCoinId,
+    coverImageId: c.coverImageId,
   }));
 
   return (

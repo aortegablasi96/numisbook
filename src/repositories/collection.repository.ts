@@ -1,9 +1,16 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { coins, collections } from "@/db/schema";
+import { coinImages, coins, collections } from "@/db/schema";
 
 export type Collection = typeof collections.$inferSelect;
-export type CollectionWithCount = Collection & { coinCount: number };
+// `coverCoinId`/`coverImageId` identify the first image of the collection's
+// oldest coin, used as the collection card's background (null when no coin in
+// the collection has an image).
+export type CollectionWithCount = Collection & {
+  coinCount: number;
+  coverCoinId: string | null;
+  coverImageId: string | null;
+};
 
 // Data access for the collections aggregate. Only this layer touches the
 // database; methods are intention-revealing and return domain-shaped rows.
@@ -14,6 +21,10 @@ export const collectionRepository = {
    * keeps the counts tenant-isolated (only the owner's collections are joined).
    */
   async listByUserWithCounts(userId: string): Promise<CollectionWithCount[]> {
+    // The two cover subqueries are ordered identically (oldest coin first, then
+    // its oldest image) so they resolve to the same image row — the coin id is
+    // needed to build the thumbnail URL (/api/coins/:id/images/:imageId).
+    const coverOrder = sql`ORDER BY c2.created_at ASC, c2.id ASC, ci.created_at ASC, ci.id ASC`;
     return db
       .select({
         id: collections.id,
@@ -21,6 +32,20 @@ export const collectionRepository = {
         name: collections.name,
         createdAt: collections.createdAt,
         coinCount: sql<number>`count(${coins.id})::int`,
+        coverCoinId: sql<string | null>`(
+          SELECT c2.id FROM ${coinImages} ci
+          JOIN ${coins} c2 ON c2.id = ci.coin_id
+          WHERE c2.collection_id = ${collections.id}
+          ${coverOrder}
+          LIMIT 1
+        )`,
+        coverImageId: sql<string | null>`(
+          SELECT ci.id FROM ${coinImages} ci
+          JOIN ${coins} c2 ON c2.id = ci.coin_id
+          WHERE c2.collection_id = ${collections.id}
+          ${coverOrder}
+          LIMIT 1
+        )`,
       })
       .from(collections)
       .leftJoin(coins, eq(coins.collectionId, collections.id))

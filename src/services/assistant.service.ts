@@ -166,10 +166,11 @@ const coinAttributeProps = {
   hammerPrice: { type: "number", description: "price paid: hammer price" },
   auctionPremium: { type: "number", description: "price paid: buyer's premium" },
   shippingCost: { type: "number", description: "price paid: shipping" },
+  taxCost: { type: "number", description: "price paid: tax" },
   finalPrice: {
     type: "number",
     description:
-      "total price paid; computed from hammer+premium+shipping when those are given",
+      "total price paid; computed from hammer+premium+shipping+tax when those are given",
   },
   priceCurrency: { type: "string", description: "ISO 4217 code for the price paid" },
 } as const;

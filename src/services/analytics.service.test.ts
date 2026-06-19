@@ -30,6 +30,7 @@ function row(
     hammerPrice: null,
     auctionPremium: null,
     shippingCost: null,
+    taxCost: null,
     finalPrice: null,
     priceCurrency: null,
     auctionDate: null,
@@ -78,6 +79,7 @@ describe("getPortfolioSummary", () => {
       hammer: 0,
       premium: 0,
       shipping: 0,
+      tax: 0,
       unsplit: 0,
     });
     expect(summary.events).toEqual([]);
@@ -105,27 +107,45 @@ describe("getPortfolioSummary", () => {
     expect(summary.unconvertible).toBe(0);
   });
 
-  it("splits cost into hammer/premium/shipping and keeps final-only coins whole", async () => {
+  it("splits cost into hammer/premium/shipping/tax and keeps final-only coins whole", async () => {
     repo.coinsForUser.mockResolvedValue(coins);
     const summary = await getPortfolioSummary("user-1", "USD");
     expect(summary.costBreakdown).toEqual({
       hammer: 245, // 80 + 150€→165
       premium: 59, // 15 + 40€→44
       shipping: 16, // 5 + 10€→11
+      tax: 0, // none of the fixture coins carry tax
       unsplit: 50, // C3, final only
     });
-    // The four components reconstitute the total paid.
-    const { hammer, premium, shipping, unsplit } = summary.costBreakdown;
-    expect(hammer + premium + shipping + unsplit).toBe(summary.totalFinal);
+    // The components reconstitute the total paid.
+    const { hammer, premium, shipping, tax, unsplit } = summary.costBreakdown;
+    expect(hammer + premium + shipping + tax + unsplit).toBe(summary.totalFinal);
+  });
+
+  it("includes tax as a partition component and in the event split", async () => {
+    repo.coinsForUser.mockResolvedValue([
+      row({ coinId: "T1", hammerPrice: "100.00", auctionPremium: "20.00", shippingCost: "5.00", taxCost: "25.00", finalPrice: "150.00", priceCurrency: "USD", category: "Romans", auctionDate: "2024-04-01" }),
+    ]);
+    const summary = await getPortfolioSummary("user-1", "USD");
+    expect(summary.costBreakdown).toEqual({
+      hammer: 100,
+      premium: 20,
+      shipping: 5,
+      tax: 25,
+      unsplit: 0,
+    });
+    const [event] = summary.events;
+    expect(event.tax).toBe(25);
+    expect(event.hammer + event.premium + event.shipping + event.tax + event.unsplit).toBeCloseTo(event.amount);
   });
 
   it("emits one acquisition event per dated, convertible coin", async () => {
     repo.coinsForUser.mockResolvedValue(coins);
     const summary = await getPortfolioSummary("user-1", "USD");
     expect(summary.events).toEqual([
-      { id: "C1", label: "Romans", date: "2024-06-01", amount: 100, hammer: 80, premium: 15, shipping: 5, unsplit: 0, metal: "gold", category: "Romans", collection: "Rome", year: "2024", currency: "USD", imageId: null },
-      { id: "C2", label: "Greek", date: "2025-03-01", amount: 220, hammer: 165, premium: 44, shipping: 11, unsplit: 0, metal: "silver", category: "Greek", collection: "Greek", year: "2025", currency: "EUR", imageId: null },
-      { id: "C3", label: "Romans", date: "2025-06-01", amount: 50, hammer: 0, premium: 0, shipping: 0, unsplit: 50, metal: "gold", category: "Romans", collection: "Rome", year: "2025", currency: "USD", imageId: null },
+      { id: "C1", label: "Romans", date: "2024-06-01", amount: 100, hammer: 80, premium: 15, shipping: 5, tax: 0, unsplit: 0, metal: "gold", category: "Romans", collection: "Rome", year: "2024", currency: "USD", imageId: null },
+      { id: "C2", label: "Greek", date: "2025-03-01", amount: 220, hammer: 165, premium: 44, shipping: 11, tax: 0, unsplit: 0, metal: "silver", category: "Greek", collection: "Greek", year: "2025", currency: "EUR", imageId: null },
+      { id: "C3", label: "Romans", date: "2025-06-01", amount: 50, hammer: 0, premium: 0, shipping: 0, tax: 0, unsplit: 50, metal: "gold", category: "Romans", collection: "Rome", year: "2025", currency: "USD", imageId: null },
     ]);
   });
 
@@ -142,7 +162,7 @@ describe("getPortfolioSummary", () => {
     repo.coinsForUser.mockResolvedValue(coins);
     const summary = await getPortfolioSummary("user-1", "USD");
     for (const e of summary.events) {
-      expect(e.hammer + e.premium + e.shipping + e.unsplit).toBeCloseTo(e.amount);
+      expect(e.hammer + e.premium + e.shipping + e.tax + e.unsplit).toBeCloseTo(e.amount);
     }
     // Partitioned coins split; final-only coins carry their whole cost in unsplit.
     const c2 = summary.events.find((e) => e.id === "C2")!;
@@ -162,7 +182,7 @@ describe("getPortfolioSummary", () => {
     ]);
     const summary = await getPortfolioSummary("user-1", "USD");
     expect(summary.events).toEqual([
-      { id: "D1", label: "Untitled coin", date: "2024-01-01", amount: 10, hammer: 0, premium: 0, shipping: 0, unsplit: 10, metal: "Unknown", category: "Uncategorized", collection: "Collection", year: "2024", currency: "USD", imageId: null },
+      { id: "D1", label: "Untitled coin", date: "2024-01-01", amount: 10, hammer: 0, premium: 0, shipping: 0, tax: 0, unsplit: 10, metal: "Unknown", category: "Uncategorized", collection: "Collection", year: "2024", currency: "USD", imageId: null },
     ]);
     // Both coins still count toward the total (the undated one just has no point).
     expect(summary.totalFinal).toBe(30);
@@ -186,6 +206,7 @@ describe("getPortfolioSummary", () => {
       hammer: 80,
       premium: 15,
       shipping: 5,
+      tax: 0,
       unsplit: 50,
     });
     expect(summary.events.map((e) => e.currency)).toEqual(["USD", "USD"]);

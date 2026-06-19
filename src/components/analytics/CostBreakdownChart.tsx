@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { AcquisitionEvent } from "@/services/analytics.service";
 import { RANGES, money, niceTicks, filterEventsByRange } from "./chart-utils";
+import { ExpandChartButton } from "./ExpandChartButton";
 import {
   AXIS_W,
   PAD,
   clamp,
-  plotWidth,
   useChartHeight,
   useMeasuredWidth,
 } from "./chart-layout";
@@ -27,44 +27,67 @@ import {
 // range filter — amounts arrive pre-converted to the base currency from the
 // analytics service.
 
+// Stack order (bottom → top) and tooltip/legend order. Tax sits before shipping
+// throughout the app (price-paid partition order, ADR-010).
 const SEGMENTS = [
   { key: "hammer", label: "Hammer", cls: "bar-hammer", swatch: "seg-hammer" },
   { key: "premium", label: "Premium", cls: "bar-premium", swatch: "seg-premium" },
+  { key: "tax", label: "Tax", cls: "bar-tax", swatch: "seg-tax" },
   { key: "shipping", label: "Shipping", cls: "bar-shipping", swatch: "seg-shipping" },
   { key: "unsplit", label: "Final only", cls: "bar-unsplit", swatch: "seg-unsplit" },
 ] as const;
 
-const AVATAR = 88; // thumbnail diameter, in px
+// The four price-paid partition components (everything except the final-only
+// fallback). The tooltip always lists all four — even those that are 0 — for a
+// partitioned coin, so the breakdown reads consistently.
+const COST_KEYS = ["hammer", "premium", "tax", "shipping"] as const;
+
+const AVATAR = 104; // thumbnail diameter, in px
+// Coins to fit across the (inline) chart's visible width. Each coin gets a fixed
+// pixel slot (viewport / VISIBLE_COINS); the rest scroll horizontally. The
+// expanded chart reuses that same per-coin width, so its wider viewport fits
+// proportionally more coins (≈ VISIBLE_COINS × modalWidth / inlineWidth).
+const VISIBLE_COINS = 5;
 
 const stackTotal = (e: AcquisitionEvent): number =>
-  e.hammer + e.premium + e.shipping + e.unsplit;
+  e.hammer + e.premium + e.shipping + e.tax + e.unsplit;
 
 type Tip = { left: number; top: number; e: AcquisitionEvent; total: number };
 
 export function CostBreakdownChart({
   events,
   currency,
+  inModal = false,
+  slotUnit,
 }: {
   events: AcquisitionEvent[];
   currency: string;
+  inModal?: boolean;
+  // Per-coin pixel width to reuse in the expanded copy so coins stay the same
+  // size as the inline chart (and the wider dialog therefore shows more of them).
+  slotUnit?: number;
 }) {
   const [rangeIdx, setRangeIdx] = useState(RANGES.length - 1); // default: All
   const [tip, setTip] = useState<Tip | null>(null);
   const plotRef = useRef<HTMLDivElement>(null);
+  // Unique per chart instance so the inline and expanded copies don't share
+  // clipPath ids (duplicate ids would cross-resolve and break the round avatars).
+  const clipUid = useId().replace(/:/g, "");
   const [scrollRef, viewport] = useMeasuredWidth<HTMLDivElement>();
-  const chartH = useChartHeight();
+  const chartH = useChartHeight(inModal);
 
   const ordered = useMemo(
     () =>
       [...events].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)),
     [events],
   );
+  // All dated, convertible coins in range (ascending, oldest→newest). The plot
+  // scrolls horizontally; only ~VISIBLE_COINS fit the view at once and it is
+  // scrolled to the newest (right) end by default.
   const shown = useMemo(
     () => filterEventsByRange(ordered, RANGES[rangeIdx].days),
     [ordered, rangeIdx],
   );
-
-  if (events.length === 0) return null;
 
   // Each column's height is its components' sum (so the stack and the axis agree).
   const maxTotal = shown.reduce((m, e) => Math.max(m, stackTotal(e)), 0);
@@ -76,9 +99,26 @@ export function CostBreakdownChart({
   })).filter((t) => t.value > 0);
   const grandTotal = totals.reduce((sum, t) => sum + t.value, 0);
 
-  const plotW = plotWidth(shown.length, viewport);
-  const slot = shown.length > 0 ? plotW / shown.length : plotW;
-  const barW = Math.max(Math.min(slot * 0.72, 72), 1);
+  // Per-coin width: in the inline chart, size it so VISIBLE_COINS fit the
+  // measured width (but never narrower than that when there are fewer coins, so
+  // a short history fills the plot). The expanded copy is handed this same unit
+  // (slotUnit) so coins keep their size and the wider dialog shows more of them.
+  const count = shown.length;
+  const baseUnit = viewport / VISIBLE_COINS;
+  const unit = slotUnit ?? baseUnit;
+  const slot = count > 0 ? Math.max(unit, viewport / count) : viewport;
+  const plotW = count > 0 ? count * slot : viewport;
+  const scrolls = plotW > viewport + 1; // more coins than fit the visible width
+  const barW = Math.max(Math.min(slot * 0.82, 96), 1);
+
+  // Default the horizontal scroll to the newest (right) end so the most recent
+  // acquisitions are in view first; resets when the data or layout width changes.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [scrollRef, plotW, count]);
+
+  if (events.length === 0) return null;
 
   // Fixed top band for the thumbnail crown + total label; the y-axis and plot
   // share these so their gridlines line up across the frozen-axis boundary.
@@ -92,9 +132,9 @@ export function CostBreakdownChart({
   const y = (value: number): number => baseline - (value / axisMax) * innerH;
 
   const label =
-    `Cost paid per coin in ${currency}, oldest acquisition first, ` +
-    `each column split into its share of hammer, premium and shipping. ` +
-    `${shown.length} coins, ${money(grandTotal, currency)} total.`;
+    `Cost paid per coin in ${currency}, newest first; scroll horizontally for ` +
+    `earlier acquisitions. Each column split into its share of hammer, premium, ` +
+    `shipping and tax. ${count} coins, ${money(grandTotal, currency)} total.`;
 
   function showTip(
     ev: React.MouseEvent,
@@ -115,24 +155,37 @@ export function CostBreakdownChart({
     <section className="card stack">
       <div className="spread">
         <h3 className="chart-title">Cost breakdown</h3>
-        <div className="row" role="group" aria-label="Date range">
-          {RANGES.map((r, i) => (
-            <button
-              key={r.label}
-              type="button"
-              className="btn-sm range-btn"
-              aria-pressed={i === rangeIdx}
-              onClick={() => setRangeIdx(i)}
-            >
-              {r.label}
-            </button>
-          ))}
+        <div className="row" style={{ gap: "var(--space-2)" }}>
+          <div className="row" role="group" aria-label="Date range">
+            {RANGES.map((r, i) => (
+              <button
+                key={r.label}
+                type="button"
+                className="btn-sm range-btn"
+                aria-pressed={i === rangeIdx}
+                onClick={() => setRangeIdx(i)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          {!inModal && (
+            <ExpandChartButton label="Cost breakdown">
+              <CostBreakdownChart
+                events={events}
+                currency={currency}
+                inModal
+                slotUnit={unit}
+              />
+            </ExpandChartButton>
+          )}
         </div>
       </div>
 
       <div className="spread legend-top">
         <span className="muted">
-          {shown.length} coin{shown.length === 1 ? "" : "s"} · oldest first
+          {count} coin{count === 1 ? "" : "s"}
+          {scrolls ? " · newest first, scroll for more" : ""}
         </span>
         <ul className="legend-inline">
           {totals.map((t) => (
@@ -180,7 +233,7 @@ export function CostBreakdownChart({
               <defs>
                 {shown.map((e, i) =>
                   e.imageId ? (
-                    <clipPath key={e.id} id={`cbc-clip-${e.id}`}>
+                    <clipPath key={e.id} id={`cbc-clip-${clipUid}-${e.id}`}>
                       <circle cx={slot * (i + 0.5)} cy={avatarCy} r={AVATAR / 2} />
                     </clipPath>
                   ) : null,
@@ -236,34 +289,22 @@ export function CostBreakdownChart({
                       height={innerH}
                       fill="transparent"
                     />
+                    {/* Stacked segments. Per-segment shares now live in the
+                        hover tooltip, so the bars stay clean (ADR-010). */}
                     {SEGMENTS.map((s) => {
                       const value = e[s.key];
                       if (value <= 0) return null;
                       const segH = (value / axisMax) * innerH;
                       top -= segH;
-                      const segMid = top + segH / 2;
-                      const labelSeg = s.key !== "unsplit" && segH >= 16;
                       return (
-                        <g key={s.key}>
-                          <rect
-                            x={cx - barW / 2}
-                            y={top}
-                            width={barW}
-                            height={segH}
-                            className={`bar-seg ${s.cls}`}
-                          />
-                          {labelSeg && (
-                            <text
-                              x={cx}
-                              y={segMid}
-                              textAnchor="middle"
-                              dominantBaseline="central"
-                              className="bar-seg-label"
-                            >
-                              {Math.round((value / total) * 100)}%
-                            </text>
-                          )}
-                        </g>
+                        <rect
+                          key={s.key}
+                          x={cx - barW / 2}
+                          y={top}
+                          width={barW}
+                          height={segH}
+                          className={`bar-seg ${s.cls}`}
+                        />
                       );
                     })}
 
@@ -280,7 +321,7 @@ export function CostBreakdownChart({
                           width={AVATAR}
                           height={AVATAR}
                           preserveAspectRatio="xMidYMid slice"
-                          clipPath={`url(#cbc-clip-${e.id})`}
+                          clipPath={`url(#cbc-clip-${clipUid}-${e.id})`}
                         />
                         <circle cx={cx} cy={avatarCy} r={AVATAR / 2} className="bar-avatar-ring" />
                       </>
@@ -302,7 +343,10 @@ export function CostBreakdownChart({
                 {tip.e.collection} · {tip.e.date}
               </p>
               <ul className="chart-tooltip-rows">
-                {SEGMENTS.filter((s) => tip.e[s.key] > 0).map((s) => (
+                {(tip.e.unsplit > 0
+                  ? SEGMENTS.filter((s) => s.key === "unsplit")
+                  : SEGMENTS.filter((s) => (COST_KEYS as readonly string[]).includes(s.key))
+                ).map((s) => (
                   <li key={s.key}>
                     <span className={`swatch ${s.swatch}`} aria-hidden />
                     <span>{s.label}</span>
@@ -310,12 +354,18 @@ export function CostBreakdownChart({
                       {money(tip.e[s.key], currency)}
                     </span>
                     <span className="muted">
-                      {Math.round((tip.e[s.key] / tip.total) * 100)}%
+                      {tip.total > 0
+                        ? Math.round((tip.e[s.key] / tip.total) * 100)
+                        : 0}
+                      %
                     </span>
                   </li>
                 ))}
               </ul>
-              <div className="chart-tooltip-total">{money(tip.total, currency)}</div>
+              <div className="chart-tooltip-total">
+                <span>Total</span>
+                <span>{money(tip.total, currency)}</span>
+              </div>
             </div>
           )}
         </div>

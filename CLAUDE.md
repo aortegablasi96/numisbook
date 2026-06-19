@@ -212,6 +212,15 @@ converts to WebP at quality 82, and returns `Cache-Control: public, immutable`
 `Cache-Control: private, no-cache`. Constraints: PNG/JPEG/WebP/GIF, max 5 MB
 (defined in `src/lib/images.ts`).
 
+## Coin bills
+
+Auction/seller **bills** (PDF receipts) per coin reuse the coin-images pattern
+end to end — metadata in `coin_bills`, bytes in object storage, the
+`coinBill.repository` the only composing layer. PDF-only, max 15 MB
+(`src/lib/bills.ts`). Routes mirror images: `GET`/`POST /api/coins/[id]/bills`,
+`GET`/`DELETE /api/coins/[id]/bills/[billId]` (GET serves the PDF inline;
+`?download=1` forces a download). See ADR-010.
+
 ## Coin search and filtering
 
 `GET /api/collections/[id]/coins` accepts query params: `q` (matches `category`
@@ -431,6 +440,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `007-portfolio-analytics-upgrade` — Portfolio Analytics Upgrade; the architectural decision within it is multi-currency support: per-user base currency + currency conversion via cached ECB rates (frankfurter.app) behind an `FxRateProvider` interface
 * `008-ui-embellishment` — UI Embellishment: cross-cutting milestone decisions — derived overview aggregates (counts in SQL, FX money rollups in the service; not denormalized), uniform client error surfacing (`lib/http`), accessibility as a `globals.css` baseline, loading/placeholder conventions, and derived currency defaults
 * `009-figma-ui-redesign` — Figma UI Redesign: visual-only "stone & gold" re-skin via `globals.css` tokens (light-only; `next/font` typography); routes, data model, and API unchanged
+* `010-ux-and-feature-refinement` — UX & Feature Refinement: tax added to the price-paid partition (now ordered hammer/premium/**tax**/shipping app-wide; threaded through cost analytics), AD/BC era suffixes, reordered coin-detail chips, collections card grid (large whole-card-link cards, prominent cover, bottom info panel), cost-breakdown chart (~5 coins per view, scrollable, newest first; bigger avatars/wider bars, per-segment split moved to the hover tooltip), hover tooltips + expand control on both portfolio charts, and per-coin **bills** (PDF receipts, coin-images storage pattern)
 
 (`template.md` is the scaffold for new ADRs.)
 
@@ -451,10 +461,13 @@ in a **pre-deployment** phase. The **Data Model Reform** (Phase 5), the
 **Portfolio Analytics Upgrade** (Phase 6 — multi-currency base currency + ECB FX
 conversion, gain/loss, deeper allocation, per-collection comparison, SVG trend
 chart), and **Embellishment** (Phase 7 — overview aggregates, UI/UX polish,
-error-state resilience; see `docs/history.md` and ADRs 006–008), and the
+error-state resilience; see `docs/history.md` and ADRs 006–008), the
 **Figma UI Redesign** (Phase 8 — the "stone & gold" re-skin via `globals.css`
-tokens; light-only; `next/font` typography; see ADR-009) are all done. The next
-milestone is **Production Readiness** (deployment, CI/CD, observability);
+tokens; light-only; `next/font` typography; see ADR-009), and the **UX & Feature
+Refinement** milestone (Phase 9 — tax in the price-paid partition, AD/BC era
+suffixes, reordered coin-detail chips, collections card grid, capped
+cost-breakdown chart, expandable portfolio charts; see ADR-010) are all done. The
+next milestone is **Production Readiness** (deployment, CI/CD, observability);
 **Valuation-Based Analytics** is the other planned milestone. See `docs/roadmap.md`
 for the current milestone tasks and the Technical Backlog — check it before starting
 anything new.

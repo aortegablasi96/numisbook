@@ -32,66 +32,31 @@ multi-currency aware, with gain/loss, deeper allocation, per-collection
 comparison, and an SVG trend chart (see `history.md` Phase 6 and
 `docs/decisions/007-portfolio-analytics-upgrade.md`) — the **Embellishment**
 milestone has shipped (see `history.md` Phase 7 and
-`docs/decisions/008-ui-embellishment.md`), and the **Figma UI Redesign** has
+`docs/decisions/008-ui-embellishment.md`), the **Figma UI Redesign** has
 shipped: the app is re-skinned to the agreed "stone & gold" look via the
-dependency-free `globals.css` system, light-only, with `next/font` typography,
-including the post-redesign coin-detail and portfolio polish (see `history.md`
-Phase 8 and `docs/decisions/009-figma-ui-redesign.md`). The current milestone is
-**UX & Feature Refinement** — a focused round of UI refinements and supporting
-back-end changes ahead of production readiness.
+dependency-free `globals.css` system, light-only, with `next/font` typography
+(see `history.md` Phase 8 and `docs/decisions/009-figma-ui-redesign.md`), and
+the **UX & Feature Refinement** milestone has shipped: tax added to the
+price-paid partition (ordered tax-before-shipping app-wide), AD/BC era suffixes,
+reordered coin-detail chips, a collections card grid (large cards, prominent
+cover, centred info panel), a scrollable ~5-coin cost-breakdown chart with the
+per-segment split in a hover tooltip, hover tooltips + expand controls on both
+portfolio charts, and per-coin **bills** (PDF receipts) (see `history.md` Phase 9
+and `docs/decisions/010-ux-and-feature-refinement.md`). The next milestone is
+**Production Readiness** (deployment, CI/CD, observability).
 
 Primary objective:
 
-**Refine everyday UX across coin detail and the portfolio, with the back-end
-changes those refinements require.**
+**Prepare NumisBook for deployment and usage by real collectors.**
 
 Current priorities:
 
-- UX & feature refinement (current)
-- (then) production readiness
+- Production readiness (current)
 - (then) valuation-based analytics
 
 ---
 
-# Current Milestone — UX & Feature Refinement
-
-Goal:
-
-Improve everyday UX through targeted UI refinements and the supporting back-end
-changes they require. No new domains — refinement across the coin and portfolio
-slices.
-
-## Back-end
-
-- [ ] Add **tax costs** to the price-paid partition — a new component alongside
-      hammer / premium / shipping that is included in the computed `final_price`
-      (schema → repository → service → coin edit form)
-
-## Coin detail
-
-- [ ] Rework the **attribute chips order** on the coin detail page. The order should be:
-      1. Category
-      2. Metal
-      3. Denomination
-      4. Condition
-      5. Weight
-      6. Diameter
-      7. Mint
-      8. Year
-- [ ] Show the **`AD` era suffix for positive years** (it currently appears only
-      for `BC`). A negative year keeps `BC`, a positive year gains `AD`, and a
-      range spanning the divide shows both ends — e.g. -5 to +5 renders as
-      `5 BC – 5 AD`
-
-## Portfolio
-
-- [ ] Replace the **collection comparison table** with a **card list**: show the number of coins and you can use the first image of the first coin to set the list background picture
-- [ ] Cap the **Cost Breakdown** chart at the **top 5 coins**, while keeping it scrollable
-- [ ] Add an **expand button** to each portfolio chart (enlarge / full-view)
-
----
-
-# Future Milestone — Production Readiness
+# Current Milestone — Production Readiness
 
 Goal:
 

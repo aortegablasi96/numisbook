@@ -22,8 +22,8 @@ import { formatCoinTitle } from "@/lib/coin-format";
 // One acquisition, in the base currency, with the dimension labels the timeline
 // filters by and the price-paid split the cost-breakdown chart stacks. The
 // cumulative cost trend is built (and filtered) from these in the client, and the
-// per-coin cost-breakdown columns are drawn from `hammer`/`premium`/`shipping`/
-// `unsplit` (which sum to `amount`). Only coins with an acquisition date appear —
+// per-coin cost-breakdown columns are drawn from `hammer`/`premium`/`tax`/
+// `shipping`/`unsplit` (which sum to `amount`). Only coins with an acquisition date appear —
 // they need a point in time to be placed on either chart's date axis.
 export type AcquisitionEvent = {
   id: string; // coin id
@@ -31,8 +31,9 @@ export type AcquisitionEvent = {
   date: string; // YYYY-MM-DD acquisition date
   amount: number; // final price paid, base currency
   hammer: number; // base-currency cost components; sum to `amount`. Partitioned
-  premium: number; // coins split across hammer/premium/shipping; final-only coins
-  shipping: number; // carry their whole cost in `unsplit` (the other three are 0).
+  premium: number; // coins split across hammer/premium/tax/shipping; final-only
+  tax: number; // coins carry their whole cost in `unsplit` (the others 0).
+  shipping: number;
   unsplit: number;
   metal: string;
   category: string;
@@ -43,12 +44,13 @@ export type AcquisitionEvent = {
 };
 
 // Total cost split into its components, base currency. Coins entered with the
-// hammer/premium/shipping partition contribute to those three; coins with only a
-// final price contribute to `unsplit` (their cost is counted but not split).
-// hammer + premium + shipping + unsplit == totalFinal.
+// hammer/premium/tax/shipping partition contribute to those four; coins with only
+// a final price contribute to `unsplit` (their cost is counted but not split).
+// hammer + premium + tax + shipping + unsplit == totalFinal.
 export type CostBreakdown = {
   hammer: number;
   premium: number;
+  tax: number;
   shipping: number;
   unsplit: number;
 };
@@ -96,7 +98,7 @@ function emptySummary(
     baseCurrency,
     totalFinal: 0,
     unconvertible: 0,
-    costBreakdown: { hammer: 0, premium: 0, shipping: 0, unsplit: 0 },
+    costBreakdown: { hammer: 0, premium: 0, tax: 0, shipping: 0, unsplit: 0 },
     events: [],
   };
 }
@@ -166,6 +168,7 @@ export async function getPortfolioSummary(
   const breakdown: CostBreakdown = {
     hammer: 0,
     premium: 0,
+    tax: 0,
     shipping: 0,
     unsplit: 0,
   };
@@ -180,16 +183,25 @@ export async function getPortfolioSummary(
     }
     totalFinal += final;
 
-    // Coins with a hammer price were entered as a partition; split the cost into
-    // its components. Coins with only a final price stay whole (`unsplit`).
+    // Coins entered with any price component were partitioned; split the cost
+    // into its components. Coins with only a final price stay whole (`unsplit`).
     let hammer = 0;
     let premium = 0;
+    let tax = 0;
     let shipping = 0;
     let unsplit = 0;
-    if (row.hammerPrice != null) {
-      hammer = convertPrice(row.hammerPrice, currency, auctionDate) ?? 0;
+    const partitioned =
+      row.hammerPrice != null ||
+      row.auctionPremium != null ||
+      row.shippingCost != null ||
+      row.taxCost != null;
+    if (partitioned) {
+      if (row.hammerPrice != null)
+        hammer = convertPrice(row.hammerPrice, currency, auctionDate) ?? 0;
       if (row.auctionPremium != null)
         premium = convertPrice(row.auctionPremium, currency, auctionDate) ?? 0;
+      if (row.taxCost != null)
+        tax = convertPrice(row.taxCost, currency, auctionDate) ?? 0;
       if (row.shippingCost != null)
         shipping = convertPrice(row.shippingCost, currency, auctionDate) ?? 0;
     } else {
@@ -197,6 +209,7 @@ export async function getPortfolioSummary(
     }
     breakdown.hammer += hammer;
     breakdown.premium += premium;
+    breakdown.tax += tax;
     breakdown.shipping += shipping;
     breakdown.unsplit += unsplit;
 
@@ -208,6 +221,7 @@ export async function getPortfolioSummary(
         amount: round2(final),
         hammer: round2(hammer),
         premium: round2(premium),
+        tax: round2(tax),
         shipping: round2(shipping),
         unsplit: round2(unsplit),
         metal: row.metal ?? "Unknown",
@@ -229,6 +243,7 @@ export async function getPortfolioSummary(
     costBreakdown: {
       hammer: round2(breakdown.hammer),
       premium: round2(breakdown.premium),
+      tax: round2(breakdown.tax),
       shipping: round2(breakdown.shipping),
       unsplit: round2(breakdown.unsplit),
     },

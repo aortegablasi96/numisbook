@@ -9,6 +9,7 @@ import { formatCoinTitle } from "@/lib/coin-format";
 import { NotFoundError } from "@/lib/errors";
 import { ValuationsManager } from "@/components/valuations/ValuationsManager";
 import { CoinImage } from "@/components/coins/CoinImage";
+import { CoinBills } from "@/components/coins/CoinBills";
 import { CoinDetailsCard } from "@/components/coins/CoinDetailsCard";
 
 // Server Component for a single coin: guards on auth + ownership, lists its
@@ -95,7 +96,10 @@ export default async function CoinDetailPage({
           />
           <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>Added {addedLabel}</p>
         </CoinDetailsCard>
-        <CoinImage coinId={id} />
+        <div className="coin-side">
+          <CoinImage coinId={id} />
+          <CoinBills coinId={id} />
+        </div>
       </div>
     </main>
   );

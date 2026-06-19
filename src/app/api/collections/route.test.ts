@@ -56,7 +56,7 @@ describe("GET /api/collections", () => {
   it("returns the signed-in user's collections", async () => {
     signedIn();
     const rows = [
-      { id: "c1", userId: "u1", name: "Rome", createdAt: new Date(), coinCount: 4 },
+      { id: "c1", userId: "u1", name: "Rome", createdAt: new Date(), coinCount: 4, coverCoinId: null, coverImageId: null },
     ];
     vi.mocked(listCollections).mockResolvedValue(rows);
     const res = await GET();
