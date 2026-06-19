@@ -323,18 +323,81 @@ success status codes (200/201/204), and AppError → status mapping (404, etc.).
 
 ## Development Workflow
 
-For non-trivial features:
+NumisBook follows a structured development workflow for all non-trivial work.
 
-1. Product Review (`product-manager`)
-2. UI Review (`ui-designer`)
-3. Architecture Review (`architect`)
-4. Database Review (`database-designer`) when schema changes are required
-5. Implementation (`implementation-engineer` or appropriate execution skill)
-6. Testing Review (`testing`)
+The workflow ensures product, design, architecture, database,
+implementation, and testing decisions are considered in the correct order.
 
-Do not jump directly to implementation for significant features.
+Not every feature requires every step.
 
-For small bug fixes and UI tweaks, implementation may proceed directly.
+The workflow adapts depending on the scope of the change.
+
+### Planning Phase
+
+Planning always starts with the Product Manager.
+
+Depending on the feature, additional planning and governance skills may
+participate before implementation begins.
+
+```text
+Product Manager (required)
+        │
+        ├── UI Designer (if UI/UX changes)
+        │        │
+        │        └── Design Recorder (if significant design decisions are approved)
+        │
+        ├── Architect (if architectural changes are required)
+        │        │
+        │        ├── Database Designer (if schema or persistence changes are required)
+        │        │
+        │        └── ADR Writer (if architectural decisions are accepted)
+        │
+        ▼
+Implementation Engineer (required)
+```
+
+### Execution Phase
+
+The Implementation Engineer coordinates implementation using one or more
+execution skills.
+
+Examples include:
+
+- `new-domain`
+- `new-repository`
+- `new-service`
+- `ui-polish`
+
+Execution skills implement approved planning decisions.
+
+They must not redefine product, design, architecture, or database decisions.
+
+### Verification Phase
+
+Every implementation concludes with the Testing skill.
+
+Testing validates:
+
+- business logic
+- regressions
+- accessibility (when applicable)
+- user workflows
+- implementation completeness
+
+### Workflow Principles
+
+- Product Review is always required for non-trivial features.
+- UI Designer participates only when user experience changes.
+- Design Recorder participates only when significant UI/UX decisions should be documented.
+- Architect participates only when architectural changes are required.
+- ADR Writer participates only when an accepted architectural decision should be documented.
+- Database Designer participates only when persistence or schema changes are required.
+- Implementation Engineer always coordinates implementation.
+- Testing always concludes implementation.
+
+Small bug fixes and isolated implementation changes may skip directly to implementation when no planning decisions are affected.
+
+Execution skills consume approved planning outputs.
 
 ## Workflow Skills
 
@@ -414,12 +477,13 @@ the rule for that layer — read it when working inside one.
 
 When making decisions, consult documentation in the following order:
 
-1. `docs/decisions/`
-2. `docs/product.md`
-3. `docs/roadmap.md`
-4. `docs/architecture.md`
-5. `docs/database.md`
-6. `docs/history.md`
+1. docs/decisions/
+2. docs/design-decisions/
+3. docs/product.md
+4. docs/roadmap.md
+5. docs/architecture.md
+6. docs/database.md
+7. docs/history.md
 
 If documentation conflicts:
 
@@ -438,11 +502,11 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `003-authjs-google-oauth` — Auth.js + Google OAuth
 * `004-s3-storage-abstraction` — S3-compatible storage abstraction
 * `005-cloudflare-r2-initial-provider` — Cloudflare R2 as initial provider
-* `006-coin-and-valuation-attribute-rework` — Coin & valuation attribute rework (derived coin title, price paid vs. valuations, grade `pgEnum`, valuation link)
-* `007-portfolio-analytics-upgrade` — Portfolio Analytics Upgrade; the architectural decision within it is multi-currency support: per-user base currency + currency conversion via cached ECB rates (frankfurter.app) behind an `FxRateProvider` interface
-* `008-ui-embellishment` — UI Embellishment: cross-cutting milestone decisions — derived overview aggregates (counts in SQL, FX money rollups in the service; not denormalized), uniform client error surfacing (`lib/http`), accessibility as a `globals.css` baseline, loading/placeholder conventions, and derived currency defaults
-* `009-figma-ui-redesign` — Figma UI Redesign: visual-only "stone & gold" re-skin via `globals.css` tokens (light-only; `next/font` typography); routes, data model, and API unchanged
-* `010-ux-and-feature-refinement` — UX & Feature Refinement: tax added to the price-paid partition (now ordered hammer/premium/**tax**/shipping app-wide; threaded through cost analytics), AD/BC era suffixes, reordered coin-detail chips, collections card grid (large whole-card-link cards, prominent cover, bottom info panel), cost-breakdown chart (~5 coins per view, scrollable, newest first; bigger avatars/wider bars, per-segment split moved to the hover tooltip), hover tooltips + expand control on both portfolio charts, and per-coin **bills** (PDF receipts, coin-images storage pattern)
+* `006-coin-and-valuation-attribute-rework` — Coin & valuation attribute rework
+* `007-portfolio-analytics-upgrade` — Portfolio analytics upgrade (multi-currency + ECB FX)
+* `008-ui-embellishment` — UI embellishment (overview aggregates, error surfacing, a11y baseline)
+* `009-figma-ui-redesign` — Figma "stone & gold" re-skin (visual-only, light-only)
+* `010-ux-and-feature-refinement` — UX & feature refinement (tax partition, card grids, coin bills)
 
 (`template.md` is the scaffold for new ADRs.)
 
@@ -458,18 +522,14 @@ Do not silently override accepted decisions.
 
 ## Current Priority
 
-The core collection-management platform is functionally complete; the project is
-in a **pre-deployment** phase. The **Data Model Reform** (Phase 5), the
-**Portfolio Analytics Upgrade** (Phase 6 — multi-currency base currency + ECB FX
-conversion, gain/loss, deeper allocation, per-collection comparison, SVG trend
-chart), and **Embellishment** (Phase 7 — overview aggregates, UI/UX polish,
-error-state resilience; see `docs/history.md` and ADRs 006–008), the
-**Figma UI Redesign** (Phase 8 — the "stone & gold" re-skin via `globals.css`
-tokens; light-only; `next/font` typography; see ADR-009), and the **UX & Feature
-Refinement** milestone (Phase 9 — tax in the price-paid partition, AD/BC era
-suffixes, reordered coin-detail chips, collections card grid, capped
-cost-breakdown chart, expandable portfolio charts; see ADR-010) are all done. The
-next milestone is **Production Readiness** (deployment, CI/CD, observability);
-**Valuation-Based Analytics** is the other planned milestone. See `docs/roadmap.md`
-for the current milestone tasks and the Technical Backlog — check it before starting
-anything new.
+The project is currently in the **Production Readiness** milestone.
+
+Before starting new work:
+
+1. Review `docs/roadmap.md` for the active milestone.
+2. Review `docs/history.md` for completed work.
+3. Follow the Development Workflow defined in this document.
+
+Do not implement backlog items unless they have been promoted into the active milestone.
+
+Prefer completing the current milestone before introducing new functionality.

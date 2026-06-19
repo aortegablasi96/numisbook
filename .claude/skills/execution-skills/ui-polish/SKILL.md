@@ -1,361 +1,160 @@
+```md
 ---
 name: ui-polish
-description: Audit, redesign and implement UI improvements for an existing NumisBook screen using Playwright. Review the rendered application, propose a prioritized improvement plan, implement approved changes, and validate that no regressions were introduced.
+description: Implement approved UI and UX improvements for an existing NumisBook screen. Apply Design Decision Records (DDRs), preserve existing functionality, validate the result with Playwright, and ensure no regressions are introduced.
 ---
 
 # UI Polish
 
 ## Purpose
 
-You are the UI implementation specialist for NumisBook.
+You are responsible for implementing approved UI and UX improvements.
 
-Your responsibility is to transform an existing page into a polished, modern SaaS experience while preserving all functionality.
+You do not design new interfaces.
 
-Always improve the UI through small, reviewable iterations.
+You implement the design defined by the workflow.
 
-Never redesign workflows unless explicitly requested.
+Your goals are:
 
----
-
-# Required References
-
-Before starting, review:
-
-- CLAUDE.md
-- docs/product.md
-- docs/roadmap.md
-- docs/architecture.md
-- docs/history.md
-- docs/decisions/
-
-Review any approved:
-
-- Product Review
-- UI Review
-- Architecture Review
-
----
-
-# Playwright Workflow
-
-Playwright is available and should be used.
-
-Before modifying any code:
-
-1. Launch the application.
-2. Navigate to the target page.
-3. Exercise the primary user flow.
-4. Capture screenshots.
-5. Inspect the rendered DOM.
-6. Observe spacing, typography, responsiveness and interactions.
-7. Identify usability problems.
-8. Produce a UI audit.
-
-After implementation:
-
-1. Reload the page.
-2. Verify all interactions still work.
-3. Compare before and after.
-4. Verify no visual regressions.
-5. Verify no console errors.
-
-Never modify a page without first inspecting it.
-
----
-
-# Design Philosophy
-
-NumisBook is not a marketing website.
-
-It is a professional productivity application for coin collectors.
-
-The interface should feel:
-
-- elegant
-- calm
-- information-dense
-- image-centric
-- trustworthy
-- fast
-- consistent
-- unobtrusive
-
-Every screen should communicate:
-
-"I can efficiently manage a serious collection."
-
----
-
-# Design Principles
-
-Prioritize:
-
-1. clarity
-2. consistency
-3. readability
-4. discoverability
-5. efficiency
-
-Avoid:
-
-- decorative UI
-- excessive colors
-- unnecessary animations
-- large empty spaces
-- oversized controls
-- visual clutter
-
-Function always comes before aesthetics.
-
----
-
-# Benchmark Applications
-
-Use modern SaaS applications as design inspiration.
-
-Examples:
-
-- Linear
-- Notion
-- GitHub
-- Vercel Dashboard
-- Stripe Dashboard
-- Airtable
-
-Study:
-
-- spacing
-- typography
-- table layouts
-- filters
-- navigation
-- dialogs
-- information hierarchy
-
-Never copy branding or styling directly.
-
----
-
-# UI Audit Checklist
-
-## 1. Information Hierarchy
-
-Review:
-
-- page title
-- section hierarchy
-- visual grouping
-- primary actions
-- secondary actions
-
-Question:
-
-Can a new user understand the page in five seconds?
-
----
-
-## 2. Layout
-
-Review:
-
-- margins
-- spacing
-- alignment
-- grids
-- whitespace
-- grouping
-
-Look for:
-
-- uneven spacing
-- visual imbalance
-- clutter
-- oversized sections
-
----
-
-## 3. Typography
-
-Review:
-
-- heading hierarchy
-- font sizing
-- emphasis
-- readability
-- line length
-
-Avoid unnecessary bold text.
-
----
-
-## 4. Tables
-
-Tables are central to NumisBook.
-
-Evaluate:
-
-- scanability
-- row density
-- sorting controls
-- filtering controls
-- pagination
-- sticky headers
+- faithful implementation
+- visual consistency
+- maintainability
+- accessibility
 - responsive behaviour
+- regression-free delivery
 
 ---
 
-## 5. Forms
+## Workflow Integration
+
+This is an execution skill.
+
+Before implementation, verify the workflow has been completed.
+
+Expected workflow:
+
+Product Manager
+
+↓
+
+UI Designer
+
+↓
+
+Design Recorder
+
+↓
+
+Architect (if required)
+
+↓
+
+ADR Writer (if required)
+
+↓
+
+Implementation Engineer
+
+↓
+
+UI Polish
+
+↓
+
+Testing
+
+If the required reviews or decision records do not exist, stop and request they be completed before implementation.
+
+Do not redefine approved decisions.
+
+---
+
+## Required References
 
 Review:
 
-- grouping
-- labels
-- validation
-- keyboard flow
-- button placement
+- approved Product Review
+- approved UI Review
+- relevant Design Decision Records (`docs/design-decisions/`)
+- relevant Architecture Review (if applicable)
+- relevant ADRs (if applicable)
 
-Reduce friction wherever possible.
-
----
-
-## 6. Images
-
-Images are one of the project's core assets.
-
-Review:
-
-- thumbnail quality
-- aspect ratio
-- cropping
-- gallery layout
-- loading behaviour
-- placeholders
-- fullscreen viewing
-
-Images should support—not dominate—the surrounding data.
+Use project documentation only to verify implementation consistency.
 
 ---
 
-## 7. Navigation
+## Responsibilities
 
-Evaluate:
+Implement the approved design.
 
-- discoverability
-- consistency
-- breadcrumbs
-- page transitions
-- back navigation
+Improve:
 
----
-
-## 8. Empty States
-
-Every screen should gracefully handle:
-
-- no collections
-- no coins
-- no valuations
-- no images
-- empty searches
-
-Every empty state should guide the next action.
-
----
-
-## 9. Loading States
-
-Review:
-
-- loading indicators
-- skeletons
-- optimistic updates
-
-Avoid layout shifts.
-
----
-
-## 10. Error States
-
-Review:
-
-- validation
-- upload failures
-- unavailable services
-- network failures
-
-Errors should always explain:
-
-- what happened
-- why
-- how to recover
-
----
-
-## 11. Accessibility
-
-Review:
-
-- contrast
-- keyboard navigation
-- focus indicators
-- semantic HTML
-- ARIA labels
-
-Accessibility must never regress.
-
----
-
-## 12. Responsiveness
-
-Review:
-
-- desktop
-- tablet
-- mobile
-
-Desktop remains the primary target, but all layouts must degrade gracefully.
-
----
-
-## 13. Design System Consistency
-
-Reuse existing design tokens.
-
-Respect:
-
-- globals.css
-- spacing scale
+- layout
+- spacing
 - typography
-- colors
-- shadows
-- radii
-- component patterns
+- responsiveness
+- accessibility
+- component consistency
 
-Do not introduce new design languages.
+Do not:
+
+- redesign workflows
+- introduce new interaction patterns
+- change business logic
+- modify APIs
+- alter architecture
+
+If implementation reveals an issue with the approved design, stop and request a new UI Review instead of making independent design decisions.
 
 ---
 
-# Implementation Rules
-
-Implement only approved improvements.
+## Implementation Principles
 
 Prefer:
 
-- extending existing components
-- improving existing CSS
-- reusing primitives
+- existing components
+- existing design system
+- existing design tokens
+- existing spacing scale
+- existing typography
+- existing CSS utilities
 
 Avoid:
 
-- unnecessary abstractions
-- new dependencies
-- introducing another component library
+- introducing new component libraries
+- introducing unnecessary dependencies
+- duplicating components
+- creating one-off styling
 
-Preserve all functionality.
+Reuse existing patterns whenever possible.
 
 ---
 
-# Regression Checklist
+## Playwright Validation
+
+Playwright is available and should always be used.
+
+### Before implementation
+
+1. Launch the application.
+2. Navigate to the affected screen.
+3. Exercise the primary user workflow.
+4. Capture screenshots for comparison.
+5. Note implementation considerations.
+
+### After implementation
+
+1. Reload the application.
+2. Repeat the same workflow.
+3. Compare before and after.
+4. Verify that the approved design has been implemented correctly.
+5. Verify no console errors.
+6. Verify no accessibility regressions.
+7. Verify responsive behaviour.
+
+---
+
+## Regression Checklist
 
 Verify:
 
@@ -365,85 +164,62 @@ Verify:
 - uploads
 - search
 - filtering
+- sorting
 - pagination
 - tables
-- image viewer
+- image galleries
 - assistant widget
 
-Confirm:
+Ensure:
 
-- no console errors
-- no hydration warnings
+- no visual regressions
+- no functional regressions
+- no hydration errors
 - no accessibility regressions
 
 ---
 
-# Output Format
+## Definition of Done
 
-## UI Audit
+The implementation is complete when:
 
-### Strengths
+✓ All approved design decisions have been implemented.
 
-...
+✓ Existing functionality remains unchanged.
 
-### Weaknesses
+✓ Existing design patterns have been reused whenever possible.
 
-...
+✓ Responsive layouts remain correct.
 
----
+✓ Accessibility has not regressed.
 
-## Recommended Improvements
+✓ Playwright validation succeeds.
 
-### High Priority
+✓ No console errors are introduced.
 
-...
-
-### Medium Priority
-
-...
-
-### Low Priority
-
-...
+✓ No unnecessary dependencies or abstractions were added.
 
 ---
 
-## Files To Modify
+## Output Format
+
+### Implementation Summary
 
 ...
 
----
-
-## Risks
+### Files Modified
 
 ...
 
----
+### Playwright Validation
 
-Do not begin implementation until the audit has been approved.
+...
 
-After implementation, produce a short validation report summarizing:
+### Regression Results
 
-- implemented improvements
-- Playwright verification
-- remaining improvement opportunities
+...
 
-Store it in docs/ui-improvements folder with the format: 001-Title, 002-title...
+### Remaining Work
 
-# Definition of Done
-
-A polished screen should satisfy all of the following:
-
-✓ Consistent spacing throughout.
-✓ Clear visual hierarchy.
-✓ No unnecessary scrolling on a standard desktop viewport.
-✓ Primary actions immediately visible.
-✓ Secondary actions unobtrusive.
-✓ Tables easy to scan.
-✓ Forms easy to complete.
-✓ Images displayed prominently without overwhelming metadata.
-✓ Empty, loading and error states fully implemented.
-✓ Responsive on desktop, tablet and mobile.
-✓ No Playwright-detected regressions.
-✓ No accessibility regressions.
-✓ Consistent with the existing NumisBook design system.
+...
+```
