@@ -391,6 +391,8 @@ These skills automate implementation tasks once reviews are complete:
 * `new-domain` — scaffold a full vertical slice for a new domain.
 * `new-repository` — scaffold a repository following the data-access rules.
 * `new-service` — scaffold a service (+ test) following the business-logic rules.
+* `ui-polish` — audit, redesign, and implement UI improvements for an existing
+  screen via Playwright (audit → approval → implement → regression check).
 
 Additional execution skills may be added as the project evolves.
 
