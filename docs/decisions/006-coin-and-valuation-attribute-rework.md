@@ -1,4 +1,4 @@
-# ADR-006: Coin and valuation attribute rework
+# ADR-006-Coin and valuation attribute rework
 
 Status: Accepted
 

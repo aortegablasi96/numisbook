@@ -1,201 +1,313 @@
 ---
 name: testing
-description: Design and review testing strategy, edge cases, regression coverage, and validation plans for NumisBook features. Use after implementation or when assessing quality risks before release.
+description: Produce Testing Reports for completed implementations by validating requirements, regressions, accessibility, user workflows, and overall implementation quality. Use after implementation and before considering a feature complete.
 ---
 
 # Testing
 
-Validate that implemented features meet requirements, protect existing behavior, and align with current roadmap priorities.
+Validate that an implemented feature satisfies the approved requirements,
+preserves existing behaviour, and is ready for release.
+
+The Testing skill owns the **Testing Report**.
+
+The Testing Report is the project's final quality gate.
+
+Testing does not implement features.
+
+Testing validates them.
+
+---
+
+# Responsibilities
 
 Owns:
 
-- test strategy
-- test planning
-- regression analysis
-- edge-case identification
-- risk assessment
-- quality validation
+* implementation validation
+* testing strategy
+* regression analysis
+* edge-case review
+* accessibility validation
+* workflow validation
+* release readiness
 
 Does not own:
 
-- feature definition
-- architecture design
-- schema design
-- feature implementation
+* product requirements
+* UI design
+* architecture
+* database design
+* implementation
 
---- 
+---
 
-## Workflow Position
+# Workflow Position
 
-This skill owns architectural design and technical planning.
+Testing is the final workflow step.
 
-Workflow:
+Typical workflow:
 
 Product Manager
-→ UI Designer
-→ Architect
-→ Database Designer (if needed)
-→ ADR Writer (if needed)
-→ Implementation Engineer
-→ Testing
+→ Product Review
 
-Before any major refactor:
+↓
 
-Refactoring Reviewer
-→ Architect
-→ Implementation Engineer
-→ Testing
+(UI Designer)
+→ UI Review
 
-Escalate concerns to the appropriate workflow skill when necessary.
+↓
+
+(Architect)
+→ Architecture Review
+
+↓
+
+(Database Designer)
+→ Database Review
+
+↓
+
+Implementation Engineer
+→ Implementation Plan
+
+↓
+
+Execution Skills
+
+↓
+
+Testing
+→ Testing Report
+
+Testing validates that the implementation matches the approved planning
+artifacts.
 
 ---
 
-## Testing Philosophy
+# Required Inputs
 
-Every feature must be tested.
+Before starting, review:
 
-Never assume generated code works.
+* approved Product Review
+* approved UI Review (if applicable)
+* approved Architecture Review
+* approved Database Review (if applicable)
+* approved Implementation Plan
 
-Verify behavior.
+Review project documentation when needed:
+
+* docs/product.md
+* docs/roadmap.md
+* docs/architecture.md
+* docs/database.md
+* docs/decisions/
+
+Testing validates the implementation.
+
+It does not redefine requirements.
+
+If implementation conflicts with approved planning, identify the issue and
+recommend returning to the appropriate workflow skill.
 
 ---
 
-## Required Test Categories
+# Testing Philosophy
 
-### Unit Tests
+Never assume code is correct.
 
-Business logic.
+Verify behaviour.
+
+Verify user outcomes.
+
+Verify regressions.
+
+Every completed feature should leave the application at least as reliable as
+before implementation.
+
+---
+
+# Validation Areas
+
+Every review should evaluate:
+
+* functional correctness
+* business rules
+* regressions
+* edge cases
+* authorization
+* validation
+* accessibility
+* user workflows
+
+Include only the areas relevant to the feature.
+
+---
+
+# Test Strategy
+
+## Service Tests
+
+Primary testing target.
+
+Verify:
+
+* business rules
+* domain logic
+* error handling
+
+Repositories and external providers should be mocked.
+
+---
+
+## API Tests
+
+Verify:
+
+* validation
+* authorization
+* status codes
+* error mapping
+
+---
+
+## UI Validation
+
+When UI changes are involved, verify:
+
+* expected user workflows
+* responsive behaviour
+* loading states
+* empty states
+* error states
+* visual consistency
+
+---
+
+## End-to-End Validation
+
+When appropriate, verify complete workflows using Playwright.
 
 Examples:
 
-* valuation calculations
-* auction comparison
-* permissions
-
----
-
-### Integration Tests
-
-Database interactions.
-
-Examples:
-
+* authentication
 * create collection
 * add coin
 * upload image
-* save valuation
+* edit valuation
+* assistant workflow
 
 ---
 
-### End-to-End Tests
+## Accessibility
 
-User workflows.
+When UI changes exist, verify:
 
-Examples:
+* keyboard navigation
+* focus management
+* colour contrast
+* semantic HTML
+* accessible labels
 
-* login
-* create collection
-* add coin
-* upload image
+Accessibility is required.
 
----
-
-## Required Validation Areas
-
-Always test:
-
-### Happy Path
-
-Expected success.
-
-### Invalid Input
-
-Bad requests.
-
-### Authorization
-
-Permissions.
-
-### Edge Cases
-
-Boundary conditions.
-
-### Failure Scenarios
-
-External failures.
-
-Examples:
-
-* storage unavailable
-* database unavailable
-* invalid image upload
+It is not optional.
 
 ---
 
-## Coin Collection Specific Checks
+# Regression Review
 
-Validate:
+Always evaluate whether the implementation could affect:
 
-* duplicate coins
-* missing images
-* valuation history integrity
-* orphaned records
-* auction matching logic
+* existing services
+* existing APIs
+* existing repositories
+* existing user workflows
+* existing database behaviour
 
----
-
-## Completion Rules
-
-A feature is not complete until:
-
-* implementation reviewed
-* tests created
-* edge cases reviewed
-* regression risk evaluated
+Identify any additional regression testing that should be performed.
 
 ---
 
-## Testing Rules
+# Edge Cases
 
-All features must include:
+Review relevant edge cases such as:
 
-- Happy path tests
-- Validation tests
-- Authorization tests
-- Failure path tests
-
-Services are the primary unit-test target.
-
-Mock repositories and external services.
-
-No feature is complete without testing review.
+* invalid input
+* missing data
+* duplicate operations
+* authorization failures
+* storage failures
+* database failures
+* concurrent operations
 
 ---
 
-## Output Format
+# Completion Criteria
 
-### Feature Under Test
+A feature is considered complete only when:
 
-...
+* approved requirements have been implemented
+* acceptance criteria are satisfied
+* regressions have been evaluated
+* appropriate tests exist
+* accessibility has been reviewed (when applicable)
+* user workflows have been validated
 
-### Test Cases
+---
 
-* ...
-* ...
-* ...
+# Testing Report
 
-### Missing Coverage
+## Summary
 
-...
+Brief assessment of implementation quality.
 
-### Regression Risks
+---
 
-...
+## Requirements Validation
 
-### Recommended Tests
+Confirm whether each acceptance criterion has been satisfied.
 
-...
+---
 
-### Approval Status
+## Test Coverage
 
-Pass / Needs Work
+Summarize:
+
+* service tests
+* API tests
+* UI validation
+* end-to-end validation
+
+---
+
+## Regression Review
+
+Identify potential regressions.
+
+---
+
+## Accessibility Review
+
+When applicable, summarize accessibility findings.
+
+---
+
+## Remaining Risks
+
+List:
+
+* known limitations
+* missing coverage
+* follow-up recommendations
+
+---
+
+## Recommendation
+
+One of:
+
+* Approved
+* Approved with Recommendations
+* Requires Rework
+
+Implementation should be considered complete only after the Testing Report has
+been accepted.

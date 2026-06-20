@@ -1,4 +1,4 @@
-# ADR-009: Figma UI Redesign
+# ADR-009-Figma UI Redesign
 
 Status: Accepted
 

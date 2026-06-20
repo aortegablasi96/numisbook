@@ -1,4 +1,3 @@
-````md
 ---
 name: design-recorder
 description: Create and maintain Design Decision Records (DDRs) for significant UI and UX decisions. Use whenever a new interface pattern, layout, navigation, design system, or user experience decision is proposed or approved.
@@ -164,6 +163,3 @@ Yes / No
 ### Proposed DDR
 
 (full DDR)
-
-```
-```

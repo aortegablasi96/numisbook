@@ -1,4 +1,4 @@
-# ADR-007: Portfolio Analytics Upgrade
+# ADR-007-Portfolio Analytics Upgrade
 
 > Scope: the Portfolio Analytics Upgrade milestone. The part requiring an
 > architectural decision is multi-currency support — a per-user base currency

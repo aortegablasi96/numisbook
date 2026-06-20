@@ -1,4 +1,4 @@
-# ADR-003: Authentication Strategy
+# ADR-003-Authentication Strategy
 
 Status: Accepted
 

@@ -1,4 +1,4 @@
-# ADR-004: Storage Provider Abstraction
+# ADR-004-Storage Provider Abstraction
 
 Status: Accepted
 

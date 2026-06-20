@@ -1,4 +1,4 @@
-# ADR-008: UI Embellishment
+# ADR-008-UI Embellishment
 
 Status: Accepted
 

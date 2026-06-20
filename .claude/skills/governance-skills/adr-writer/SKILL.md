@@ -1,100 +1,187 @@
 ---
+
 name: adr-writer
-description: Create and maintain Architecture Decision Records (ADRs) for significant technical decisions. Use whenever a new architectural, infrastructure, storage, authentication, AI, deployment, or data-model decision is proposed or approved.
----
+description: Produce Architecture Decision Records (ADRs) that document approved architectural decisions. Use after an Architecture Review has been accepted whenever a significant technical decision should become long-term project guidance.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # ADR Writer
 
-## Purpose
+Document approved architectural decisions.
 
-You are responsible for maintaining the project's Architecture Decision Records (ADRs).
+The ADR Writer preserves architectural knowledge.
 
-ADRs document important decisions so future development remains consistent.
-
-You do not make decisions.
-
-You document them.
+It does not evaluate or approve technical proposals.
 
 ---
 
-## Required References
+# Responsibilities
+
+Owns:
+
+* Architecture Decision Records (ADRs)
+* documenting architectural rationale
+* recording alternatives considered
+* documenting long-term consequences
+* maintaining ADR history
+
+Does not own:
+
+* product decisions
+* UI decisions
+* architecture reviews
+* database reviews
+* implementation planning
+
+Architectural decisions must already be approved before an ADR is written.
+
+---
+
+# Workflow Position
+
+Typical workflow:
+
+Architect
+
+↓
+
+Architecture Review
+
+↓
+
+ADR Writer
+
+↓
+
+Architecture Decision Record (ADR)
+
+The ADR becomes part of the project's permanent architectural documentation.
+
+---
+
+# Required Inputs
 
 Review:
 
+* approved Architecture Review
+* approved Database Review (if relevant)
+
+Review project documentation:
+
+* CLAUDE.md
 * docs/architecture.md
-* docs/roadmap.md
-* docs/history.md
+* docs/database.md
 * docs/decisions/
 
-Review any relevant:
-
-* Architecture Review
-* Database Review
-* Product Review
+Review existing ADRs to avoid duplication.
 
 ---
 
-## When To Create An ADR
+# When To Create An ADR
 
-Create an ADR when:
+Create an ADR when an approved decision changes long-term technical direction.
 
-- introducing a new infrastructure provider
-- introducing a new storage provider
-- introducing a new authentication strategy
-- introducing a new AI architecture
-- introducing a new deployment architecture
-- changing repository/service patterns
-- changing database design principles
-- introducing a major dependency
-- changing architectural direction
+Examples include:
 
-Do NOT create ADRs for:
+* architectural patterns
+* application structure
+* storage architecture
+* authentication strategy
+* deployment strategy
+* AI architecture
+* integration architecture
+* major dependencies
+* persistence strategy
+* cross-cutting technical conventions
 
-- UI tweaks
-- small bug fixes
-- implementation details
-- local refactors
+Do not create ADRs for:
 
----
-
-## ADR Lifecycle
-
-Status values:
-
-- Proposed
-- Accepted
-- Superseded
-- Deprecated
-
-Never silently replace an existing ADR.
-
-If a decision changes:
-
-1. Create a new ADR.
-2. Reference the previous ADR.
-3. Mark the old ADR as superseded.
+* feature implementations
+* UI improvements
+* implementation details
+* bug fixes
+* refactorings without architectural impact
 
 ---
 
-## Naming Convention
+# ADR Principles
 
-File:
+An ADR should explain:
 
-```text
+* why the decision exists
+* what was decided
+* alternatives that were rejected
+* long-term consequences
+
+An ADR should never describe implementation details.
+
+Focus on the decision, not the code.
+
+---
+
+# ADR Lifecycle
+
+Valid statuses:
+
+* Proposed
+* Accepted
+* Superseded
+* Deprecated
+
+Never modify the meaning of an accepted ADR.
+
+If architecture changes:
+
+* create a new ADR
+* reference the previous ADR
+* mark the previous ADR as Superseded
+
+Architectural history must remain traceable.
+
+---
+
+# Naming Convention
+
+Filename:
+
 ADR-XXX-short-title.md
-```
 
 Examples:
 
-```text
-ADR-001-drizzle-orm.md
-ADR-002-authjs-authentication.md
-ADR-003-cloudflare-r2-storage.md
-```
+ADR-011-new-storage-provider.md
+
+ADR-012-event-driven-notifications.md
+
+Use the next available ADR number.
 
 ---
 
-## ADR Format
+# Review Process
+
+For every approved architectural decision:
+
+## Step 1
+
+Review the Architecture Review.
+
+## Step 2
+
+Determine whether the decision has long-term architectural significance.
+
+## Step 3
+
+Review existing ADRs.
+
+## Step 4
+
+Identify superseded decisions, if any.
+
+## Step 5
+
+Produce the ADR.
+
+---
+
+# ADR Template
 
 # ADR-XXX Title
 
@@ -108,7 +195,7 @@ YYYY-MM-DD
 
 ## Context
 
-Why is this decision needed?
+Why was this decision necessary?
 
 ## Decision
 
@@ -116,17 +203,17 @@ What was decided?
 
 ## Consequences
 
-Benefits:
+### Benefits
 
-- ...
+* ...
 
-Tradeoffs:
+### Tradeoffs
 
-- ...
+* ...
 
-Risks:
+### Risks
 
-- ...
+* ...
 
 ## Alternatives Considered
 
@@ -138,23 +225,39 @@ Risks:
 
 ...
 
+## Supersedes
+
+ADR-XXX (if applicable)
+
 ## References
 
-- docs/architecture.md
-- related ADRs
+* Architecture Review
+* Related ADRs
 
 ---
 
-## Output Format
+# Output
 
-### ADR Required?
+## ADR Required
 
 Yes / No
 
-### Reason
+---
 
-...
+## Reason
 
-### Proposed ADR
+Explain why an ADR is or is not required.
 
-(full ADR)
+---
+
+## ADR Summary
+
+Provide a short summary of the decision.
+
+---
+
+## Architecture Decision Record
+
+Provide the complete ADR ready to save under:
+
+docs/decisions/ADR-XXX-title.md

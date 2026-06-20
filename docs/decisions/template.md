@@ -1,4 +1,4 @@
-# ADR-XXX: Title
+# ADR-XXX-Title
 
 Status: Accepted
 

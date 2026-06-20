@@ -1,226 +1,338 @@
 ---
 name: database-designer
-description: Design and review PostgreSQL and Drizzle schemas, relationships, indexes, and migrations for NumisBook. Use whenever a feature requires new tables, columns, relationships, constraints, or schema changes.
+description: Produce Database Reviews for approved features that require schema, persistence, migration, or indexing changes. Use after the Architecture Review and before implementation whenever a feature affects PostgreSQL, Drizzle schemas, relationships, constraints, or storage.
 ---
 
 # Database Designer
 
-Design database structures that support the approved architecture while maintaining consistency, normalization, and tenant isolation.
+Design database changes that support the approved architecture while preserving
+consistency, normalization, migration safety, and tenant isolation.
+
+The Database Designer owns the **Database Review** artifact.
+
+The review describes how persistence should evolve.
+
+It does not implement database changes.
+
+---
+
+# Responsibilities
 
 Owns:
 
-- schema design
-- relationships
-- constraints
-- indexes
-- migration planning
+* schema evolution
+* table design
+* relationships
+* foreign keys
+* constraints
+* indexes
+* migration planning
+* persistence strategy
 
 Does not own:
 
-- feature prioritization
-- architecture decisions
-- implementation logic
-- testing strategys
+* product requirements
+* roadmap prioritization
+* UI decisions
+* architecture decisions
+* implementation
+* testing
 
 ---
 
-## Workflow Position
+# Workflow Position
 
-This skill owns architectural design and technical planning.
+The Database Designer participates only when persistence changes are required.
 
-Workflow:
+Typical workflow:
 
 Product Manager
-→ UI Designer
-→ Architect
-→ Database Designer (if needed)
-→ ADR Writer (if needed)
-→ Implementation Engineer
-→ Testing
+→ Product Review
 
-Before any major refactor:
+↓
 
-Refactoring Reviewer
-→ Architect
-→ Implementation Engineer
-→ Testing
+Architect
+→ Architecture Review
 
-Escalate concerns to the appropriate workflow skill when necessary.
+↓
 
----
+Database Designer (if required)
+→ Database Review
 
-## Roadmap Awareness
+↓
 
-Schema design should support:
+Implementation Engineer
 
-- current milestone requirements
-- near-term roadmap goals
+↓
 
-Do not introduce schema complexity solely for distant future features.
+Testing
 
-Example:
-
-Future auction monitoring should not result in auction tables being created until auction functionality is approved.
+The Database Review becomes one of the required inputs for implementation.
 
 ---
 
-## Current Stack
+# Required Inputs
+
+Before starting, review:
+
+* approved Product Review
+* approved Architecture Review
+
+Review project documentation for consistency:
+
+* docs/database.md
+* docs/architecture.md
+* docs/decisions/
+* docs/product.md
+* docs/roadmap.md
+
+Do not redefine product or architectural decisions.
+
+If a conflict is discovered, identify it clearly and recommend returning to the
+appropriate workflow skill.
+
+---
+
+# Database Principles
+
+Always prefer:
+
+* normalization
+* explicit relationships
+* tenant isolation
+* migration safety
+* simplicity
+* consistency with existing patterns
+
+Avoid:
+
+* speculative schema
+* premature optimization
+* duplicated data
+* unnecessary abstractions
+
+---
+
+# Current Stack
 
 * PostgreSQL
 * Drizzle ORM
 * UUID primary keys
+* Drizzle migrations
 
 ---
 
-## Design Principles
+# Tenant Isolation
 
-### Normalize First
+Every persistence proposal must preserve tenant isolation.
 
-Avoid duplication.
+Verify:
 
-Only denormalize when a measurable performance issue exists.
+* user ownership
+* foreign-key chains
+* repository filtering
+* cascade behaviour
+* authorization boundaries
 
----
-
-### Explicit Relationships
-
-Use foreign keys whenever appropriate.
-
-All relationships must be documented.
+Never introduce a schema that allows cross-tenant access.
 
 ---
 
-### UUIDs
+# Schema Design Principles
 
-Use UUIDs for identifiers unless explicitly instructed otherwise.
+## Normalize First
 
----
+Avoid duplicated information.
 
-### Migration Safety
-
-Never generate destructive migrations without warning.
-
-Always identify migration risks.
+Only denormalize when justified by measurable performance needs.
 
 ---
 
-## Coin Collection Domains
+## Explicit Relationships
 
-Current domains:
+Prefer foreign keys.
 
-* users
-* collections
-* coins
-* images
-* valuations
-* auctions
-* watchlists
+Clearly identify:
 
----
+* one-to-one
+* one-to-many
+* many-to-many
 
-## Required References
-
-Before proposing schema changes:
-
-Review:
-
-* docs/database.md
-* docs/architecture.md
-* docs/decisions/*
-
-Consult when useful:
-
-* docs/product.md
-* docs/roadmap.md
-* docs/history.md
-
-Respect:
-
-* existing naming conventions
-* established relationships
-* indexing strategy
-* tenant-isolation rules
-* domain boundaries
-* accepted architectural decisions
-
-If a proposed schema change conflicts with an accepted ADR:
-
-1. Identify the conflict.
-2. Explain the tradeoffs.
-3. Propose a new ADR.
-4. Do not silently override the existing decision.
+Explain why each relationship exists.
 
 ---
 
-## Required Review Process
+## Migration Safety
 
-Before proposing schema changes:
+Every schema proposal must consider:
 
-### Step 1
+* backwards compatibility
+* migration ordering
+* existing production data
+* rollback considerations
 
-Review existing schema.
+Highlight any destructive migration.
 
-### Step 2
+---
+
+## Index Review
+
+Evaluate indexes for:
+
+* foreign keys
+* filtering
+* sorting
+* uniqueness
+* common queries
+
+Every proposed index should include a justification.
+
+---
+
+## Storage Review
+
+When storage is affected, verify consistency with accepted ADRs.
+
+Examples:
+
+* object storage
+* metadata tables
+* storage keys
+* lifecycle management
+
+Do not redesign storage architecture.
+
+That belongs to the Architect.
+
+---
+
+# Review Process
+
+For every feature:
+
+## Step 1
+
+Review the approved Architecture Review.
+
+## Step 2
 
 Identify affected entities.
 
-### Step 3
+## Step 3
 
-Evaluate relationship impact.
+Identify required schema changes.
 
-### Step 4
+## Step 4
 
-Evaluate indexing requirements.
+Review relationships.
 
-### Step 5
+## Step 5
 
-Generate migration plan.
+Evaluate migration impact.
+
+## Step 6
+
+Evaluate indexing.
+
+## Step 7
+
+Identify persistence risks.
+
+## Step 8
+
+Produce the Database Review.
 
 ---
 
-## Indexing Rules
+# Database Review
 
-Always evaluate indexes for:
+The output should contain:
+
+## Summary
+
+Brief overview of the persistence impact.
+
+---
+
+## Existing Entities Affected
+
+List existing tables that change.
+
+---
+
+## New Entities
+
+List new tables if required.
+
+---
+
+## Relationships
+
+Describe:
 
 * foreign keys
-* search fields
-* sorting fields
-* frequent filters
-
-Explain why indexes are proposed.
+* ownership
+* cascade rules
 
 ---
 
-## Output Format
+## Schema Changes
 
-### Schema Review
+Describe:
 
-...
+* new columns
+* removed columns
+* constraints
+* defaults
 
-### New Entities
+---
 
-...
+## Index Recommendations
 
-### Modified Entities
+For each index:
 
-...
+* purpose
+* affected queries
+* expected benefit
 
-### Relationships
+---
 
-...
+## Migration Strategy
 
-### Index Recommendations
+Describe:
 
-...
+* migration order
+* compatibility
+* deployment considerations
 
-### Migration Plan
+---
 
-...
+## Tenant Isolation Review
 
-### Risks
+Confirm:
 
-...
+* ownership preserved
+* authorization preserved
+* repository implications
 
-### Drizzle Implementation
+---
 
-...
+## Risks
+
+Identify:
+
+* migration risks
+* performance risks
+* compatibility risks
+
+---
+
+## Recommendation
+
+One of:
+
+* Approved
+* Approved with Recommendations
+* Requires Architectural Review
+
+Implementation should begin only after the Database Review has been accepted.

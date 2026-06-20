@@ -106,7 +106,7 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   `analytics/CostBreakdownChart` are dependency-free SVG charts rendered by the
   server `/portfolio` page.) Each domain has a client-side "manager" that owns its
   view and talks to the API: `CollectionsManager`, `CoinsManager` (+ the
-  `CoinDetailsCard` / `CoinImage` detail views), `ValuationsManager`, and
+  `CoinDetailsCard` / `CoinImage` / `CoinBills` detail views), `ValuationsManager`, and
   `AssistantWidget`; `SiteHeader` (layout; a Server Component that delegates the
   active-state primary nav to the client `HeaderNav`) and `ConfirmButton` (ui)
   are the shared shell/primitive.
@@ -313,153 +313,220 @@ success status codes (200/201/204), and AppError → status mapping (404, etc.).
   needs documenting, put the detail in `docs/` (or an ADR) and link to it from
   here; do not duplicate it into CLAUDE.md, which is always-on context. Prefer a
   one-line breadcrumb to a paragraph.
+* Prefer documenting significant decisions rather than rediscovering them.
 
 ## Before Implementing Any Feature
 
-1. Review existing architecture (`docs/architecture.md`).
-2. Identify affected domains.
-3. Check for reusable components.
-4. Produce a short implementation plan.
+For any non-trivial feature:
+
+1. Follow the Development Workflow.
+2. Produce the required planning artifacts.
+3. Obtain an approved Implementation Plan.
+4. Execute using the appropriate execution skills.
+5. Validate the implementation with the Testing skill.
+
+Small bug fixes may skip planning artifacts when no product, design,
+architecture, or database decisions are affected.
 
 ## Development Workflow
 
-NumisBook follows a structured development workflow for all non-trivial work.
+NumisBook follows an artifact-driven development workflow.
 
-The workflow ensures product, design, architecture, database,
-implementation, and testing decisions are considered in the correct order.
+The workflow separates **planning**, **implementation**, and **verification**.
 
-Not every feature requires every step.
+Every workflow skill produces a well-defined artifact that becomes the input for
+subsequent steps.
 
-The workflow adapts depending on the scope of the change.
+Not every feature requires every planning role, but every non-trivial feature
+must produce the appropriate planning artifacts before implementation begins.
 
-### Planning Phase
+```
+Planning
 
-Planning always starts with the Product Manager.
-
-Depending on the feature, additional planning and governance skills may
-participate before implementation begins.
-
-```text
-Product Manager (required)
-        │
-        ├── UI Designer (if UI/UX changes)
-        │        │
-        │        └── Design Recorder (if significant design decisions are approved)
-        │
-        ├── Architect (if architectural changes are required)
-        │        │
-        │        ├── Database Designer (if schema or persistence changes are required)
-        │        │
-        │        └── ADR Writer (if architectural decisions are accepted)
+Product Manager
         │
         ▼
-Implementation Engineer (required)
+Product Review
+        │
+        ├─────────────┐
+        ▼             ▼
+UI Designer      Architect
+        │             │
+        ▼             ▼
+UI Review    Architecture Review
+        │             │
+        │             ▼
+        │      Database Designer (optional)
+        │             │
+        │             ▼
+        │      Database Review
+        │
+        ├──────────────┐
+        ▼              ▼
+Design Recorder     ADR Writer
+(optional)          (optional)
+        │              │
+        ▼              ▼
+      DDR             ADR
+
+               ▼
+Implementation Engineer
+        │
+        ▼
+Implementation Plan
+        │
+        ▼
+Execution Skills
+        │
+        ▼
+Testing
+        │
+        ▼
+Testing Report
 ```
 
-### Execution Phase
+Small bug fixes may skip planning artifacts when no product, design,
+architecture, or database decisions are affected.
 
-The Implementation Engineer coordinates implementation using one or more
-execution skills.
+## Workflow Artifacts
 
-Examples include:
+Workflow skills communicate through planning artifacts rather than directly.
 
-- `new-domain`
-- `new-repository`
-- `new-service`
-- `ui-polish`
+Each artifact has a single owner and a clearly defined purpose.
 
-Execution skills implement approved planning decisions.
+### Product Review
 
-They must not redefine product, design, architecture, or database decisions.
+Produced by: Product Manager
 
-### Verification Phase
+Defines:
 
-Every implementation concludes with the Testing skill.
+- user problem
+- user story
+- acceptance criteria
+- MVP scope
+- roadmap alignment
 
-Testing validates:
+### UI Review
 
-- business logic
+Produced by: UI Designer
+
+Defines:
+
+- layouts
+- interactions
+- accessibility
+- responsive behaviour
+- visual consistency
+
+### Architecture Review
+
+Produced by: Architect
+
+Defines:
+
+- affected domains
+- affected layers
+- implementation strategy
+- risks
+
+### Database Review
+
+Produced by: Database Designer
+
+Defines:
+
+- schema changes
+- migrations
+- indexes
+- integrity constraints
+
+### Implementation Plan
+
+Produced by: Implementation Engineer
+
+Defines:
+
+- implementation order
+- affected files
+- execution skills
+- testing strategy
+
+### Testing Report
+
+Produced by: Testing
+
+Defines:
+
+- executed tests
 - regressions
-- accessibility (when applicable)
-- user workflows
-- implementation completeness
+- accessibility verification
+- remaining issues
 
-### Workflow Principles
+### Architecture Decision Record (ADR)
 
-- Product Review is always required for non-trivial features.
-- UI Designer participates only when user experience changes.
-- Design Recorder participates only when significant UI/UX decisions should be documented.
-- Architect participates only when architectural changes are required.
-- ADR Writer participates only when an accepted architectural decision should be documented.
-- Database Designer participates only when persistence or schema changes are required.
-- Implementation Engineer always coordinates implementation.
-- Testing always concludes implementation.
+Produced by: ADR Writer
 
-Small bug fixes and isolated implementation changes may skip directly to implementation when no planning decisions are affected.
+Documents significant architectural decisions for long-term project consistency.
 
-Execution skills consume approved planning outputs.
+### Design Decision Record (DDR)
 
-## Workflow Skills
+Produced by: Design Recorder
 
-Project skills live in `.claude/skills/{workflow,governance,execution}-skills/`,
-one `SKILL.md` per skill.
+Documents significant UI/UX decisions for long-term design consistency.
 
-These skills are responsible for analysis, planning, and validation:
+## Claude Skills
 
-### Core Workflow Skills
+Project skills live in:
 
-* `product-manager`
-* `ui-designer`
-* `architect`
-* `database-designer`
-* `implementation-engineer`
-* `testing`
+`.claude/skills/`
 
-These skills participate in the standard feature-development workflow.
+They are organized into three categories.
+
+### Workflow Skills
+
+Workflow skills analyse requirements and produce planning artifacts.
+
+Core workflow skills:
+
+- product-manager
+- ui-designer
+- architect
+- database-designer
+- implementation-engineer
+- testing
 
 ### Governance Skills
 
-* `adr-writer`
-* `refactoring-reviewer`
+Governance skills preserve long-term project consistency.
 
-Governance skills protect long-term consistency and are invoked only when needed.
+They document or review significant decisions without implementing them.
 
-#### ADR Writer
+Current governance skills:
 
-Use when:
+- adr-writer
+- design-recorder
+- refactoring-reviewer
 
-* introducing a new provider
-* introducing a major dependency
-* changing authentication strategy
-* changing storage strategy
-* changing deployment strategy
-* introducing a significant architectural pattern
+### Execution Skills
 
-#### Refactoring Reviewer
+Execution skills implement approved plans.
 
-Use before:
+Execution skills consume the approved Implementation Plan together with any
+relevant ADRs and DDRs.
 
-* major refactors
-* architectural restructuring
-* introducing new abstractions
-* reorganizing domains
-* replacing established patterns
+They implement approved decisions rather than redefining them.
 
-Governance reviews may approve, revise, or reject a proposal before implementation proceeds.
+Current execution skills (each maps to a layer of the vertical slice):
 
-## Execution Skills
-
-These skills automate implementation tasks once reviews are complete:
-
-* `new-domain` — scaffold a full vertical slice for a new domain.
-* `new-repository` — scaffold a repository following the data-access rules.
-* `new-service` — scaffold a service (+ test) following the business-logic rules.
-* `ui-polish` — audit, redesign, and implement UI improvements for an existing
-  screen via Playwright (audit → approval → implement → regression check).
+- feature-implementer — coordinate a full vertical slice across the layers below.
+- api-builder — expose services through thin Next.js API routes.
+- repository-builder — implement/modify repositories (the only Drizzle layer).
+- service-builder — implement/modify framework-agnostic business services.
+- ui-builder — implement React UI using the design system and approved UX.
+- storage-builder — implement features backed by the object-storage abstraction.
+- assistant-builder — implement the AI assistant: tools, function-calling, and the orchestration loop over domain services.
 
 Additional execution skills may be added as the project evolves.
-
-Execution skills must follow approved requirements, architecture, and database decisions.
 
 ## Documentation
 
@@ -468,6 +535,8 @@ Execution skills must follow approved requirements, architecture, and database d
 * Product requirements: `docs/product.md`
 * Roadmap (planned work): `docs/roadmap.md`
 * History (completed milestones, by phase): `docs/history.md`
+* Architecture decisions (ADRs): `docs/decisions/`
+* Design decisions (DDRs): `docs/design-decisions/`
 
 Each `src/*` layer also has a short `README.md` (`src/services`, `src/repositories`,
 `src/app`, `src/app/api`, `src/components`, `src/db/schema`, `src/lib`) restating
@@ -484,6 +553,11 @@ When making decisions, consult documentation in the following order:
 5. docs/architecture.md
 6. docs/database.md
 7. docs/history.md
+
+Workflow artifacts are transient planning outputs.
+
+Long-term architectural and design decisions must be recorded as ADRs or Design
+Decision Records (DDRs).
 
 If documentation conflicts:
 
@@ -522,14 +596,12 @@ Do not silently override accepted decisions.
 
 ## Current Priority
 
-The project is currently in the **Production Readiness** milestone.
-
 Before starting new work:
 
-1. Review `docs/roadmap.md` for the active milestone.
-2. Review `docs/history.md` for completed work.
-3. Follow the Development Workflow defined in this document.
+1. Review the active milestone in `docs/roadmap.md`.
+2. Review completed work in `docs/history.md`.
+3. Follow the Development Workflow.
+4. Record significant architectural or design decisions as ADRs or DDRs.
 
-Do not implement backlog items unless they have been promoted into the active milestone.
-
-Prefer completing the current milestone before introducing new functionality.
+Do not implement backlog items unless they have been promoted into the active
+milestone.

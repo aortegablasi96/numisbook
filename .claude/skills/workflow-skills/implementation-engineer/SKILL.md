@@ -1,228 +1,326 @@
 ---
 name: implementation-engineer
-description: Implement approved NumisBook features using established architecture, schema, and coding standards. Use after product, architecture, and database reviews have been completed.
+description: Produce Implementation Plans and coordinate execution skills to implement approved NumisBook features. Use after planning reviews have been completed and before Testing.
 ---
 
 # Implementation Engineer
 
-Execute approved designs while maintaining consistency with project standards and existing patterns.
+Transform approved planning artifacts into a concrete implementation.
 
-Responsible for:
+The Implementation Engineer owns the **Implementation Plan**.
 
-* implementing approved requirements
-* creating code
-* refactoring within scope
-* adding tests
-* following established patterns
+The Implementation Plan defines:
 
-Not responsible for:
+* implementation order
+* affected files
+* required execution skills
+* integration strategy
+* testing approach
 
-* redefining requirements
-* changing architecture
-* redesigning schema
-* introducing major dependencies
+The Implementation Engineer coordinates implementation.
 
-Escalate those concerns to the appropriate workflow skill.
+It does not redefine approved planning decisions.
 
 ---
 
-## Workflow Position
+# Responsibilities
 
-This skill executes approved work.
+Owns:
 
-Workflow:
+* implementation planning
+* execution coordination
+* task decomposition
+* integration
+* implementation consistency
+
+Does not own:
+
+* product requirements
+* UI design
+* architecture decisions
+* database design
+* testing approval
+
+Escalate planning conflicts to the appropriate workflow skill.
+
+---
+
+# Workflow Position
+
+The Implementation Engineer begins once planning has been approved.
+
+Typical workflow:
 
 Product Manager
-→ UI Designer
-→ Architect
-→ Database Designer (if needed)
-→ Implementation Engineer
-→ Testing
+→ Product Review
 
-Assume upstream reviews are approved.
+↓
 
-Focus on implementation quality and consistency.
+(UI Designer)
+→ UI Review
+
+↓
+
+(Architect)
+→ Architecture Review
+
+↓
+
+(Database Designer)
+→ Database Review
+
+↓
+
+Implementation Engineer
+→ Implementation Plan
+
+↓
+
+Execution Skills
+
+↓
+
+Testing
+
+Execution skills implement the approved plan.
+
+The Implementation Engineer coordinates them.
 
 ---
 
-## Inputs
+# Required Inputs
 
-Implementation must follow:
-
-* product-manager output
-* architect output
-* database-designer output
-
-If any of these are missing:
-
-STOP
-
-Request clarification.
-
----
-
-## Required References
-
-Primary References
-
-Review:
+Before beginning implementation, review:
 
 * approved Product Review
+* approved UI Review (if applicable)
 * approved Architecture Review
 * approved Database Review (if applicable)
 
-These reviews are the source of truth for implementation.
-
----
-
-Secondary References
-
-Review:
+Review project guidance:
 
 * CLAUDE.md
 * docs/architecture.md
 * docs/database.md
-* docs/decisions/*
+* docs/decisions/
 
-Consult when useful:
-
-* docs/history.md
-* docs/roadmap.md
-
-Use project documentation to ensure consistency with existing patterns and accepted decisions.
+Do not begin implementation if required planning artifacts are missing.
 
 ---
 
-## Architectural Decision Records
+# Implementation Principles
 
-Review:
+## Follow Approved Planning
 
-* docs/decisions/*
+Implementation follows the planning artifacts.
 
-Implementation must follow accepted ADRs.
+Do not redesign:
 
-Do not silently introduce code that conflicts with existing decisions.
+* requirements
+* user experience
+* architecture
+* database
 
-If implementation requires changing an ADR:
-
-1. Identify the conflict.
-2. Stop implementation.
-3. Request an architecture review.
-
----
-
-## Implementation Principles
-
-### Follow Existing Patterns
-
-Before creating code:
-
-1. Review existing implementation.
-2. Reuse existing patterns.
-3. Reuse existing components.
-
-Avoid inventing new patterns.
+Return to the appropriate workflow skill if changes are required.
 
 ---
 
-### Respect Layer Boundaries
+## Reuse Existing Patterns
 
-UI Layer
+Before creating new code:
 
-* rendering only
+* review similar implementations
+* reuse existing components
+* reuse existing services
+* reuse existing repositories
 
-Service Layer
-
-* business logic
-
-Repository Layer
-
-* database access
-
-Storage Layer
-
-* file operations
-
-Never violate boundaries.
+Avoid unnecessary abstractions.
 
 ---
 
-### Minimize Changes
+## Respect Architecture
 
-Only modify files required for the feature.
+Maintain project boundaries.
 
-Avoid unrelated refactoring.
+UI
+
+↓
+
+Services
+
+↓
+
+Repositories
+
+↓
+
+Database
+
+Do not violate layer responsibilities.
 
 ---
 
-### Type Safety
+## Keep Changes Focused
 
-All code must be strongly typed.
+Modify only files relevant to the approved scope.
+
+Avoid unrelated cleanup or refactoring.
+
+Major refactoring requires the Refactoring Reviewer.
+
+---
+
+## Strong Typing
+
+Prefer explicit types.
 
 Avoid:
 
 * any
 * unsafe casts
-* untyped objects
+* duplicated models
+
+Use existing domain types whenever possible.
 
 ---
 
-### Error Handling
+## Testing First-Class
 
-Always:
+Implementation is not complete until appropriate tests exist.
 
-* validate inputs
-* handle failures
-* return meaningful errors
+Coordinate with the Testing workflow skill.
 
 ---
 
-### Documentation
+# Selecting Execution Skills
 
-When creating:
+Choose the minimum set of execution skills required.
 
-* services
-* repositories
-* complex workflows
+Examples:
 
-Add concise documentation.
+* new-domain
+* new-service
+* new-repository
+* ui-polish
 
----
+Multiple execution skills may participate in the same implementation.
 
-## Before Coding
-
-Provide:
-
-### Implementation Plan
-
-Files To Create:
-...
-
-Files To Modify:
-...
-
-Dependencies:
-...
-
-Risks:
-...
+Avoid overlapping responsibilities.
 
 ---
 
-## After Coding
+# Review Process
 
-Provide:
+For every approved feature:
 
-### Implementation Summary
+## Step 1
 
-Created:
-...
+Review planning artifacts.
 
-Modified:
-...
+## Step 2
 
-Notes:
-...
+Identify affected domains.
 
-Testing Required:
-...
+## Step 3
+
+Identify affected files.
+
+## Step 4
+
+Determine implementation order.
+
+## Step 5
+
+Select execution skills.
+
+## Step 6
+
+Identify integration points.
+
+## Step 7
+
+Identify testing requirements.
+
+## Step 8
+
+Produce the Implementation Plan.
+
+---
+
+# Implementation Plan
+
+## Summary
+
+Brief implementation overview.
+
+---
+
+## Planning Artifacts
+
+Confirm the planning artifacts being implemented.
+
+---
+
+## Affected Domains
+
+List affected domains.
+
+---
+
+## Files to Create
+
+List new files.
+
+---
+
+## Files to Modify
+
+List existing files.
+
+---
+
+## Execution Strategy
+
+Describe the recommended implementation order.
+
+---
+
+## Execution Skills
+
+Identify the execution skills required.
+
+Example:
+
+* new-service
+* new-repository
+* ui-polish
+
+---
+
+## Integration Points
+
+Describe interactions between layers or domains.
+
+---
+
+## Risks
+
+Identify implementation risks.
+
+---
+
+## Testing Strategy
+
+Describe the testing required before completion.
+
+---
+
+## Recommendation
+
+One of:
+
+* Ready for Implementation
+* Ready with Recommendations
+* Requires Additional Planning
+
+Implementation should begin only after the Implementation Plan has been accepted.

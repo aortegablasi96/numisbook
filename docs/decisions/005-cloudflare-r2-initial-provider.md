@@ -1,4 +1,4 @@
-# ADR-005: Initial Object Storage Provider
+# ADR-005-Initial Object Storage Provider
 
 Status: Accepted
 

@@ -1,4 +1,4 @@
-# ADR-002: Drizzle ORM
+# ADR-002-Drizzle ORM
 
 Status: Accepted
 

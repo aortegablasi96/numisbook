@@ -1,4 +1,4 @@
-# ADR-001: Monolithic Next.js Architecture
+# ADR-001-Monolithic Next.js Architecture
 
 Status: Accepted
 

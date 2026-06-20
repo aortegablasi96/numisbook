@@ -1,4 +1,4 @@
-# ADR-010: UX & Feature Refinement
+# ADR-010-UX & Feature Refinement
 
 Status: Accepted
 
