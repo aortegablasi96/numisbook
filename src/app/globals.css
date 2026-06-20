@@ -1,6 +1,6 @@
 /* ---- NumisBook design system -------------------------------------------- */
 /* "Stone & gold" — a warm, editorial light theme translated from the Figma
-   redesign (ADR-009). Light-only by design: the Figma defines no real dark
+   redesign (DDR-001). Light-only by design: the Figma defines no real dark
    variant, so we ship a single scheme. Fonts arrive as CSS variables from
    next/font (see src/app/layout.tsx): Fraunces (serif), DM Sans, DM Mono. */
 
@@ -23,7 +23,7 @@
   /* Primary action = white text on the deeper gold --accent (#8a5f15, ~5.6:1 AA),
      keeping the Figma's white-on-gold look; white on the bright #B8871E is ~3.2:1
      and would fail. The bright --primary/--gold stays the fill colour (logo,
-     tints, borders, charts). See ADR-009 §4 + addenda. */
+     tints, borders, charts). See DDR-001 §4 + addenda. */
   --primary: #b8871e;
 
   /* Dark ink surfaces (assistant header + FAB) — near-black per the Figma. */
@@ -169,7 +169,7 @@ a:hover {
 
 /* ---- Layout ------------------------------------------------------------- */
 
-/* Spacious shell (ADR-009 full-bleed addendum): the page uses the viewport rather
+/* Spacious shell (DDR-001 full-bleed addendum): the page uses the viewport rather
    than a narrow centred column, but keeps comfortable breathing room from the
    window edges. The gutter scales with viewport width (clamp) so it grows on big
    displays instead of staying a thin 48px sliver, and a generous max-width keeps
@@ -565,7 +565,7 @@ button:disabled {
 
 /* Primary = white text on the deeper gold (--accent #8a5f15, ~5.6:1 AA), keeping
    the Figma's white-on-gold look while clearing contrast. The bright --primary
-   gold stays reserved for fills/tints/borders. See ADR-009 §4. */
+   gold stays reserved for fills/tints/borders. See DDR-001 §4. */
 .btn-primary {
   background: var(--accent);
   color: #fff;
@@ -1249,12 +1249,12 @@ button:disabled {
   gap: 3.25rem; /* Figma gap-[40px], widened for more separation between columns */
   /* Full-width: the flex-1 left column fills the remaining width beside the
      fixed 460px rail, so the row spans the whole content area (no left-bias /
-     empty right gutter), consistent with the full-width shell (ADR-009). */
+     empty right gutter), consistent with the full-width shell (DDR-001). */
 }
 
 /* Left column: a stack of cards. Title + attribute chips sit on the page
    surface; each notes section and the valuations get their own card, matching
-   the Figma coin-detail layout (ADR-009) rather than one monolithic panel. */
+   the Figma coin-detail layout (DDR-001) rather than one monolithic panel. */
 .coin-overview-left {
   flex: 1; /* Figma flex-1: takes the remaining width beside the 360px rail */
   display: flex;

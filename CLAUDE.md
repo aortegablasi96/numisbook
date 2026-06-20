@@ -219,7 +219,7 @@ end to end — metadata in `coin_bills`, bytes in object storage, the
 `coinBill.repository` the only composing layer. PDF-only, max 15 MB
 (`src/lib/bills.ts`). Routes mirror images: `GET`/`POST /api/coins/[id]/bills`,
 `GET`/`DELETE /api/coins/[id]/bills/[billId]` (GET serves the PDF inline;
-`?download=1` forces a download). See ADR-010.
+`?download=1` forces a download). See ADR-009.
 
 ## Coin search and filtering
 
@@ -240,11 +240,11 @@ search/sort operate on the underlying attributes, not a stored name.
 ## UI / Design system
 
 The app uses a **dependency-free CSS design system** defined entirely in
-`src/app/globals.css`, themed to the "stone & gold" Figma spec (ADR-009). It
+`src/app/globals.css`, themed to the "stone & gold" Figma spec (DDR-001). It
 provides:
 
 * CSS custom-property theme tokens (**light-only** — dark mode was dropped in
-  ADR-009): palette (`--bg`, `--surface`, `--text`, `--muted`, `--border`, the
+  DDR-001): palette (`--bg`, `--surface`, `--text`, `--muted`, `--border`, the
   golds `--gold`/`--accent`, `--primary`, `--ink`), `--radius-*`, and the font
   variables `--font-display` (Fraunces), `--font-body` (DM Sans), `--font-micro`
   (DM Mono, the `.mono-label` utility). Fonts load via `next/font` in `layout.tsx`.
@@ -252,7 +252,7 @@ provides:
   `.mono-label`, `.crumbs`, `.analytics-bar`, and themed buttons/inputs/tables.
 
 Gold (`--gold #B8871E`) is for **fills only**; gold **text** uses the deeper
-`--accent`, and primary buttons use ink-on-gold — all for WCAG AA (see ADR-009).
+`--accent`, and primary buttons use ink-on-gold — all for WCAG AA (see DDR-001).
 
 Do not introduce a CSS-in-JS library or a component framework (e.g. Tailwind,
 shadcn, MUI) — extend `globals.css` instead.
@@ -571,18 +571,23 @@ Do not silently choose one source over another.
 
 Accepted architectural decisions are stored in `docs/decisions/`:
 
-* `001-nextjs-monolith` — Next.js monolith
-* `002-drizzle-over-prisma` — Drizzle ORM over Prisma
-* `003-authjs-google-oauth` — Auth.js + Google OAuth
-* `004-s3-storage-abstraction` — S3-compatible storage abstraction
-* `005-cloudflare-r2-initial-provider` — Cloudflare R2 as initial provider
-* `006-coin-and-valuation-attribute-rework` — Coin & valuation attribute rework
-* `007-portfolio-analytics-upgrade` — Portfolio analytics upgrade (multi-currency + ECB FX)
-* `008-ui-embellishment` — UI embellishment (overview aggregates, error surfacing, a11y baseline)
-* `009-figma-ui-redesign` — Figma "stone & gold" re-skin (visual-only, light-only)
-* `010-ux-and-feature-refinement` — UX & feature refinement (tax partition, card grids, coin bills)
+* `ADR-001-nextjs-monolith` — Next.js monolith
+* `ADR-002-drizzle-over-prisma` — Drizzle ORM over Prisma
+* `ADR-003-authjs-google-oauth` — Auth.js + Google OAuth
+* `ADR-004-s3-storage-abstraction` — S3-compatible storage abstraction
+* `ADR-005-cloudflare-r2-initial-provider` — Cloudflare R2 as initial provider
+* `ADR-006-coin-and-valuation-attribute-rework` — Coin & valuation attribute rework
+* `ADR-007-portfolio-analytics-upgrade` — Portfolio analytics upgrade (multi-currency + ECB FX)
+* `ADR-008-ui-embellishment` — UI embellishment (overview aggregates, error surfacing, a11y baseline)
+* `ADR-009-ux-and-feature-refinement` — UX & feature refinement (tax partition, card grids, coin bills)
 
 (`template.md` is the scaffold for new ADRs.)
+
+Accepted **design** decisions are stored in `docs/design-decisions/`:
+
+* `DDR-001-figma-ui-redesign` — Figma "stone & gold" re-skin (visual-only, light-only; originally an ADR, relocated to the DDRs)
+
+(`docs/design-decisions/template.md` is the scaffold for new DDRs.)
 
 These decisions take precedence over generated suggestions.
 

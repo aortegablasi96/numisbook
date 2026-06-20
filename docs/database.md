@@ -77,7 +77,7 @@ The adapter also owns `accounts`, `sessions`, and `verification_tokens`
 | hammer_price | numeric(12,2) | nullable; price paid — hammer price |
 | auction_premium | numeric(12,2) | nullable; price paid — buyer's premium |
 | shipping_cost | numeric(12,2) | nullable; price paid — shipping |
-| tax_cost | numeric(12,2) | nullable; price paid — tax (ADR-010) |
+| tax_cost | numeric(12,2) | nullable; price paid — tax (ADR-009) |
 | final_price | numeric(12,2) | nullable; total price paid — computed sum of the partition when any component is set, else entered directly |
 | price_currency | text | nullable; ISO 4217 code for the price-paid amounts |
 | created_at | timestamptz | default now() |
@@ -117,7 +117,7 @@ delete; the `coinImage.repository` removes the stored object alongside the row.
 | created_at | timestamptz | default now(); also the display order |
 
 ### CoinBill
-One or more auction/seller **bills** (PDF receipts) per coin (ADR-010). Mirrors
+One or more auction/seller **bills** (PDF receipts) per coin (ADR-009). Mirrors
 `CoinImage`: only metadata lives here — the PDF bytes are kept in object storage
 (`src/lib/storage`) and referenced by `storage_key`. The original `filename` is
 kept so downloads get a sensible "Save as" name. Cascades on coin delete; the
@@ -188,7 +188,7 @@ Resolved during implementation:
 - **Price paid is on the coin, separate from valuations.** The
   hammer/premium/shipping/tax partition plus `final_price` (computed sum or
   direct) and `price_currency` record cost basis; `valuations` stay market value.
-  See ADR-006 (partition) and ADR-010 (tax component).
+  See ADR-006 (partition) and ADR-009 (tax component).
 - **`pedigree` is free text** (a user-entered list of prior auctions), not a
   structured child table — kept simple until provenance analytics are needed.
 - **Valuations carry a `source_url`** link to the sale/hammer page; `source`

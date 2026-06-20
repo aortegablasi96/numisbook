@@ -1,17 +1,22 @@
-# ADR-010-UX & Feature Refinement
+# ADR-009-UX & Feature Refinement
 
 Status: Accepted
 
 Date: 2026-06-19
 
+> Renumbered from **ADR-010**. The original ADR-009 (Figma UI Redesign) was a
+> visual/UX decision and was relocated to the Design Decision Records as
+> **DDR-001**, so this ADR took the freed `009` slot to keep the ADR sequence
+> gapless.
+
 ## Context
 
 With the platform functionally complete and the "stone & gold" re-skin shipped
-(ADR-009), the **UX & Feature Refinement** milestone (`roadmap.md`) is a focused
+(DDR-001), the **UX & Feature Refinement** milestone (`roadmap.md`) is a focused
 round of everyday-UX polish across the coin and portfolio slices ahead of
 Production Readiness. It bundles six small, mostly independent changes — five
 visual/UX and one supporting data-model change. No new domains and no new
-dependencies; all UI extends the existing `globals.css` system per ADR-009.
+dependencies; all UI extends the existing `globals.css` system per DDR-001.
 
 The changes are individually minor, but two of them carry decisions worth
 recording so later work stays consistent: adding a **tax** component to the
@@ -197,7 +202,7 @@ Positive:
   the split moved into a tooltip that always shows the full partition.
 * Collectors can keep the purchase receipt (PDF) attached to each coin, reusing
   the proven coin-images storage pattern (no new dependency or storage decision).
-* No new dependencies; all styling extends `globals.css` (ADR-009) and reuses the
+* No new dependencies; all styling extends `globals.css` (DDR-001) and reuses the
   existing `.modal`, `row-actions`, and chart chrome.
 
 Negative / trade-offs:
@@ -215,6 +220,6 @@ Negative / trade-offs:
 * docs/roadmap.md (UX & Feature Refinement milestone)
 * docs/architecture.md
 * docs/database.md
-* docs/decisions/006-coin-and-valuation-attribute-rework.md (price-paid partition)
-* docs/decisions/007-portfolio-analytics-upgrade.md (cost analytics, FX)
-* docs/decisions/009-figma-ui-redesign.md (design system)
+* docs/decisions/ADR-006-coin-and-valuation-attribute-rework.md (price-paid partition)
+* docs/decisions/ADR-007-portfolio-analytics-upgrade.md (cost analytics, FX)
+* docs/design-decisions/DDR-001-figma-ui-redesign.md (design system)

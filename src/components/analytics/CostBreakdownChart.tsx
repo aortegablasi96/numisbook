@@ -28,7 +28,7 @@ import {
 // analytics service.
 
 // Stack order (bottom → top) and tooltip/legend order. Tax sits before shipping
-// throughout the app (price-paid partition order, ADR-010).
+// throughout the app (price-paid partition order, ADR-009).
 const SEGMENTS = [
   { key: "hammer", label: "Hammer", cls: "bar-hammer", swatch: "seg-hammer" },
   { key: "premium", label: "Premium", cls: "bar-premium", swatch: "seg-premium" },
@@ -290,7 +290,7 @@ export function CostBreakdownChart({
                       fill="transparent"
                     />
                     {/* Stacked segments. Per-segment shares now live in the
-                        hover tooltip, so the bars stay clean (ADR-010). */}
+                        hover tooltip, so the bars stay clean (ADR-009). */}
                     {SEGMENTS.map((s) => {
                       const value = e[s.key];
                       if (value <= 0) return null;

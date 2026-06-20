@@ -331,7 +331,7 @@ Re-skinned the app to the agreed **Figma "stone & gold"** design — a warm,
 editorial look with serif display type — without changing routes, services,
 repositories, the API, or the data model. The Figma source (Tailwind + shadcn +
 recharts) was a visual reference only; the look was translated into the existing
-dependency-free `globals.css` system. See ADR-009.
+dependency-free `globals.css` system. See DDR-001.
 
 ## Foundations
 
@@ -369,12 +369,12 @@ Implemented:
 - **axe-clean (WCAG 2.1 AA)** on dashboard, portfolio, and coin detail in the
   shipped light scheme; gold-on-white resolved by reserving the bright gold for
   fills and using a deeper gold / ink-on-gold for text, plus a darkened `--muted`
-  (ADR-009 §4); responsive verified at mobile and desktop
+  (DDR-001 §4); responsive verified at mobile and desktop
 
 ## Layout matched to the Figma (2026-06-17)
 
 After the initial re-skin read as too narrow on desktop, the shell and dashboard
-were aligned **directly to the Figma's exact spacing** (ADR-009 addendum, shell
+were aligned **directly to the Figma's exact spacing** (DDR-001 addendum, shell
 geometry only — no logic, route, or data-model change):
 
 - `.container` made **full-width with a flat 48px gutter** (Figma `w-full
@@ -428,7 +428,7 @@ A focused round of everyday-UX polish across the coin and portfolio slices ahead
 of Production Readiness, plus the one supporting data-model change those
 refinements required. No new domains or dependencies; UI extends the existing
 `globals.css` system. Built through the standard workflow
-(product → UI → architecture → DB → implementation → testing). See ADR-010.
+(product → UI → architecture → DB → implementation → testing). See ADR-009.
 
 ## Price paid
 
@@ -495,16 +495,23 @@ A second pass within the same milestone (also through the standard workflow):
 
 See:
 
-- `docs/decisions/001-nextjs-monolith.md`
-- `docs/decisions/002-drizzle-over-prisma.md`
-- `docs/decisions/003-authjs-google-oauth.md`
-- `docs/decisions/004-s3-storage-abstraction.md`
-- `docs/decisions/005-cloudflare-r2-initial-provider.md`
-- `docs/decisions/006-coin-and-valuation-attribute-rework.md`
-- `docs/decisions/007-portfolio-analytics-upgrade.md`
-- `docs/decisions/008-ui-embellishment.md`
-- `docs/decisions/009-figma-ui-redesign.md`
-- `docs/decisions/010-ux-and-feature-refinement.md`
+- `docs/decisions/ADR-001-nextjs-monolith.md`
+- `docs/decisions/ADR-002-drizzle-over-prisma.md`
+- `docs/decisions/ADR-003-authjs-google-oauth.md`
+- `docs/decisions/ADR-004-s3-storage-abstraction.md`
+- `docs/decisions/ADR-005-cloudflare-r2-initial-provider.md`
+- `docs/decisions/ADR-006-coin-and-valuation-attribute-rework.md`
+- `docs/decisions/ADR-007-portfolio-analytics-upgrade.md`
+- `docs/decisions/ADR-008-ui-embellishment.md`
+- `docs/decisions/ADR-009-ux-and-feature-refinement.md`
+
+# Design Decisions
+
+See:
+
+- `docs/design-decisions/DDR-001-figma-ui-redesign.md` — Figma "stone & gold"
+  re-skin (Phase 8; visual-only, light-only; originally an ADR, relocated to the
+  Design Decisions)
 
 ---
 
@@ -518,7 +525,7 @@ Current stack:
 - React
 - TypeScript
 - Dependency-free CSS design system (`src/app/globals.css`; no Tailwind/CSS-in-JS) —
-  "stone & gold" theme, light-only, `next/font` typography (ADR-009)
+  "stone & gold" theme, light-only, `next/font` typography (DDR-001)
 
 ## Backend
 

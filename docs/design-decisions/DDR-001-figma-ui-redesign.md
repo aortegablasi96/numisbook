@@ -1,8 +1,15 @@
-# ADR-009-Figma UI Redesign
+# DDR-001-Figma UI Redesign
 
 Status: Accepted
 
 Date: 2026-06-16
+
+> Relocated from the architecture decisions (it was originally an ADR) to the
+> Design Decision Records: this is a visual/UX decision (no route, service,
+> repository, API, or data-model change), so it belongs with the DDRs. Its
+> former ADR number was reused for the UX & Feature Refinement ADR once the gap
+> was closed, so this record is now **DDR-001**. Section numbering (§1–§5) and
+> addenda are unchanged; references elsewhere now point to **DDR-001**.
 
 ## Context
 

@@ -30,19 +30,19 @@ valuation data models have been reformed (see `history.md` Phase 5), the
 **Portfolio Analytics Upgrade** is complete — portfolio figures are
 multi-currency aware, with gain/loss, deeper allocation, per-collection
 comparison, and an SVG trend chart (see `history.md` Phase 6 and
-`docs/decisions/007-portfolio-analytics-upgrade.md`) — the **Embellishment**
+`docs/decisions/ADR-007-portfolio-analytics-upgrade.md`) — the **Embellishment**
 milestone has shipped (see `history.md` Phase 7 and
-`docs/decisions/008-ui-embellishment.md`), the **Figma UI Redesign** has
+`docs/decisions/ADR-008-ui-embellishment.md`), the **Figma UI Redesign** has
 shipped: the app is re-skinned to the agreed "stone & gold" look via the
 dependency-free `globals.css` system, light-only, with `next/font` typography
-(see `history.md` Phase 8 and `docs/decisions/009-figma-ui-redesign.md`), and
+(see `history.md` Phase 8 and `docs/design-decisions/DDR-001-figma-ui-redesign.md`), and
 the **UX & Feature Refinement** milestone has shipped: tax added to the
 price-paid partition (ordered tax-before-shipping app-wide), AD/BC era suffixes,
 reordered coin-detail chips, a collections card grid (large cards, prominent
 cover, centred info panel), a scrollable ~5-coin cost-breakdown chart with the
 per-segment split in a hover tooltip, hover tooltips + expand controls on both
 portfolio charts, and per-coin **bills** (PDF receipts) (see `history.md` Phase 9
-and `docs/decisions/010-ux-and-feature-refinement.md`). The next milestone is
+and `docs/decisions/ADR-009-ux-and-feature-refinement.md`). The next milestone is
 **Production Readiness** (deployment, CI/CD, observability).
 
 Primary objective:

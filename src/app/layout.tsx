@@ -9,7 +9,7 @@ import { AssistantWidget } from "@/components/assistant/AssistantWidget";
 
 // Self-hosted via next/font (no runtime request, no layout shift). Exposed as CSS
 // variables consumed by globals.css: Fraunces (serif display/numerals), DM Sans
-// (body/UI), DM Mono (uppercase micro-labels). See ADR-009.
+// (body/UI), DM Mono (uppercase micro-labels). See DDR-001.
 const fraunces = Fraunces({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
