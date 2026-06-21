@@ -34,6 +34,7 @@ npm run dev            # start the dev server (http://localhost:3000)
 npm run build          # production build
 npm start              # run the production build
 npm run lint           # eslint (next/core-web-vitals) — note: `next lint` is removed in Next 16; see roadmap backlog "Migrate off deprecated next lint"
+npm run typecheck      # tsc --noEmit (no build output) — same check CI runs
 npm test               # run unit tests once (Vitest)
 npm run test:watch     # tests in watch mode
 
@@ -583,6 +584,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `ADR-007-portfolio-analytics-upgrade` — Portfolio analytics upgrade (multi-currency + ECB FX)
 * `ADR-008-ui-embellishment` — UI embellishment (overview aggregates, error surfacing, a11y baseline)
 * `ADR-009-ux-and-feature-refinement` — UX & feature refinement (tax partition, card grids, coin bills)
+* `ADR-010-ci-pipeline-github-actions` — CI on GitHub Actions (lint + type-check + test gates on PRs / `main`)
 
 (`template.md` is the scaffold for new ADRs.)
 

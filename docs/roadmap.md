@@ -71,10 +71,10 @@ Prepare NumisBook for deployment and usage by real collectors.
 
 ## CI/CD
 
-- [ ] GitHub Actions
-- [ ] Lint checks
-- [ ] Type-checking
-- [ ] Automated tests
+- [x] GitHub Actions
+- [x] Lint checks
+- [x] Type-checking
+- [x] Automated tests
 
 ## Observability
 

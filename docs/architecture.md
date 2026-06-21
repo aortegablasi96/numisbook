@@ -87,6 +87,10 @@ identification, marketplace/trading, mobile apps.
   loop (OpenAI `gpt-4o-mini`); the acting `userId` is injected server-side into
   every tool handler, never model-supplied, preserving tenant isolation.
 - **Logging / observability** — TODO (see roadmap backlog).
+- **Continuous integration** — GitHub Actions (`.github/workflows/ci.yml`) runs
+  the quality gates (`npm run lint`, `npm run typecheck`, `npm test`) on every
+  pull request and push to `main`, on Node 20 (`.nvmrc`), with no database or
+  secrets required. See ADR-010.
 
 ## Folder Map
 
