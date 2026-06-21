@@ -117,8 +117,10 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   `import { db } from "@/db"`. `src/db/index.ts` exports the singleton Drizzle
   client and throws at import time if `DATABASE_URL` is unset.
 * **Cross-cutting helpers** live in `src/lib`: typed errors, formatting,
-  per-domain Zod schemas (`src/lib/validation/`), and the swappable
-  `FxRateProvider` (`src/lib/fx`, frankfurter.app — see ADR-007).
+  per-domain Zod schemas (`src/lib/validation/`), the swappable
+  `FxRateProvider` (`src/lib/fx`, frankfurter.app — see ADR-007), and the
+  client-side fetch helpers in `src/lib/http.ts` (`readError`, `NETWORK_ERROR`)
+  used by the domain "manager" components for consistent API error messaging.
 
 A new feature is built as a vertical slice:
 `schema → repository → service (+ tests) → API route → UI`.
@@ -278,7 +280,8 @@ changes.
 ### Service tests (primary target)
 
 Mock all repositories with `vi.mock()`; test business logic in isolation.
-`describe` / `it` / `expect` are global (Vitest `globals: true`).
+`describe` / `it` / `expect` are global (Vitest `globals: true`). Tests are
+colocated next to their source as `*.test.ts`.
 
 There is **no DOM environment** — `vitest.config.ts` runs `environment: "node"`,
 so components are not rendered in tests (no `@testing-library/react`). Test
