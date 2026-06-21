@@ -82,13 +82,6 @@ Prepare NumisBook for deployment and usage by real collectors.
 - [ ] Error monitoring
 - [ ] Production diagnostics
 
-## Assistant Hardening
-
-- [ ] Streaming responses
-- [ ] Rate limiting
-- [ ] Cost controls
-- [ ] Conversation limits
-
 ## Authentication Resilience
 
 - [ ] Graceful auth error page
@@ -143,6 +136,21 @@ Help collectors understand market value and opportunities.
 - [ ] Market price tracking
 - [ ] Market trend analysis
 - [ ] Watchlists
+
+---
+
+# Future Milestone — Assistant Hardening
+
+Goal:
+
+Make the collection assistant production-grade once the platform is deployed.
+
+## Features
+
+- [ ] Streaming responses
+- [ ] Rate limiting
+- [ ] Cost controls
+- [ ] Conversation limits
 
 ---
 
