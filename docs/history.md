@@ -491,6 +491,53 @@ A second pass within the same milestone (also through the standard workflow):
 
 ---
 
+# Phase 10 — Deployment Scaffolding
+
+Status: Complete (in-repo scaffolding; the account-bound deploy actions remain
+the owner's, per the runbook)
+
+The final slice of **Production Readiness**: make deploying NumisBook turnkey.
+The platform decisions were recorded as ADR-012 (Vercel hosting + Neon managed
+PostgreSQL + migrations applied from a gated GitHub Actions job), and the in-repo
+artifacts that implement them were shipped. No application code, schema, or
+dependency changes — deployment reuses the existing env-var configuration and
+`drizzle-kit migrate`.
+
+## Hosting & database
+
+Decided (ADR-012):
+
+- **Vercel** for hosting (push-to-`main` production deploys, PR previews;
+  zero-config Next.js build). Minimal `vercel.json` pins the framework and region.
+- **Neon** serverless PostgreSQL, used unchanged through the existing `pg` +
+  Drizzle setup — **pooled** connection for the app runtime, **direct/unpooled**
+  connection for migrations.
+
+## Production migration workflow
+
+Implemented:
+
+- A `migrate` job added to `.github/workflows/ci.yml` — runs on push to `main`
+  only, `needs: check` (after lint/type-check/test), in a protected `production`
+  GitHub Environment, applying `npm run db:migrate` against the
+  `MIGRATION_DATABASE_URL` secret (Neon direct endpoint). Activates once that
+  secret is set; the additive-migration discipline keeps the parallel
+  deploy/migrate safe.
+
+## Configuration & runbook
+
+Implemented:
+
+- `.env.production.example` — non-secret inventory of every production variable
+  (required/optional, with sources), flagging that **R2 object storage is
+  required in production** (the filesystem fallback does not persist on Vercel).
+- `docs/deployment.md` — step-by-step runbook (provision Neon → import to Vercel
+  → secrets → first migration → Google OAuth redirect URI / R2 → deploy & verify
+  `/api/health` → rollback / break-glass migration).
+- Cross-references added to `architecture.md`, `roadmap.md`, and CLAUDE.md.
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -504,6 +551,9 @@ See:
 - `docs/decisions/ADR-007-portfolio-analytics-upgrade.md`
 - `docs/decisions/ADR-008-ui-embellishment.md`
 - `docs/decisions/ADR-009-ux-and-feature-refinement.md`
+- `docs/decisions/ADR-010-ci-pipeline-github-actions.md`
+- `docs/decisions/ADR-011-observability.md`
+- `docs/decisions/ADR-012-production-deployment.md`
 
 # Design Decisions
 

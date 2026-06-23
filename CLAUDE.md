@@ -116,7 +116,9 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   all table definitions.
 * **Imports use the `@/*` alias** (`@/* → ./src/*`, see `tsconfig.json`), e.g.
   `import { db } from "@/db"`. `src/db/index.ts` exports the singleton Drizzle
-  client and throws at import time if `DATABASE_URL` is unset.
+  client and throws at import time if no connection string is set — in production
+  it reads `PROD_DATABASE_URL` (falling back to `DATABASE_URL`), locally it uses
+  `DATABASE_URL` (see ADR-012).
 * **Cross-cutting helpers** live in `src/lib`: typed errors, formatting,
   per-domain Zod schemas (`src/lib/validation/`), the swappable
   `FxRateProvider` (`src/lib/fx`, frankfurter.app — see ADR-007), the
@@ -560,6 +562,7 @@ Additional execution skills may be added as the project evolves.
 ## Documentation
 
 * Architecture: `docs/architecture.md`
+* Deployment runbook: `docs/deployment.md` (Vercel + Neon; ADR-012)
 * Database design: `docs/database.md`
 * Product requirements: `docs/product.md`
 * Roadmap (planned work): `docs/roadmap.md`
@@ -611,6 +614,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `ADR-009-ux-and-feature-refinement` — UX & feature refinement (tax partition, card grids, coin bills)
 * `ADR-010-ci-pipeline-github-actions` — CI on GitHub Actions (lint + type-check + test gates on PRs / `main`)
 * `ADR-011-observability` — Observability (structured logger, `ErrorReporter` seam, `/api/health`)
+* `ADR-012-production-deployment` — Production deployment (Vercel + Neon; migrations via a gated CI `migrate` job). Runbook: `docs/deployment.md`
 
 (`template.md` is the scaffold for new ADRs.)
 

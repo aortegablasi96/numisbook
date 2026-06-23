@@ -96,6 +96,13 @@ identification, marketplace/trading, mobile apps.
   the quality gates (`npm run lint`, `npm run typecheck`, `npm test`) on every
   pull request and push to `main`, on Node 20 (`.nvmrc`), with no database or
   secrets required. See ADR-010.
+- **Deployment** — Vercel (hosting) + Neon (managed PostgreSQL). Production
+  deploys on push to `main`; migrations run from a gated `migrate` job in the CI
+  workflow (`needs: check`, `main` pushes only, in a protected `production`
+  Environment, against Neon's direct/unpooled connection). The app runtime uses
+  Neon's pooled connection. Object storage (R2) is required in production (the
+  filesystem fallback does not persist on Vercel's ephemeral filesystem). See
+  ADR-012 and the runbook in `docs/deployment.md`.
 
 ## Folder Map
 

@@ -31,3 +31,34 @@ jobs:
 
       - name: Test
         run: npm test
+
+  migrate:
+    name: Apply production migrations
+    needs: check
+    # Only after the quality gates pass, and only on pushes to main —
+    # never on pull requests or preview branches.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Scopes MIGRATION_DATABASE_URL to this environment; add required reviewers
+    # in the repo's "production" environment to gate migrations behind approval.
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply database migrations
+        run: npm run db:migrate
+        env:
+          # Neon *direct* (unpooled) connection — DDL/advisory locks need it.
+          # See docs/deployment.md and ADR-012.
+          DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}

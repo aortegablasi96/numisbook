@@ -64,10 +64,17 @@ Prepare NumisBook for deployment and usage by real collectors.
 
 ## Deployment
 
-- [ ] Deploy to Vercel
-- [ ] Configure managed PostgreSQL
-- [ ] Configure production secrets
-- [ ] Production migration workflow
+In-repo deployment scaffolding is complete (`vercel.json`, the gated `migrate`
+job in CI, the `.env.production.example` inventory, and the
+`docs/deployment.md` runbook; see `docs/decisions/ADR-012-production-deployment.md`).
+The remaining boxes are account-bound actions the repository owner performs by
+following the runbook — they cannot be committed to the repo.
+
+- [x] Production migration workflow (gated GitHub Actions `migrate` job; activates
+      once `MIGRATION_DATABASE_URL` is set in the `production` environment)
+- [ ] Deploy to Vercel — _owner action; see `docs/deployment.md` §2_
+- [ ] Configure managed PostgreSQL (Neon) — _owner action; §1_
+- [ ] Configure production secrets — _owner action; §4_
 
 ## CI/CD
 
