@@ -123,7 +123,7 @@ export default async function Home() {
       {user ? (
         <SignedInHome userId={user.id} baseCurrencyPref={user.baseCurrency} />
       ) : (
-        <div className="card stack">
+        <div className="card stack" style={{ textAlign: "center" }}>
           <p>Sign in to start cataloguing and valuing your coin collection.</p>
           <form
             action={async () => {

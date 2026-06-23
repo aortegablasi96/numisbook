@@ -189,6 +189,9 @@ Auth.js v5 (`next-auth@5`) with the Drizzle adapter and **database** sessions
   or Server Component, then pass the plain session into a service. Services stay
   framework-agnostic — `src/services/auth.service.ts` (`resolveCurrentUser`)
   takes an `AuthSession` shape rather than touching `auth()` or Drizzle directly.
+* OAuth failures route to a branded page (`pages.error` →
+  `src/app/auth/error/page.tsx`; maps `?error=` via `src/lib/auth-errors.ts`).
+  It runs during auth failures, so it must not call `auth()` or hit the DB.
 
 ## Collection Assistant
 

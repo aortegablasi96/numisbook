@@ -78,14 +78,43 @@ Prepare NumisBook for deployment and usage by real collectors.
 
 ## Observability
 
-- [ ] Structured logging
-- [ ] Error monitoring
-- [ ] Production diagnostics
+- [x] Structured logging
+- [x] Error monitoring
+- [x] Production diagnostics
+
+(See `docs/decisions/ADR-011-observability.md`. Wiring a hosted error monitor —
+Sentry — onto the `ErrorReporter` seam is deferred until after deployment; see
+the **Hosted Error Monitoring** future milestone.)
 
 ## Authentication Resilience
 
-- [ ] Graceful auth error page
-- [ ] Database outage handling
+- [x] Graceful auth error page
+- [x] Database outage handling
+
+---
+
+# Future Milestone — Hosted Error Monitoring
+
+Goal:
+
+Turn production errors from a pull-based log stream into proactive,
+aggregated alerting — to be picked up **post-deployment**, once a hosting
+platform and a monitor account/DSN exist.
+
+Today the `ErrorReporter` seam (`src/lib/observability`) only logs; finding a
+production error means grepping the deploy platform's runtime logs by `errorId`,
+with no grouping, retention, or alerts (see `ADR-011`). This milestone wires a
+hosted monitor onto that seam — a change confined to
+`src/lib/observability/index.ts`, leaving all call sites untouched.
+
+## Features
+
+- [ ] Add the Sentry SDK (`@sentry/nextjs`) and provision a project/DSN
+- [ ] Implement a Sentry-backed `ErrorReporter` behind the existing seam
+- [ ] Forward the generated `errorId` to Sentry as a correlation tag
+- [ ] Configure environment, release tagging, and PII scrubbing
+- [ ] Set up alerting rules / notification channels
+- [ ] Document the setup in an ADR (extends or supersedes ADR-011)
 
 ---
 

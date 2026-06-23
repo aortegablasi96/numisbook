@@ -15,4 +15,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   }),
   providers: [Google],
   session: { strategy: "database" },
+  // Route OAuth sign-in failures to our branded page instead of Auth.js's
+  // default error screen (see src/app/auth/error/page.tsx).
+  pages: { error: "/auth/error" },
 });
