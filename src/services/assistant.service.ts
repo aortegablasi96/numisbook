@@ -6,6 +6,7 @@ import { getPortfolioSummary } from "@/services/analytics.service";
 import { setCoinImage } from "@/services/coinImage.service";
 import { userRepository } from "@/repositories/user.repository";
 import { formatCoinTitle } from "@/lib/coin-format";
+import { logger } from "@/lib/logger";
 
 // NumisBook's collection assistant: OpenAI gpt-4o-mini with function calling over
 // the domain services, driven by a manual agentic loop. Tenant isolation is
@@ -88,7 +89,10 @@ export function buildHandlers(
           await setCoinImage(userId, coin.id, mimeType, Buffer.from(b64, "base64"));
           actions.push("Saved coin photo");
         } catch (err) {
-          console.error("[assistant] setCoinImage failed:", err);
+          logger.error("Assistant setCoinImage failed", {
+            tool: "setCoinImage",
+            error: err instanceof Error ? err.message : String(err),
+          });
           actions.push(`⚠ Photo not saved: ${err instanceof Error ? err.message : String(err)}`);
         }
       }

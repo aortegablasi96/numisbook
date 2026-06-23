@@ -86,7 +86,12 @@ identification, marketplace/trading, mobile apps.
 - **AI assistant** — `src/services/assistant.service.ts` runs a manual agentic
   loop (OpenAI `gpt-4o-mini`); the acting `userId` is injected server-side into
   every tool handler, never model-supplied, preserving tenant isolation.
-- **Logging / observability** — TODO (see roadmap backlog).
+- **Logging / observability** — structured logger (`src/lib/logger`; JSON in
+  prod, pretty in dev, `LOG_LEVEL`/`LOG_FORMAT`), an `ErrorReporter` seam
+  (`src/lib/observability`) the API boundary calls for unhandled errors (returns
+  an `errorId` in the 500 body), and a public `GET /api/health` readiness check
+  (`health.service` + `health.repository` DB ping; 200 ok / 503 degraded). The
+  reporter seam is where a hosted monitor (Sentry) would be wired in. See ADR-011.
 - **Continuous integration** — GitHub Actions (`.github/workflows/ci.yml`) runs
   the quality gates (`npm run lint`, `npm run typecheck`, `npm test`) on every
   pull request and push to `main`, on Node 20 (`.nvmrc`), with no database or

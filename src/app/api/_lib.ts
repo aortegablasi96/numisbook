@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { auth } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { AppError } from "@/lib/errors";
+import { captureException } from "@/lib/observability";
 import type { User } from "@/repositories/user.repository";
 
 // Shared boundary helpers for API route handlers. Routes stay thin: resolve the
@@ -29,6 +30,11 @@ export function errorResponse(error: unknown): NextResponse {
   if (error instanceof AppError) {
     return NextResponse.json({ error: error.message }, { status: error.status });
   }
-  console.error("Unhandled API error:", error);
-  return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  // Unexpected failure: report it (logs + correlation id) and hand the caller
+  // an errorId they can quote to support, without leaking internals.
+  const errorId = captureException(error, { kind: "unhandledApiError" });
+  return NextResponse.json(
+    { error: "Internal server error", errorId },
+    { status: 500 },
+  );
 }

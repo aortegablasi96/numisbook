@@ -119,9 +119,11 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   client and throws at import time if `DATABASE_URL` is unset.
 * **Cross-cutting helpers** live in `src/lib`: typed errors, formatting,
   per-domain Zod schemas (`src/lib/validation/`), the swappable
-  `FxRateProvider` (`src/lib/fx`, frankfurter.app — see ADR-007), and the
+  `FxRateProvider` (`src/lib/fx`, frankfurter.app — see ADR-007), the
   client-side fetch helpers in `src/lib/http.ts` (`readError`, `NETWORK_ERROR`)
-  used by the domain "manager" components for consistent API error messaging.
+  used by the domain "manager" components for consistent API error messaging, and
+  the observability primitives `src/lib/logger` + `src/lib/observability`
+  (see Observability, ADR-011).
 
 A new feature is built as a vertical slice:
 `schema → repository → service (+ tests) → API route → UI`.
@@ -138,6 +140,26 @@ AppError(message, status)       — base; carries an HTTP status
 
 Services throw these; `errorResponse()` in `_lib.ts` maps them to JSON
 responses. Never throw raw `Error` from a service for a known domain failure.
+Unexpected errors (not `AppError`/`ZodError`) are reported via
+`captureException` (see Observability) and returned as a 500 with a correlation
+`errorId` in the body.
+
+## Observability
+
+Structured logging, error reporting, and a health check (ADR-011):
+
+* **Log through `logger`** (`src/lib/logger`), never `console.*` — JSON in prod,
+  pretty in dev; `LOG_LEVEL` / `LOG_FORMAT` override the `NODE_ENV` defaults.
+* **`captureException`** (`src/lib/observability`) records an unexpected error
+  and returns an `errorId`. The API boundary calls it; a hosted monitor (Sentry)
+  would be wired in behind this seam, not at call sites.
+* **`GET /api/health`** is public/unauthenticated (uptime + deploy checks):
+  `health.service` + `health.repository` (`SELECT 1`); 200 `ok` / 503 `degraded`.
+* **Branded error UIs** surface Next's `error.digest` as a quotable reference:
+  `src/app/error.tsx` (in-layout boundary), `global-error.tsx` (root-layout
+  throws — DB-outage path; renders its own `<html>`), `not-found.tsx`. These are
+  client components, so they must **not** call `captureException` (it imports
+  `node:crypto`).
 
 ## Repository types
 
@@ -585,6 +607,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `ADR-008-ui-embellishment` — UI embellishment (overview aggregates, error surfacing, a11y baseline)
 * `ADR-009-ux-and-feature-refinement` — UX & feature refinement (tax partition, card grids, coin bills)
 * `ADR-010-ci-pipeline-github-actions` — CI on GitHub Actions (lint + type-check + test gates on PRs / `main`)
+* `ADR-011-observability` — Observability (structured logger, `ErrorReporter` seam, `/api/health`)
 
 (`template.md` is the scaffold for new ADRs.)
 
