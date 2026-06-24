@@ -538,6 +538,44 @@ Implemented:
 
 ---
 
+# Phase 11 — Production Deployment
+
+Status: Complete
+
+NumisBook went **live in production**, completing the Production Readiness
+milestone. This is the account-bound counterpart to Phase 10's in-repo
+scaffolding — the owner actions from `docs/deployment.md`, performed against the
+real platforms. No application code, schema, or dependency changes.
+
+## Go-live
+
+Completed (per the runbook, ADR-012):
+
+- **Neon** PostgreSQL provisioned; pooled connection wired to the app
+  (`PROD_DATABASE_URL`) and the direct/unpooled connection stored as the
+  `MIGRATION_DATABASE_URL` secret in the GitHub `production` environment.
+- **Schema migrated** — the committed `drizzle/` migrations applied to Neon
+  (initially via a break-glass manual `drizzle-kit migrate` to unblock sign-in,
+  then automated through the gated `migrate` job for future changes).
+- **Vercel** project imported and deployed (push-to-`main` production deploys).
+- **Production secrets** set — `AUTH_*`, the four `R2_*` vars, and the Neon
+  pooled URL in Vercel; Google OAuth production redirect URI configured.
+- **Verified** — Google sign-in working end to end, `/api/health` returning
+  `ok` (app ↔ Neon), and image upload confirming R2.
+
+## Existing data migrated
+
+Implemented:
+
+- A one-off idempotent migration moved the owner's existing collection from the
+  local dev database into production: 2 collections, 9 coins, 1 valuation, and
+  18 image + 2 bill metadata rows, with `collections.user_id` **remapped** to the
+  prod user (looked up by email, since the prod user row has a different id), and
+  the 20 referenced image/bill **byte objects** uploaded from local `.storage`
+  into R2 under their existing storage keys.
+
+---
+
 # Major Architectural Decisions
 
 See:
