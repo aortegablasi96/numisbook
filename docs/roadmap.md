@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Pre-deployment — Production Readiness**
+Current maturity: **Live in production — next: Hosted Error Monitoring**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -42,65 +42,26 @@ reordered coin-detail chips, a collections card grid (large cards, prominent
 cover, centred info panel), a scrollable ~5-coin cost-breakdown chart with the
 per-segment split in a hover tooltip, hover tooltips + expand controls on both
 portfolio charts, and per-coin **bills** (PDF receipts) (see `history.md` Phase 9
-and `docs/decisions/ADR-009-ux-and-feature-refinement.md`). The next milestone is
-**Production Readiness** (deployment, CI/CD, observability).
+and `docs/decisions/ADR-009-ux-and-feature-refinement.md`). **Production
+Readiness** has now shipped: NumisBook is **live in production** — deployed on
+Vercel against Neon, schema applied via the gated `migrate` job, Google sign-in
+working and `/api/health` green, with CI/CD, observability, and auth resilience
+in place (see `history.md` Phases 10–11 and ADR-010/011/012). The next milestone
+is **Hosted Error Monitoring**.
 
 Primary objective:
 
-**Prepare NumisBook for deployment and usage by real collectors.**
+**Turn production errors into proactive, aggregated alerting.**
 
 Current priorities:
 
-- Production readiness (current)
+- Production readiness — ✅ complete (live in production)
+- Hosted error monitoring (current)
 - (then) valuation-based analytics
 
 ---
 
-# Current Milestone — Production Readiness
-
-Goal:
-
-Prepare NumisBook for deployment and usage by real collectors.
-
-## Deployment
-
-In-repo deployment scaffolding is complete (`vercel.json`, the gated `migrate`
-job in CI, the `.env.production.example` inventory, and the
-`docs/deployment.md` runbook; see `docs/decisions/ADR-012-production-deployment.md`).
-The remaining boxes are account-bound actions the repository owner performs by
-following the runbook — they cannot be committed to the repo.
-
-- [x] Production migration workflow (gated GitHub Actions `migrate` job; activates
-      once `MIGRATION_DATABASE_URL` is set in the `production` environment)
-- [ ] Deploy to Vercel — _owner action; see `docs/deployment.md` §2_
-- [ ] Configure managed PostgreSQL (Neon) — _owner action; §1_
-- [ ] Configure production secrets — _owner action; §4_
-
-## CI/CD
-
-- [x] GitHub Actions
-- [x] Lint checks
-- [x] Type-checking
-- [x] Automated tests
-
-## Observability
-
-- [x] Structured logging
-- [x] Error monitoring
-- [x] Production diagnostics
-
-(See `docs/decisions/ADR-011-observability.md`. Wiring a hosted error monitor —
-Sentry — onto the `ErrorReporter` seam is deferred until after deployment; see
-the **Hosted Error Monitoring** future milestone.)
-
-## Authentication Resilience
-
-- [x] Graceful auth error page
-- [x] Database outage handling
-
----
-
-# Future Milestone — Hosted Error Monitoring
+# Current Milestone — Hosted Error Monitoring
 
 Goal:
 
