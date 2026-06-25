@@ -92,6 +92,12 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Global display density: render the whole app at 75% of nominal size, the
+     scale the design reads best at on wide monitors (it was being viewed at 75%
+     browser zoom). `zoom` (not `transform: scale`) reflows normally and keeps
+     sticky/fixed elements correct, and the user's own browser zoom still stacks
+     on top, so text remains resizable (WCAG 1.4.4). See DDR-002. */
+  zoom: 0.75;
 }
 
 body {

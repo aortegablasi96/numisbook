@@ -284,6 +284,10 @@ provides:
 Gold (`--gold #B8871E`) is for **fills only**; gold **text** uses the deeper
 `--accent`, and primary buttons use ink-on-gold — all for WCAG AA (see DDR-001).
 
+The whole app is rendered at **75% density** via `zoom: 0.75` on `html` — a global
+display scale on top of the design system, so all token/px values stay nominal
+(see DDR-002).
+
 Do not introduce a CSS-in-JS library or a component framework (e.g. Tailwind,
 shadcn, MUI) — extend `globals.css` instead.
 
@@ -621,6 +625,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 Accepted **design** decisions are stored in `docs/design-decisions/`:
 
 * `DDR-001-figma-ui-redesign` — Figma "stone & gold" re-skin (visual-only, light-only; originally an ADR, relocated to the DDRs)
+* `DDR-002-global-display-density` — global `zoom: 0.75` on `html` (renders the whole app at 75% density; builds on, does not supersede, DDR-001)
 
 (`docs/design-decisions/template.md` is the scaffold for new DDRs.)
 
