@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — next: Hosted Error Monitoring**
+Current maturity: **Live in production — next: Additional Settings**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -47,21 +47,49 @@ Readiness** has now shipped: NumisBook is **live in production** — deployed on
 Vercel against Neon, schema applied via the gated `migrate` job, Google sign-in
 working and `/api/health` green, with CI/CD, observability, and auth resilience
 in place (see `history.md` Phases 10–11 and ADR-010/011/012). The next milestone
-is **Hosted Error Monitoring**.
+is **Additional Settings**.
 
 Primary objective:
 
-**Turn production errors into proactive, aggregated alerting.**
+**Give users control over their account and preferences through a dedicated
+settings area.**
 
 Current priorities:
 
 - Production readiness — ✅ complete (live in production)
-- Hosted error monitoring (current)
+- Additional settings (current)
+- (then) hosted error monitoring
 - (then) valuation-based analytics
 
 ---
 
-# Current Milestone — Hosted Error Monitoring
+# Current Milestone — Additional Settings
+
+Goal:
+
+Give users control over their account and preferences through a dedicated
+settings area — profile/account details, a preferred base currency for
+portfolio analytics, interface language, and theme (day/night).
+
+## Features
+
+- [ ] Settings page (route + navigation entry)
+- [ ] View/edit user profile (display name, account info)
+- [ ] Account/data controls (e.g. account deletion)
+- [ ] Add languages (i18n / multi-language support)
+- [ ] Add night mode (dark theme)
+  > ⚠️ Reverses `DDR-001-figma-ui-redesign`, which made the app light-only
+  > (`globals.css` ships light theme tokens only). Requires a new DDR
+  > superseding DDR-001 — re-introducing dark theme tokens — before
+  > implementation.
+- [ ] Settings menu controls
+  - [ ] Select language
+  - [ ] Select default currency (base currency applied to portfolio analytics)
+  - [ ] Select day/night mode
+
+---
+
+# Future Milestone — Hosted Error Monitoring
 
 Goal:
 
@@ -112,8 +140,10 @@ Improve collection management and portability.
 > Multi-currency portfolio support and base-currency preferences were pulled
 > forward into the **Portfolio Analytics Upgrade** milestone — analytics figures
 > are only meaningful once all values share a single currency.
+>
+> User profile/account settings were pulled forward into the **Additional
+> Settings** milestone.
 
-- [ ] User profile/account settings
 - [ ] CSV export
 - [ ] CSV import
 - [ ] Collection backup and recovery
