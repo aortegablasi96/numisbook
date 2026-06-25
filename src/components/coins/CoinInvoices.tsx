@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import { ALLOWED_BILL_TYPES } from "@/lib/bills";
+import { ALLOWED_INVOICE_TYPES } from "@/lib/invoices";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { IconTrash } from "@/components/ui/icons";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 
-type Bill = { id: string; filename: string | null; sizeBytes: number; createdAt: string };
+type Invoice = { id: string; filename: string | null; sizeBytes: number; createdAt: string };
 
 function IconUpload() {
   return (
@@ -32,26 +32,26 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// Auction/seller bills (PDF receipts) for a coin: list, upload, view, download,
-// and delete. Mirrors CoinImage's client-side flow against /api/coins/[id]/bills.
-export function CoinBills({ coinId }: { coinId: string }) {
-  const [bills, setBills] = useState<Bill[]>([]);
+// Auction/seller invoices (PDF receipts) for a coin: list, upload, view, download,
+// and delete. Mirrors CoinImage's client-side flow against /api/coins/[id]/invoices.
+export function CoinInvoices({ coinId }: { coinId: string }) {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const fetchBills = useCallback(async () => {
-    const res = await fetch(`/api/coins/${coinId}/bills`);
+  const fetchInvoices = useCallback(async () => {
+    const res = await fetch(`/api/coins/${coinId}/invoices`);
     if (!res.ok) return;
-    const { bills } = (await res.json()) as { bills: Bill[] };
-    setBills(bills);
+    const { invoices } = (await res.json()) as { invoices: Invoice[] };
+    setInvoices(invoices);
     setLoaded(true);
   }, [coinId]);
 
   useEffect(() => {
-    void fetchBills();
-  }, [fetchBills]);
+    void fetchInvoices();
+  }, [fetchInvoices]);
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -61,12 +61,12 @@ export function CoinBills({ coinId }: { coinId: string }) {
     try {
       const body = new FormData();
       body.append("file", file);
-      const response = await fetch(`/api/coins/${coinId}/bills`, { method: "POST", body });
+      const response = await fetch(`/api/coins/${coinId}/invoices`, { method: "POST", body });
       if (!response.ok) {
         setError(await readError(response, "Upload failed."));
         return;
       }
-      await fetchBills();
+      await fetchInvoices();
     } catch {
       setError(NETWORK_ERROR);
     } finally {
@@ -75,16 +75,16 @@ export function CoinBills({ coinId }: { coinId: string }) {
     }
   }
 
-  async function handleRemove(billId: string) {
+  async function handleRemove(invoiceId: string) {
     setError(null);
     setBusy(true);
     try {
-      const response = await fetch(`/api/coins/${coinId}/bills/${billId}`, { method: "DELETE" });
+      const response = await fetch(`/api/coins/${coinId}/invoices/${invoiceId}`, { method: "DELETE" });
       if (!response.ok) {
-        setError(await readError(response, "Couldn’t remove the bill."));
+        setError(await readError(response, "Couldn’t remove the invoice."));
         return;
       }
-      setBills((prev) => prev.filter((b) => b.id !== billId));
+      setInvoices((prev) => prev.filter((inv) => inv.id !== invoiceId));
     } catch {
       setError(NETWORK_ERROR);
     } finally {
@@ -93,30 +93,30 @@ export function CoinBills({ coinId }: { coinId: string }) {
   }
 
   return (
-    <section className="card stack coin-bills-card">
-      <p className="mono-label" style={{ margin: 0 }}>Bills</p>
+    <section className="card stack coin-invoices-card">
+      <p className="mono-label" style={{ margin: 0 }}>Invoices</p>
 
       {!loaded ? (
         <span className="skeleton" style={{ height: "2.5rem" }} aria-hidden />
-      ) : bills.length === 0 ? (
-        <p className="muted" style={{ margin: 0 }}>No bill yet. Upload the auction or seller receipt (PDF).</p>
+      ) : invoices.length === 0 ? (
+        <p className="muted" style={{ margin: 0 }}>No invoice yet. Upload the auction or seller receipt (PDF).</p>
       ) : (
-        <ul className="bill-list">
-          {bills.map((bill, i) => {
-            const href = `/api/coins/${coinId}/bills/${bill.id}`;
-            const name = bill.filename || `Bill ${i + 1}.pdf`;
+        <ul className="invoice-list">
+          {invoices.map((invoice, i) => {
+            const href = `/api/coins/${coinId}/invoices/${invoice.id}`;
+            const name = invoice.filename || `Invoice ${i + 1}.pdf`;
             return (
-              <li key={bill.id} className="bill-row">
-                <span className="bill-icon" aria-hidden><IconPdf /></span>
-                <span className="bill-info">
-                  <a href={href} target="_blank" rel="noopener noreferrer" className="bill-name" title={name}>
+              <li key={invoice.id} className="invoice-row">
+                <span className="invoice-icon" aria-hidden><IconPdf /></span>
+                <span className="invoice-info">
+                  <a href={href} target="_blank" rel="noopener noreferrer" className="invoice-name" title={name}>
                     {name}
                   </a>
-                  <span className="bill-meta mono-label">
-                    {formatBytes(bill.sizeBytes)} · {bill.createdAt.slice(0, 10)}
+                  <span className="invoice-meta mono-label">
+                    {formatBytes(invoice.sizeBytes)} · {invoice.createdAt.slice(0, 10)}
                   </span>
                 </span>
-                <span className="row bill-actions" style={{ gap: "0.4rem" }}>
+                <span className="row invoice-actions" style={{ gap: "0.4rem" }}>
                   <a href={`${href}?download=1`} download={name} className="btn-sm btn-icon">
                     Download
                   </a>
@@ -125,7 +125,7 @@ export function CoinBills({ coinId }: { coinId: string }) {
                     disabled={busy}
                     message={`Remove "${name}"?`}
                     confirmLabel="Remove"
-                    onConfirm={() => handleRemove(bill.id)}
+                    onConfirm={() => handleRemove(invoice.id)}
                   >
                     <IconTrash />
                   </ConfirmButton>
@@ -140,10 +140,10 @@ export function CoinBills({ coinId }: { coinId: string }) {
         <input
           ref={inputRef}
           type="file"
-          accept={ALLOWED_BILL_TYPES.join(",")}
+          accept={ALLOWED_INVOICE_TYPES.join(",")}
           onChange={handleUpload}
           disabled={busy}
-          aria-label="Coin bill (PDF)"
+          aria-label="Coin invoice (PDF)"
           style={{ display: "none" }}
         />
         <button
@@ -153,7 +153,7 @@ export function CoinBills({ coinId }: { coinId: string }) {
           disabled={busy}
         >
           <IconUpload />
-          {busy ? "Uploading…" : "Add bill (PDF)"}
+          {busy ? "Uploading…" : "Add invoice (PDF)"}
         </button>
       </div>
 

@@ -107,7 +107,7 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
   `analytics/CostBreakdownChart` are dependency-free SVG charts rendered by the
   server `/portfolio` page.) Each domain has a client-side "manager" that owns its
   view and talks to the API: `CollectionsManager`, `CoinsManager` (+ the
-  `CoinDetailsCard` / `CoinImage` / `CoinBills` detail views), `ValuationsManager`, and
+  `CoinDetailsCard` / `CoinImage` / `CoinInvoices` detail views), `ValuationsManager`, and
   `AssistantWidget`; `SiteHeader` (layout; a Server Component that delegates the
   active-state primary nav to the client `HeaderNav`) and `ConfirmButton` (ui)
   are the shared shell/primitive.
@@ -242,14 +242,15 @@ converts to WebP at quality 82, and returns `Cache-Control: public, immutable`
 `Cache-Control: private, no-cache`. Constraints: PNG/JPEG/WebP/GIF, max 5 MB
 (defined in `src/lib/images.ts`).
 
-## Coin bills
+## Coin invoices
 
-Auction/seller **bills** (PDF receipts) per coin reuse the coin-images pattern
-end to end — metadata in `coin_bills`, bytes in object storage, the
-`coinBill.repository` the only composing layer. PDF-only, max 15 MB
-(`src/lib/bills.ts`). Routes mirror images: `GET`/`POST /api/coins/[id]/bills`,
-`GET`/`DELETE /api/coins/[id]/bills/[billId]` (GET serves the PDF inline;
-`?download=1` forces a download). See ADR-009.
+Auction/seller **invoices** (PDF receipts) per coin reuse the coin-images pattern
+end to end — metadata in `coin_invoices`, bytes in object storage, the
+`coinInvoice.repository` the only composing layer. PDF-only, max 15 MB
+(`src/lib/invoices.ts`). Routes mirror images: `GET`/`POST /api/coins/[id]/invoices`,
+`GET`/`DELETE /api/coins/[id]/invoices/[invoiceId]` (GET serves the PDF inline;
+`?download=1` forces a download). Renamed from "bills" (table `coin_bills`,
+migration `0004`). See ADR-009.
 
 ## Coin search and filtering
 
@@ -615,7 +616,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `ADR-006-coin-and-valuation-attribute-rework` — Coin & valuation attribute rework
 * `ADR-007-portfolio-analytics-upgrade` — Portfolio analytics upgrade (multi-currency + ECB FX)
 * `ADR-008-ui-embellishment` — UI embellishment (overview aggregates, error surfacing, a11y baseline)
-* `ADR-009-ux-and-feature-refinement` — UX & feature refinement (tax partition, card grids, coin bills)
+* `ADR-009-ux-and-feature-refinement` — UX & feature refinement (tax partition, card grids, coin invoices)
 * `ADR-010-ci-pipeline-github-actions` — CI on GitHub Actions (lint + type-check + test gates on PRs / `main`)
 * `ADR-011-observability` — Observability (structured logger, `ErrorReporter` seam, `/api/health`)
 * `ADR-012-production-deployment` — Production deployment (Vercel + Neon; migrations via a gated CI `migrate` job). Runbook: `docs/deployment.md`

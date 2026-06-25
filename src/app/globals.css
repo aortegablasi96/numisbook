@@ -1309,7 +1309,7 @@ button:disabled {
   }
 }
 
-/* Right rail: the coin photo on top, the bills (PDF receipts) card below. The
+/* Right rail: the coin photo on top, the invoices (PDF receipts) card below. The
    rail owns the fixed 520px width; its children fill it. (Figma right column is
    borderless; widened to 520px so the photo reads with presence beside the
    full-width flex-1 left column.) */
@@ -1329,13 +1329,13 @@ button:disabled {
   gap: var(--space-3); /* Figma gap-[12px] */
 }
 
-/* ---- Coin bills (PDF receipts) ------------------------------------------- */
+/* ---- Coin invoices (PDF receipts) ---------------------------------------- */
 
-.coin-bills-card {
+.coin-invoices-card {
   padding: var(--space-4) var(--space-5);
   gap: var(--space-3);
 }
-.bill-list {
+.invoice-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1343,7 +1343,7 @@ button:disabled {
   flex-direction: column;
   gap: var(--space-2);
 }
-.bill-row {
+.invoice-row {
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -1352,19 +1352,19 @@ button:disabled {
   border-radius: var(--radius-md);
   background: var(--surface-2);
 }
-.bill-icon {
+.invoice-icon {
   display: flex;
   flex: 0 0 auto;
   color: var(--accent);
 }
-.bill-info {
+.invoice-info {
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
   min-width: 0;
   flex: 1;
 }
-.bill-name {
+.invoice-name {
   font-weight: 500;
   color: var(--text);
   text-decoration: none;
@@ -1372,18 +1372,18 @@ button:disabled {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.bill-name:hover {
+.invoice-name:hover {
   text-decoration: underline;
 }
-.bill-meta {
+.invoice-meta {
   font-size: 0.65rem;
 }
-.bill-actions {
+.invoice-actions {
   flex: 0 0 auto;
 }
 /* The "Download" link rendered as a small outline button (anchors don't inherit
    the base `button` chrome). Matches .btn-sm sizing and the Delete button beside it. */
-.bill-actions a {
+.invoice-actions a {
   font: inherit;
   font-weight: 500;
   text-decoration: none;
@@ -1395,7 +1395,7 @@ button:disabled {
   transition: background var(--dur-fast) var(--ease),
     border-color var(--dur-fast) var(--ease);
 }
-.bill-actions a:hover {
+.invoice-actions a:hover {
   background: var(--surface-2);
   border-color: color-mix(in srgb, var(--text) 22%, var(--border));
 }

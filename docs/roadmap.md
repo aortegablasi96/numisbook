@@ -41,7 +41,7 @@ price-paid partition (ordered tax-before-shipping app-wide), AD/BC era suffixes,
 reordered coin-detail chips, a collections card grid (large cards, prominent
 cover, centred info panel), a scrollable ~5-coin cost-breakdown chart with the
 per-segment split in a hover tooltip, hover tooltips + expand controls on both
-portfolio charts, and per-coin **bills** (PDF receipts) (see `history.md` Phase 9
+portfolio charts, and per-coin **invoices** (PDF receipts) (see `history.md` Phase 9
 and `docs/decisions/ADR-009-ux-and-feature-refinement.md`). **Production
 Readiness** has now shipped: NumisBook is **live in production** — deployed on
 Vercel against Neon, schema applied via the gated `migrate` job, Google sign-in

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { addCoinBill, listCoinBills } from "@/services/coinBill.service";
+import { addCoinInvoice, listCoinInvoices } from "@/services/coinInvoice.service";
 import { ValidationError } from "@/lib/errors";
 import { currentUser, errorResponse, unauthorized } from "../../../_lib";
 
@@ -10,13 +10,13 @@ export async function GET(_request: Request, { params }: Params) {
     const user = await currentUser();
     if (!user) return unauthorized();
     const { id } = await params;
-    const bills = await listCoinBills(user.id, id);
+    const invoices = await listCoinInvoices(user.id, id);
     return NextResponse.json({
-      bills: bills.map((b) => ({
-        id: b.id,
-        filename: b.filename,
-        sizeBytes: b.sizeBytes,
-        createdAt: b.createdAt.toISOString(),
+      invoices: invoices.map((inv) => ({
+        id: inv.id,
+        filename: inv.filename,
+        sizeBytes: inv.sizeBytes,
+        createdAt: inv.createdAt.toISOString(),
       })),
     });
   } catch (error) {
@@ -35,8 +35,8 @@ export async function POST(request: Request, { params }: Params) {
       throw new ValidationError("Expected a file upload under the 'file' field.");
     }
     const data = Buffer.from(await file.arrayBuffer());
-    const billId = await addCoinBill(user.id, id, file.type, file.name || null, data);
-    return NextResponse.json({ id: billId }, { status: 201 });
+    const invoiceId = await addCoinInvoice(user.id, id, file.type, file.name || null, data);
+    return NextResponse.json({ id: invoiceId }, { status: 201 });
   } catch (error) {
     return errorResponse(error);
   }

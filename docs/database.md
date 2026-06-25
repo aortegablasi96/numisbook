@@ -116,12 +116,13 @@ delete; the `coinImage.repository` removes the stored object alongside the row.
 | size_bytes | integer | not null; size of the stored object |
 | created_at | timestamptz | default now(); also the display order |
 
-### CoinBill
-One or more auction/seller **bills** (PDF receipts) per coin (ADR-009). Mirrors
-`CoinImage`: only metadata lives here — the PDF bytes are kept in object storage
-(`src/lib/storage`) and referenced by `storage_key`. The original `filename` is
-kept so downloads get a sensible "Save as" name. Cascades on coin delete; the
-`coinBill.repository` removes the stored object alongside the row.
+### CoinInvoice
+One or more auction/seller **invoices** (PDF receipts) per coin (ADR-009; table
+renamed from `coin_bills` in migration `0004`). Mirrors `CoinImage`: only metadata
+lives here — the PDF bytes are kept in object storage (`src/lib/storage`) and
+referenced by `storage_key`. The original `filename` is kept so downloads get a
+sensible "Save as" name. Cascades on coin delete; the `coinInvoice.repository`
+removes the stored object alongside the row.
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -129,7 +130,7 @@ kept so downloads get a sensible "Save as" name. Cascades on coin delete; the
 | coin_id | uuid (fk → Coin) | not null; cascade delete |
 | mime_type | text | not null; always `application/pdf` |
 | filename | text | nullable; original upload filename, for the download name |
-| storage_key | text | not null; object-storage key (e.g. `bills/<coinId>/<uuid>`), not a public URL |
+| storage_key | text | not null; object-storage key (e.g. `invoices/<coinId>/<uuid>`), not a public URL |
 | size_bytes | integer | not null; size of the stored object |
 | created_at | timestamptz | default now(); also the display order |
 

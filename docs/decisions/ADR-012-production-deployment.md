@@ -20,7 +20,7 @@ configuration (secrets) is structured. Several constraints shape these choices:
 
 - **Serverless runtime.** Vercel runs the Next.js app as serverless functions
   with an ephemeral, read-only filesystem. The local-filesystem storage fallback
-  (`FsStorage`, `src/lib/storage`) therefore cannot persist coin image/bill bytes
+  (`FsStorage`, `src/lib/storage`) therefore cannot persist coin image/invoice bytes
   in production — object storage (Cloudflare R2, ADR-004/005) becomes **required**,
   not optional, in production.
 - **Connection model.** Serverless functions open many short-lived database

@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
-  addCoinBill,
-  listCoinBills,
-  getCoinBill,
-  removeCoinBill,
-} from "./coinBill.service";
-import { coinBillRepository } from "@/repositories/coinBill.repository";
+  addCoinInvoice,
+  listCoinInvoices,
+  getCoinInvoice,
+  removeCoinInvoice,
+} from "./coinInvoice.service";
+import { coinInvoiceRepository } from "@/repositories/coinInvoice.repository";
 import { coinRepository } from "@/repositories/coin.repository";
 import { NotFoundError, ValidationError } from "@/lib/errors";
-import { MAX_BILL_BYTES } from "@/lib/bills";
+import { MAX_INVOICE_BYTES } from "@/lib/invoices";
 
-vi.mock("@/repositories/coinBill.repository", () => ({
-  coinBillRepository: {
+vi.mock("@/repositories/coinInvoice.repository", () => ({
+  coinInvoiceRepository: {
     insert: vi.fn(),
     listByCoinId: vi.fn(),
     getById: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock("@/repositories/coin.repository", () => ({
   coinRepository: { findByIdForUser: vi.fn() },
 }));
 
-const bills = vi.mocked(coinBillRepository);
+const invoices = vi.mocked(coinInvoiceRepository);
 const coins = vi.mocked(coinRepository);
 
 const ownedCoin = {
@@ -60,68 +60,68 @@ const pdf = Buffer.from("%PDF-1.7");
 
 beforeEach(() => vi.clearAllMocks());
 
-describe("coinBill.service", () => {
-  describe("addCoinBill", () => {
+describe("coinInvoice.service", () => {
+  describe("addCoinInvoice", () => {
     it("stores a valid PDF for an owned coin and returns its id", async () => {
       coins.findByIdForUser.mockResolvedValue(ownedCoin);
-      bills.insert.mockResolvedValue("bill-uuid-1");
-      const id = await addCoinBill("user-1", "coin-1", "application/pdf", "receipt.pdf", pdf);
-      expect(id).toBe("bill-uuid-1");
-      expect(bills.insert).toHaveBeenCalledWith("coin-1", "application/pdf", "receipt.pdf", pdf);
+      invoices.insert.mockResolvedValue("invoice-uuid-1");
+      const id = await addCoinInvoice("user-1", "coin-1", "application/pdf", "receipt.pdf", pdf);
+      expect(id).toBe("invoice-uuid-1");
+      expect(invoices.insert).toHaveBeenCalledWith("coin-1", "application/pdf", "receipt.pdf", pdf);
     });
 
     it("rejects a non-PDF mime type before any DB access", async () => {
       await expect(
-        addCoinBill("user-1", "coin-1", "image/png", "x.png", pdf),
+        addCoinInvoice("user-1", "coin-1", "image/png", "x.png", pdf),
       ).rejects.toBeInstanceOf(ValidationError);
       expect(coins.findByIdForUser).not.toHaveBeenCalled();
-      expect(bills.insert).not.toHaveBeenCalled();
+      expect(invoices.insert).not.toHaveBeenCalled();
     });
 
     it("rejects an empty file", async () => {
       await expect(
-        addCoinBill("user-1", "coin-1", "application/pdf", "x.pdf", Buffer.alloc(0)),
+        addCoinInvoice("user-1", "coin-1", "application/pdf", "x.pdf", Buffer.alloc(0)),
       ).rejects.toBeInstanceOf(ValidationError);
     });
 
     it("rejects an oversized file", async () => {
-      const tooBig = Buffer.alloc(MAX_BILL_BYTES + 1);
+      const tooBig = Buffer.alloc(MAX_INVOICE_BYTES + 1);
       await expect(
-        addCoinBill("user-1", "coin-1", "application/pdf", "x.pdf", tooBig),
+        addCoinInvoice("user-1", "coin-1", "application/pdf", "x.pdf", tooBig),
       ).rejects.toBeInstanceOf(ValidationError);
-      expect(bills.insert).not.toHaveBeenCalled();
+      expect(invoices.insert).not.toHaveBeenCalled();
     });
 
     it("throws NotFound when the user does not own the coin", async () => {
       coins.findByIdForUser.mockResolvedValue(null);
       await expect(
-        addCoinBill("user-1", "coin-x", "application/pdf", "x.pdf", pdf),
+        addCoinInvoice("user-1", "coin-x", "application/pdf", "x.pdf", pdf),
       ).rejects.toBeInstanceOf(NotFoundError);
-      expect(bills.insert).not.toHaveBeenCalled();
+      expect(invoices.insert).not.toHaveBeenCalled();
     });
   });
 
-  describe("listCoinBills", () => {
-    it("returns bill metadata for an owned coin", async () => {
-      const meta = [{ id: "bill-1", filename: "r.pdf", sizeBytes: 10, createdAt: new Date() }];
+  describe("listCoinInvoices", () => {
+    it("returns invoice metadata for an owned coin", async () => {
+      const meta = [{ id: "invoice-1", filename: "r.pdf", sizeBytes: 10, createdAt: new Date() }];
       coins.findByIdForUser.mockResolvedValue(ownedCoin);
-      bills.listByCoinId.mockResolvedValue(meta);
-      expect(await listCoinBills("user-1", "coin-1")).toEqual(meta);
+      invoices.listByCoinId.mockResolvedValue(meta);
+      expect(await listCoinInvoices("user-1", "coin-1")).toEqual(meta);
     });
 
     it("throws NotFound when the user does not own the coin", async () => {
       coins.findByIdForUser.mockResolvedValue(null);
-      await expect(listCoinBills("user-1", "coin-x")).rejects.toBeInstanceOf(
+      await expect(listCoinInvoices("user-1", "coin-x")).rejects.toBeInstanceOf(
         NotFoundError,
       );
     });
   });
 
-  describe("getCoinBill", () => {
-    it("returns bill data by id for an owned coin", async () => {
+  describe("getCoinInvoice", () => {
+    it("returns invoice data by id for an owned coin", async () => {
       coins.findByIdForUser.mockResolvedValue(ownedCoin);
-      bills.getById.mockResolvedValue({ mimeType: "application/pdf", filename: "r.pdf", data: pdf });
-      expect(await getCoinBill("user-1", "coin-1", "bill-1")).toEqual({
+      invoices.getById.mockResolvedValue({ mimeType: "application/pdf", filename: "r.pdf", data: pdf });
+      expect(await getCoinInvoice("user-1", "coin-1", "invoice-1")).toEqual({
         mimeType: "application/pdf",
         filename: "r.pdf",
         data: pdf,
@@ -131,43 +131,43 @@ describe("coinBill.service", () => {
     it("throws NotFound when the coin is not the user's", async () => {
       coins.findByIdForUser.mockResolvedValue(null);
       await expect(
-        getCoinBill("user-1", "coin-x", "bill-1"),
+        getCoinInvoice("user-1", "coin-x", "invoice-1"),
       ).rejects.toBeInstanceOf(NotFoundError);
-      expect(bills.getById).not.toHaveBeenCalled();
+      expect(invoices.getById).not.toHaveBeenCalled();
     });
 
-    it("throws NotFound when the bill does not exist", async () => {
+    it("throws NotFound when the invoice does not exist", async () => {
       coins.findByIdForUser.mockResolvedValue(ownedCoin);
-      bills.getById.mockResolvedValue(null);
+      invoices.getById.mockResolvedValue(null);
       await expect(
-        getCoinBill("user-1", "coin-1", "bill-missing"),
+        getCoinInvoice("user-1", "coin-1", "invoice-missing"),
       ).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 
-  describe("removeCoinBill", () => {
-    it("deletes a bill by id for an owned coin", async () => {
+  describe("removeCoinInvoice", () => {
+    it("deletes an invoice by id for an owned coin", async () => {
       coins.findByIdForUser.mockResolvedValue(ownedCoin);
-      bills.deleteById.mockResolvedValue(true);
+      invoices.deleteById.mockResolvedValue(true);
       await expect(
-        removeCoinBill("user-1", "coin-1", "bill-1"),
+        removeCoinInvoice("user-1", "coin-1", "invoice-1"),
       ).resolves.toBeUndefined();
-      expect(bills.deleteById).toHaveBeenCalledWith("bill-1");
+      expect(invoices.deleteById).toHaveBeenCalledWith("invoice-1");
     });
 
     it("throws NotFound when the user does not own the coin", async () => {
       coins.findByIdForUser.mockResolvedValue(null);
       await expect(
-        removeCoinBill("user-1", "coin-x", "bill-1"),
+        removeCoinInvoice("user-1", "coin-x", "invoice-1"),
       ).rejects.toBeInstanceOf(NotFoundError);
-      expect(bills.deleteById).not.toHaveBeenCalled();
+      expect(invoices.deleteById).not.toHaveBeenCalled();
     });
 
-    it("throws NotFound when the bill does not exist", async () => {
+    it("throws NotFound when the invoice does not exist", async () => {
       coins.findByIdForUser.mockResolvedValue(ownedCoin);
-      bills.deleteById.mockResolvedValue(false);
+      invoices.deleteById.mockResolvedValue(false);
       await expect(
-        removeCoinBill("user-1", "coin-1", "bill-missing"),
+        removeCoinInvoice("user-1", "coin-1", "invoice-missing"),
       ).rejects.toBeInstanceOf(NotFoundError);
     });
   });

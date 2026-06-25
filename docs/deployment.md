@@ -21,7 +21,7 @@ Accounts:
 - **Vercel** — hosting. Connect it to the GitHub repo.
 - **Neon** — managed PostgreSQL.
 - **Google Cloud** — OAuth client for sign-in.
-- **Cloudflare R2** — object storage for coin images/bills (**required in
+- **Cloudflare R2** — object storage for coin images/invoices (**required in
   production** — see §6).
 - **OpenAI** — API key for the collection assistant (optional; the assistant
   returns 503 without it, the rest of the app works).
@@ -164,7 +164,7 @@ Use the production client's ID/secret for `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET
 
 **Cloudflare R2 (object storage).** Create a bucket and an S3 API token
 (Cloudflare dashboard → R2 → Manage R2 API Tokens). Set the four `R2_*` vars in
-Vercel. **This is required in production**: coin image/bill bytes are written to
+Vercel. **This is required in production**: coin image/invoice bytes are written to
 object storage, and the local-filesystem fallback does not persist on Vercel's
 ephemeral, read-only filesystem — without R2, uploads will fail or vanish.
 

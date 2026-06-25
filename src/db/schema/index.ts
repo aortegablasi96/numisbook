@@ -3,6 +3,6 @@ export * from "./auth";
 export * from "./collections";
 export * from "./coins";
 export * from "./coin-images";
-export * from "./coin-bills";
+export * from "./coin-invoices";
 export * from "./valuations";
 export * from "./fx-rates";

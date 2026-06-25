@@ -29,7 +29,8 @@ feature: cost-breakdown chart tuning (bigger coin avatars, wider bars,
 per-segment shares moved into the hover tooltip), a hover tooltip on the trend
 chart, a more prominent collections card cover with a centred info panel, fixing
 **tax before shipping** as the canonical partition order app-wide, and — the one
-new feature — storing an auction/seller **bill (PDF)** per coin (decision 7).
+new feature — storing an auction/seller **invoice (PDF)** per coin (decision 7;
+originally "bill", renamed to "invoice" — see the amendment in that section).
 
 ## Decision
 
@@ -129,30 +130,38 @@ moving the cursor over the plot scrubs to the nearest day's data point, drops a
 dashed vertical guide + marker, and floats a tooltip with that day's cumulative
 total and date — matching the cost-breakdown chart's hover affordance.
 
-### 7. Coin bills (auction/seller receipts) stored as PDFs
+### 7. Coin invoices (auction/seller receipts) stored as PDFs
 
-A coin can carry one or more **bills** — the auction or seller receipt the coin
+> **Amendment (2026-06-25):** this feature was originally named **"bills"** and
+> was renamed end to end to **"invoices"** — clearer terminology for an
+> auction/seller receipt. The rename covered the DB table (`coin_bills` →
+> `coin_invoices`, migration `0004`), the API routes (`/bills` → `/invoices`),
+> the storage-key prefix (new objects under `invoices/…`; existing `bills/…`
+> keys remain valid), and all code identifiers. The section below uses the
+> current "invoice" terminology.
+
+A coin can carry one or more **invoices** — the auction or seller receipt the coin
 was purchased against — uploaded, viewed, downloaded, and deleted from the coin
-detail page. Bills are **always PDFs**.
+detail page. Invoices are **always PDFs**.
 
 This is a new vertical slice that deliberately **mirrors coin images** rather than
-inventing a new pattern: a `coin_bills` table holds only metadata (`mime_type`,
+inventing a new pattern: a `coin_invoices` table holds only metadata (`mime_type`,
 `filename`, `size_bytes`, `storage_key`), while the PDF bytes live in **object
 storage** behind the existing `src/lib/storage` abstraction (ADR-004 / ADR-005) —
-so no new dependency and no new storage decision. The `coinBill.repository` is the
+so no new dependency and no new storage decision. The `coinInvoice.repository` is the
 only layer that composes the row with the stored object (deleting the object on
-row delete, cleaning up on a failed insert); `coinBill.service` gates every use
+row delete, cleaning up on a failed insert); `coinInvoice.service` gates every use
 case on the acting user owning the coin (tenant isolation). Routes follow the
 images convention:
 
 ```
-GET    /api/coins/[id]/bills            → { bills: [{ id, filename, sizeBytes, createdAt }] }
-POST   /api/coins/[id]/bills            → { id }   (multipart/form-data, field "file")
-GET    /api/coins/[id]/bills/[billId]   → the PDF inline (?download=1 → attachment)
-DELETE /api/coins/[id]/bills/[billId]   → 204
+GET    /api/coins/[id]/invoices               → { invoices: [{ id, filename, sizeBytes, createdAt }] }
+POST   /api/coins/[id]/invoices               → { id }   (multipart/form-data, field "file")
+GET    /api/coins/[id]/invoices/[invoiceId]   → the PDF inline (?download=1 → attachment)
+DELETE /api/coins/[id]/invoices/[invoiceId]   → 204
 ```
 
-Constraints (`src/lib/bills.ts`): `application/pdf` only, max 15 MB. Because it
+Constraints (`src/lib/invoices.ts`): `application/pdf` only, max 15 MB. Because it
 reuses the established storage abstraction and the coin-images pattern end to end,
 no separate ADR is warranted — this section records it.
 
@@ -208,8 +217,9 @@ Positive:
 Negative / trade-offs:
 * `coins` gains a nullable column (additive migration `0002`); existing rows have
   `NULL` tax (treated as 0 in the partition sum), so no backfill is needed.
-* A new `coin_bills` table (additive migration `0003`) plus its object-storage
-  prefix (`bills/<coinId>/…`); the maintenance burden is the same as coin images.
+* A new `coin_invoices` table (additive migration `0003`, originally `coin_bills`;
+  renamed in migration `0004` — see the amendment above) plus its object-storage
+  prefix (`invoices/<coinId>/…`); the maintenance burden is the same as coin images.
 * The expand modal keeps a second (hidden) chart instance mounted per chart;
   acceptable for dependency-free SVG.
 * The collection card cover costs two correlated subqueries per collection list
