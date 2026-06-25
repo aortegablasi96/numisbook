@@ -58,6 +58,7 @@ Current priorities:
 
 - Production readiness — ✅ complete (live in production)
 - Additional settings (current)
+- (then) rework filters
 - (then) hosted error monitoring
 - (then) valuation-based analytics
 
@@ -86,6 +87,26 @@ portfolio analytics, interface language, and theme (day/night).
   - [ ] Select language
   - [ ] Select default currency (base currency applied to portfolio analytics)
   - [ ] Select day/night mode
+
+---
+
+# Future Milestone — Rework Filters
+
+Goal:
+
+Revisit and adjust all filtering across NumisBook so the available filters are
+consistent, complete, and useful — building on today's coin search/filter set
+(`q`, `metal`, `category`, `year`, sort by category/metal/denomination/year/
+createdAt; facets endpoint — see `CLAUDE.md` "Coin search and filtering").
+
+## Features
+
+- [ ] Audit existing filters and identify gaps/inconsistencies
+- [ ] Review and adjust the coin filter set (e.g. denomination, country/issuing
+      authority, year range, condition/grade)
+- [ ] Consistent filter UX across collections, coins, and portfolio views
+- [ ] Combinable/multi-select filters where it makes sense
+- [ ] Clear-all and active-filter indicators
 
 ---
 
