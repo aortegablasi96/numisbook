@@ -66,6 +66,11 @@ Product Manager
 
 ↓
 
+Issue Writer
+→ GitHub Issues
+
+↓
+
 Implementation Engineer
 → Implementation Plan
 

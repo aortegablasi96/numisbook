@@ -113,6 +113,10 @@ Architecture Review
 
 ↓
 
+Issue Writer
+
+↓
+
 Implementation Engineer
 
 Do not:

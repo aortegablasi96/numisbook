@@ -406,6 +406,12 @@ Design Recorder     ADR Writer
       DDR             ADR
 
                ▼
+        Issue Writer
+               │
+               ▼
+        GitHub Issues
+               │
+               ▼
 Implementation Engineer
         │
         ▼
@@ -475,6 +481,19 @@ Defines:
 - migrations
 - indexes
 - integrity constraints
+
+### GitHub Issues
+
+Produced by: Issue Writer
+
+Defines:
+
+- Epics / User Stories / Bugs for the approved work
+- suggested labels (per `docs/github-issues.md`)
+- references to the planning artifacts and ADRs / DDRs
+
+Created after the planning artifacts (Product, UI, Architecture, Database
+reviews) and any ADRs / DDRs exist, before implementation begins.
 
 ### Implementation Plan
 

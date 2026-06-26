@@ -44,6 +44,7 @@ Product Manager
 → (optional) Design Recorder
 → Architect
 → Database Designer (if required)
+→ Issue Writer
 → Implementation Engineer
 → Testing
 

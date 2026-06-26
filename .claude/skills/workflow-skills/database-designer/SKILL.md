@@ -61,6 +61,11 @@ Database Designer (if required)
 
 ↓
 
+Issue Writer
+→ GitHub Issues
+
+↓
+
 Implementation Engineer
 
 ↓

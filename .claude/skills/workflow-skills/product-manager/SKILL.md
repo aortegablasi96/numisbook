@@ -238,6 +238,10 @@ After producing the Product Review:
 * involve the Architect if the feature may affect architecture
 * involve both when appropriate
 
+Once the planning artifacts (and any ADRs / DDRs) are approved, the Issue Writer
+turns the work into GitHub Epics / User Stories / Bugs before the Implementation
+Engineer begins.
+
 Do not:
 
 * design the UI
