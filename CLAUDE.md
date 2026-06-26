@@ -564,6 +564,19 @@ Current execution skills (each maps to a layer of the vertical slice):
 
 Additional execution skills may be added as the project evolves.
 
+### Project-Management Skills
+
+Project-management skills turn work into GitHub-tracked issues; they create
+tracking artifacts only and never design or implement features. They follow the
+repository issue templates (`.github/ISSUE_TEMPLATE/` — `epic.md`,
+`user-story.md`, `bug.md`) and the conventions in `docs/github-issues.md`
+(issue types Epic / User Story / Bug; the `epic`/`story`/`bug`, `priority:*`,
+and `area:*` label sets). Do not invent new labels or issue structures.
+
+- issue-writer — create Epics / User Stories / Bugs for new, approved work.
+- project-historian — reconstruct already-completed work as historical issues
+  from `docs/history.md`, the ADRs/DDRs, and the roadmap.
+
 ## Documentation
 
 * Architecture: `docs/architecture.md`
@@ -572,6 +585,7 @@ Additional execution skills may be added as the project evolves.
 * Product requirements: `docs/product.md`
 * Roadmap (planned work): `docs/roadmap.md`
 * History (completed milestones, by phase): `docs/history.md`
+* GitHub issue conventions (types, labels, titles): `docs/github-issues.md`
 * Architecture decisions (ADRs): `docs/decisions/`
 * Design decisions (DDRs): `docs/design-decisions/`
 
