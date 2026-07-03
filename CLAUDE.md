@@ -653,6 +653,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `ADR-010-ci-pipeline-github-actions` — CI on GitHub Actions (lint + type-check + test gates on PRs / `main`)
 * `ADR-011-observability` — Observability (structured logger, `ErrorReporter` seam, `/api/health`)
 * `ADR-012-production-deployment` — Production deployment (Vercel + Neon; migrations via a gated CI `migrate` job). Runbook: `docs/deployment.md`
+* `ADR-013-account-settings-and-deletion` — Account settings & self-service account deletion (`/settings`; app-owned profile mutations; DB cascade + object-storage purge)
 
 (`template.md` is the scaffold for new ADRs.)
 
