@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — Additional Settings in progress (foundation shipped)**
+Current maturity: **Live in production — Additional Settings in progress (foundation + i18n shell shipped)**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -78,22 +78,32 @@ portfolio analytics, interface language, and theme (day/night).
 The **Settings foundation** has shipped (see `history.md` Phase 12 and
 `docs/decisions/ADR-013-account-settings-and-deletion.md`): the `/settings`
 page + navigation, display-name editing, self-service account deletion, and the
-base-currency preference's canonical home. The remaining features —
-internationalization and dark mode — are the later passes of this milestone.
+base-currency preference's canonical home.
+
+**Internationalization** has now shipped for the app shell (see `history.md`
+Phase 13 and `docs/decisions/ADR-014-internationalization.md`): a dependency-free
+i18n layer, a per-user `locale` preference with a language selector in
+`/settings`, and seven locales (English + Spanish, German, French, Italian,
+Chinese, Russian) covering the global chrome, home, settings, and entry/error
+pages. Extracting the deep domain screens is a tracked follow-up. **Dark mode**
+remains the last pass (blocked on a DDR superseding DDR-001).
 
 ## Features
 
 - [x] Settings page (route + navigation entry)
 - [x] View/edit user profile (display name, account info)
 - [x] Account/data controls (e.g. account deletion)
-- [ ] Add languages (i18n / multi-language support)
+- [~] Add languages (i18n / multi-language support) — machinery + 7 locales
+      shipped for the app shell (chrome, home, settings, entry/error pages);
+      deep domain screens (coins/collections/valuations/assistant) are a
+      follow-up extraction pass (ADR-014, `history.md` Phase 13)
 - [ ] Add night mode (dark theme)
   > ⚠️ Reverses `DDR-001-figma-ui-redesign`, which made the app light-only
   > (`globals.css` ships light theme tokens only). Requires a new DDR
   > superseding DDR-001 — re-introducing dark theme tokens — before
   > implementation.
 - [ ] Settings menu controls
-  - [ ] Select language
+  - [x] Select language (settings language selector + per-user `locale`; ADR-014)
   - [x] Select default currency (base currency applied to portfolio analytics)
   - [ ] Select day/night mode
 

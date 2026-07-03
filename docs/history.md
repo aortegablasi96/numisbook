@@ -614,6 +614,45 @@ Tracked as GitHub Epic #114 (stories #115–#118).
 
 ---
 
+# Phase 13 — Internationalization (Shell)
+
+Status: Complete (shell); deep domain screens tracked as a follow-up
+
+Second pass of the **Additional Settings** milestone: multi-language support for
+the app shell, so non-English collectors can use NumisBook in their own language
+(see `docs/decisions/ADR-014-internationalization.md`).
+
+## Achievements
+
+- **Dependency-free i18n layer** (`src/lib/i18n/`) — supported-locale set +
+  endonyms, an English source catalog that defines the `MessageKey` type, SSR-safe
+  locale resolution (user preference → `NEXT_LOCALE` cookie → `Accept-Language` →
+  English), and `t()` (server) / `useT()` via a client `LocaleProvider`. No new
+  dependency, consistent with the hand-rolled design system.
+- **Per-user language preference** — a nullable `users.locale` column
+  (migration `0005`, additive) with `userRepository.updateLocale`, a Zod
+  `localeSchema`, and `user.service.setLocale`, mirroring the base-currency
+  preference. The root layout resolves the active locale from the session user's
+  preference first and seeds the client provider (no hydration mismatch).
+- **Language selector in Settings** — a Preferences control listing the seven
+  languages by endonym; its server action persists the preference, syncs the
+  `NEXT_LOCALE` cookie, and revalidates the root layout so the whole app
+  re-renders in the chosen language.
+- **Seven locales for the shell** — English + Spanish, German, French, Italian,
+  Chinese (Simplified), Russian, covering the global chrome (header/nav), home
+  dashboard, settings, and the not-found / error / auth-error pages. Catalogs
+  merge over English with per-key fallback; a parity test guards completeness.
+- **Fonts** — DM Sans/Fraunces cover Latin only, so Russian (Cyrillic) and
+  Chinese fall back to system fonts for those scripts (documented MVP tradeoff).
+  `global-error` stays English (renders outside the provider).
+- **Deep domain screens** (coins/collections/valuations/assistant/analytics) are
+  a tracked follow-up extraction using the same machinery; they render in English
+  via fallback until then. Full suite green (207 tests).
+
+Tracked as GitHub Epic #120 (stories #121–#125).
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -631,6 +670,7 @@ See:
 - `docs/decisions/ADR-011-observability.md`
 - `docs/decisions/ADR-012-production-deployment.md`
 - `docs/decisions/ADR-013-account-settings-and-deletion.md`
+- `docs/decisions/ADR-014-internationalization.md`
 
 # Design Decisions
 

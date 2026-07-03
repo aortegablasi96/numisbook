@@ -67,10 +67,23 @@ per-user preference** locale model (no URL-based locale routing).
    preference; a cookie/preference model is simpler than `/es/…` segment routing
    and needs no middleware rewrite.
 
-4. **Fonts / CJK.** DM Sans and Fraunces gain the `cyrillic` subset for `ru`.
-   Their Google builds have **no CJK coverage**, so `zh` renders via the
-   platform's **system CJK fallback** in MVP — an accepted, documented tradeoff
-   (no web-font dependency added for a single locale).
+4. **Fonts / non-Latin scripts.** The Google builds of DM Sans and Fraunces
+   cover Latin/Latin-ext only — **no Cyrillic or CJK**. So both Russian
+   (Cyrillic) and Chinese render via the platform's **system font fallback** for
+   those scripts in the MVP — an accepted, documented tradeoff (no web-font
+   dependency added for two locales; a CJK/Cyrillic web font can be layered in
+   later behind the same seam).
+
+### Delivery: shell first
+
+The interface is localized in passes. The **first pass localizes the app
+"shell"** — global chrome (header/nav), the home dashboard, settings, and the
+entry/error pages (`not-found`, the in-layout error boundary, the auth-error
+page) — and ships all seven locales for it. The **deep domain screens**
+(coins / collections / valuations / assistant / analytics) are extracted in a
+**follow-up pass** using the exact same machinery; until then they render in
+English via the per-key fallback. `global-error` stays English by necessity — it
+renders its own `<html>` outside the `LocaleProvider` (the DB-outage path).
 
 `userId` always comes from the authenticated session (`currentUser()`), never
 client input — the tenant-isolation invariant is unchanged.
