@@ -7,7 +7,7 @@ import { auth } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { AssistantWidget } from "@/components/assistant/AssistantWidget";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
-import { getMessages } from "@/lib/i18n";
+import { getMessages, t } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/i18n/server";
 
 // Self-hosted via next/font (no runtime request, no layout shift). Exposed as CSS
@@ -57,7 +57,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body>
         <LocaleProvider locale={locale} messages={messages}>
           <a href="#main-content" className="skip-link">
-            Skip to content
+            {t(locale, "skip.toContent")}
           </a>
           <SiteHeader />
           <div id="main-content" tabIndex={-1} className="container">

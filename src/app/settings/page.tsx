@@ -4,7 +4,14 @@ import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { setBaseCurrency, setLocale } from "@/services/user.service";
 import { COMMON_CURRENCIES } from "@/lib/currencies";
-import { LOCALES, LOCALE_LABELS, LOCALE_COOKIE } from "@/lib/i18n";
+import {
+  LOCALES,
+  LOCALE_LABELS,
+  LOCALE_COOKIE,
+  t,
+  type Locale,
+} from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n/server";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 
@@ -16,10 +23,12 @@ const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // one year
 // the framework-agnostic services (setLocale / setBaseCurrency). Rendered
 // between Profile and the Danger zone.
 function PreferencesSection({
-  locale,
+  activeLocale,
+  localePref,
   baseCurrency,
 }: {
-  locale: string | null;
+  activeLocale: Locale;
+  localePref: string | null;
   baseCurrency: string | null;
 }) {
   async function updateLocale(formData: FormData) {
@@ -55,15 +64,15 @@ function PreferencesSection({
 
   return (
     <section className="card stack">
-      <h2 style={{ margin: 0 }}>Preferences</h2>
+      <h2 style={{ margin: 0 }}>{t(activeLocale, "settings.preferences.heading")}</h2>
 
       <form action={updateLocale} className="field">
         <label htmlFor="locale" className="mono-label">
-          Language
+          {t(activeLocale, "settings.language.label")}
         </label>
         <div className="row">
-          <select id="locale" name="locale" defaultValue={locale ?? ""}>
-            <option value="">System default</option>
+          <select id="locale" name="locale" defaultValue={localePref ?? ""}>
+            <option value="">{t(activeLocale, "settings.language.systemDefault")}</option>
             {LOCALES.map((code) => (
               <option key={code} value={code}>
                 {LOCALE_LABELS[code]}
@@ -71,21 +80,21 @@ function PreferencesSection({
             ))}
           </select>
           <button type="submit" className="btn-sm">
-            Apply
+            {t(activeLocale, "action.apply")}
           </button>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          The language NumisBook&rsquo;s interface is shown in.
+          {t(activeLocale, "settings.language.help")}
         </p>
       </form>
 
       <form action={updateBaseCurrency} className="field">
         <label htmlFor="baseCurrency" className="mono-label">
-          Base currency
+          {t(activeLocale, "settings.baseCurrency.label")}
         </label>
         <div className="row">
           <select id="baseCurrency" name="baseCurrency" defaultValue={baseCurrency ?? ""}>
-            <option value="">Auto (largest holding)</option>
+            <option value="">{t(activeLocale, "settings.baseCurrency.auto")}</option>
             {COMMON_CURRENCIES.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -93,12 +102,11 @@ function PreferencesSection({
             ))}
           </select>
           <button type="submit" className="btn-sm">
-            Apply
+            {t(activeLocale, "action.apply")}
           </button>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Applied to your portfolio analytics. &ldquo;Auto&rdquo; uses the
-          currency of your largest holding.
+          {t(activeLocale, "settings.baseCurrency.help")}
         </p>
       </form>
     </section>
@@ -108,13 +116,14 @@ function PreferencesSection({
 export default async function SettingsPage() {
   const session = await auth();
   const user = await resolveCurrentUser(session);
+  const locale = await getRequestLocale(user?.locale);
 
   if (!user) {
     return (
       <main className="stack">
-        <h1>Settings</h1>
+        <h1>{t(locale, "settings.title")}</h1>
         <div className="card stack">
-          <p>Sign in to manage your account and preferences.</p>
+          <p>{t(locale, "settings.signInPrompt")}</p>
           <form
             action={async () => {
               "use server";
@@ -122,7 +131,7 @@ export default async function SettingsPage() {
             }}
           >
             <button type="submit" className="btn-primary">
-              Sign in with Google
+              {t(locale, "nav.signInWithGoogle")}
             </button>
           </form>
         </div>
@@ -132,9 +141,13 @@ export default async function SettingsPage() {
 
   return (
     <main className="stack settings-page">
-      <h1 style={{ margin: 0 }}>Settings</h1>
+      <h1 style={{ margin: 0 }}>{t(locale, "settings.title")}</h1>
       <ProfileForm initialName={user.name ?? ""} email={user.email} />
-      <PreferencesSection locale={user.locale} baseCurrency={user.baseCurrency} />
+      <PreferencesSection
+        activeLocale={locale}
+        localePref={user.locale}
+        baseCurrency={user.baseCurrency}
+      />
       <DeleteAccountSection />
     </main>
   );

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { auth, signIn, signOut } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
+import { t } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n/server";
 import { HeaderNav } from "./HeaderNav";
 
 function IconSettings() {
@@ -48,6 +50,7 @@ function IconSignOut() {
 export async function SiteHeader() {
   const session = await auth();
   const user = await resolveCurrentUser(session);
+  const locale = await getRequestLocale(user?.locale);
 
   return (
     <header className="site-header">
@@ -56,17 +59,21 @@ export async function SiteHeader() {
           <span className="brand-logo" aria-hidden="true">
             N
           </span>
-          NumisBook
+          {t(locale, "app.name")}
         </Link>
 
-        <nav className="nav" aria-label="Primary">
+        <nav className="nav" aria-label={t(locale, "nav.primaryAria")}>
           {user && <HeaderNav />}
           {user ? (
             <>
               <span className="nav-divider" aria-hidden="true" />
-              <Link href="/settings" className="nav-signout" title="Settings">
+              <Link
+                href="/settings"
+                className="nav-signout"
+                title={t(locale, "nav.settings")}
+              >
                 <IconSettings />
-                Settings
+                {t(locale, "nav.settings")}
               </Link>
               <form
                 action={async () => {
@@ -80,7 +87,7 @@ export async function SiteHeader() {
                   title={user.email ?? ""}
                 >
                   <IconSignOut />
-                  Sign out
+                  {t(locale, "nav.signOut")}
                 </button>
               </form>
             </>
@@ -92,7 +99,7 @@ export async function SiteHeader() {
               }}
             >
               <button type="submit" className="btn-primary btn-sm">
-                Sign in
+                {t(locale, "nav.signIn")}
               </button>
             </form>
           )}

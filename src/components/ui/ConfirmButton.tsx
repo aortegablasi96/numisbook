@@ -1,13 +1,14 @@
 "use client";
 
 import { useRef } from "react";
+import { useT } from "@/components/i18n/LocaleProvider";
 
 // A button that opens a styled confirmation dialog (native <dialog>) before
 // running `onConfirm`. Replaces window.confirm for destructive actions.
 export function ConfirmButton({
   onConfirm,
   message,
-  confirmLabel = "Delete",
+  confirmLabel,
   children,
   className,
   disabled,
@@ -22,6 +23,7 @@ export function ConfirmButton({
   title?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const t = useT();
 
   return (
     <>
@@ -39,7 +41,7 @@ export function ConfirmButton({
           <p style={{ margin: 0 }}>{message}</p>
           <div className="row" style={{ justifyContent: "flex-end" }}>
             <button type="submit" value="cancel">
-              Cancel
+              {t("action.cancel")}
             </button>
             <button
               type="submit"
@@ -47,7 +49,7 @@ export function ConfirmButton({
               className="btn-danger"
               onClick={() => onConfirm()}
             >
-              {confirmLabel}
+              {confirmLabel ?? t("action.delete")}
             </button>
           </div>
         </form>
