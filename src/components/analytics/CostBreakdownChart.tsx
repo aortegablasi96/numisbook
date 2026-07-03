@@ -4,6 +4,8 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { AcquisitionEvent } from "@/services/analytics.service";
 import { RANGES, money, niceTicks, filterEventsByRange } from "./chart-utils";
 import { ExpandChartButton } from "./ExpandChartButton";
+import { useT } from "@/components/i18n/LocaleProvider";
+import type { MessageKey } from "@/lib/i18n";
 import {
   AXIS_W,
   PAD,
@@ -30,12 +32,20 @@ import {
 // Stack order (bottom → top) and tooltip/legend order. Tax sits before shipping
 // throughout the app (price-paid partition order, ADR-009).
 const SEGMENTS = [
-  { key: "hammer", label: "Hammer", cls: "bar-hammer", swatch: "seg-hammer" },
-  { key: "premium", label: "Premium", cls: "bar-premium", swatch: "seg-premium" },
-  { key: "tax", label: "Tax", cls: "bar-tax", swatch: "seg-tax" },
-  { key: "shipping", label: "Shipping", cls: "bar-shipping", swatch: "seg-shipping" },
-  { key: "unsplit", label: "Final only", cls: "bar-unsplit", swatch: "seg-unsplit" },
-] as const;
+  { key: "hammer", labelKey: "chart.seg.hammer", cls: "bar-hammer", swatch: "seg-hammer" },
+  { key: "premium", labelKey: "chart.seg.premium", cls: "bar-premium", swatch: "seg-premium" },
+  { key: "tax", labelKey: "chart.seg.tax", cls: "bar-tax", swatch: "seg-tax" },
+  { key: "shipping", labelKey: "chart.seg.shipping", cls: "bar-shipping", swatch: "seg-shipping" },
+  { key: "unsplit", labelKey: "chart.seg.unsplit", cls: "bar-unsplit", swatch: "seg-unsplit" },
+] as const satisfies readonly { key: string; labelKey: MessageKey; cls: string; swatch: string }[];
+
+// Range presets are index-aligned with RANGES (3M / 6M / 1Y / All).
+const RANGE_KEYS: MessageKey[] = [
+  "chart.range.3m",
+  "chart.range.6m",
+  "chart.range.1y",
+  "chart.range.all",
+];
 
 // The four price-paid partition components (everything except the final-only
 // fallback). The tooltip always lists all four — even those that are 0 — for a
@@ -67,6 +77,7 @@ export function CostBreakdownChart({
   // size as the inline chart (and the wider dialog therefore shows more of them).
   slotUnit?: number;
 }) {
+  const t = useT();
   const [rangeIdx, setRangeIdx] = useState(RANGES.length - 1); // default: All
   const [tip, setTip] = useState<Tip | null>(null);
   const plotRef = useRef<HTMLDivElement>(null);
@@ -131,10 +142,11 @@ export function CostBreakdownChart({
   const axisMax = ticks[ticks.length - 1];
   const y = (value: number): number => baseline - (value / axisMax) * innerH;
 
-  const label =
-    `Cost paid per coin in ${currency}, newest first; scroll horizontally for ` +
-    `earlier acquisitions. Each column split into its share of hammer, premium, ` +
-    `shipping and tax. ${count} coins, ${money(grandTotal, currency)} total.`;
+  const label = t("chart.cost.ariaLabel", {
+    currency,
+    count,
+    total: money(grandTotal, currency),
+  });
 
   function showTip(
     ev: React.MouseEvent,
@@ -154,9 +166,9 @@ export function CostBreakdownChart({
   return (
     <section className="card stack">
       <div className="spread">
-        <h3 className="chart-title">Cost breakdown</h3>
+        <h3 className="chart-title">{t("chart.cost.title")}</h3>
         <div className="row" style={{ gap: "var(--space-2)" }}>
-          <div className="row" role="group" aria-label="Date range">
+          <div className="row" role="group" aria-label={t("chart.dateRangeAria")}>
             {RANGES.map((r, i) => (
               <button
                 key={r.label}
@@ -165,12 +177,12 @@ export function CostBreakdownChart({
                 aria-pressed={i === rangeIdx}
                 onClick={() => setRangeIdx(i)}
               >
-                {r.label}
+                {t(RANGE_KEYS[i])}
               </button>
             ))}
           </div>
           {!inModal && (
-            <ExpandChartButton label="Cost breakdown">
+            <ExpandChartButton label={t("chart.cost.title")}>
               <CostBreakdownChart
                 events={events}
                 currency={currency}
@@ -184,22 +196,22 @@ export function CostBreakdownChart({
 
       <div className="spread legend-top">
         <span className="muted">
-          {count} coin{count === 1 ? "" : "s"}
-          {scrolls ? " · newest first, scroll for more" : ""}
+          {t(count === 1 ? "unit.coinOne" : "unit.coinOther", { count })}
+          {scrolls ? ` · ${t("chart.cost.scrollHint")}` : ""}
         </span>
         <ul className="legend-inline">
-          {totals.map((t) => (
-            <li key={t.key}>
-              <span className={`swatch ${t.swatch}`} aria-hidden />
-              <span>{t.label}</span>
-              <span className="muted">{Math.round((t.value / grandTotal) * 100)}%</span>
+          {totals.map((seg) => (
+            <li key={seg.key}>
+              <span className={`swatch ${seg.swatch}`} aria-hidden />
+              <span>{t(seg.labelKey)}</span>
+              <span className="muted">{Math.round((seg.value / grandTotal) * 100)}%</span>
             </li>
           ))}
         </ul>
       </div>
 
       {maxTotal <= 0 ? (
-        <p className="empty">No acquisitions in this range.</p>
+        <p className="empty">{t("chart.noneInRange")}</p>
       ) : (
         <div className="chart-plot" ref={plotRef}>
           {/* Frozen y-axis: cost labels stay visible while the plot scrolls. */}
@@ -349,7 +361,7 @@ export function CostBreakdownChart({
                 ).map((s) => (
                   <li key={s.key}>
                     <span className={`swatch ${s.swatch}`} aria-hidden />
-                    <span>{s.label}</span>
+                    <span>{t(s.labelKey)}</span>
                     <span className="chart-tooltip-val">
                       {money(tip.e[s.key], currency)}
                     </span>
@@ -363,7 +375,7 @@ export function CostBreakdownChart({
                 ))}
               </ul>
               <div className="chart-tooltip-total">
-                <span>Total</span>
+                <span>{t("chart.cost.total")}</span>
                 <span>{money(tip.total, currency)}</span>
               </div>
             </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { readError, NETWORK_ERROR } from "@/lib/http";
+import { useT } from "@/components/i18n/LocaleProvider";
 
 // Client-side shape of a valuation. `amount` is numeric(12,2), serialized as a
 // string; the timestamps arrive as ISO strings.
@@ -45,6 +46,7 @@ export function ValuationsManager({
   // the user's base currency) is a far better default than a hard-coded USD.
   defaultCurrency?: string;
 }) {
+  const t = useT();
   const [valuations, setValuations] =
     useState<ValuationView[]>(initialValuations);
   const [amount, setAmount] = useState("");
@@ -97,19 +99,19 @@ export function ValuationsManager({
   return (
     <section className={className}>
       <div className="spread">
-        <h2 style={{ margin: 0 }}>Valuations</h2>
+        <h2 style={{ margin: 0 }}>{t("valuations.title")}</h2>
         {latest && (
           <span>
-            Latest{" "}
+            {t("valuations.latest")}{" "}
             <strong>{formatAmount(latest.amount, latest.currency)}</strong>{" "}
-            <span className="muted">as of {latest.valuedAt.slice(0, 10)}</span>
+            <span className="muted">{t("valuations.asOf", { date: latest.valuedAt.slice(0, 10) })}</span>
           </span>
         )}
       </div>
 
       <form onSubmit={handleSubmit} className="row" style={{ alignItems: "flex-end" }}>
         <label>
-          Amount *
+          {t("valuations.amount")}
           <input
             type="number"
             step="0.01"
@@ -119,7 +121,7 @@ export function ValuationsManager({
           />
         </label>
         <label>
-          Currency *
+          {t("valuations.currency")}
           <input
             type="text"
             maxLength={3}
@@ -129,7 +131,7 @@ export function ValuationsManager({
           />
         </label>
         <label>
-          Date *
+          {t("valuations.date")}
           <input
             type="date"
             max={today()}
@@ -138,21 +140,21 @@ export function ValuationsManager({
           />
         </label>
         <label>
-          Source
+          {t("valuations.source")}
           <input
             type="text"
             value={source}
             onChange={(e) => setSource(e.target.value)}
-            placeholder="auction, estimate…"
+            placeholder={t("valuations.sourcePlaceholder")}
           />
         </label>
         <label>
-          Link
+          {t("valuations.link")}
           <input
             type="url"
             value={sourceUrl}
             onChange={(e) => setSourceUrl(e.target.value)}
-            placeholder="https://…"
+            placeholder={t("valuations.linkPlaceholder")}
           />
         </label>
         <button
@@ -160,14 +162,14 @@ export function ValuationsManager({
           className="btn-primary"
           disabled={busy || amount.trim() === "" || currency.trim().length !== 3}
         >
-          Record
+          {t("action.record")}
         </button>
       </form>
 
       {error && <p className="alert">{error}</p>}
 
       {valuations.length === 0 ? (
-        <p className="empty">No valuations yet. Record the first one above.</p>
+        <p className="empty">{t("valuations.empty")}</p>
       ) : (
         <ul className="rows">
           {valuations.map((v) => (
@@ -178,7 +180,7 @@ export function ValuationsManager({
                 {v.source && <span className="muted"> · {v.source}</span>}
                 {v.sourceUrl && (
                   <a href={v.sourceUrl} target="_blank" rel="noreferrer noopener" className="muted" style={{ marginLeft: "0.4rem" }}>
-                    ↗ link
+                    {t("valuations.linkLabel")}
                   </a>
                 )}
               </span>

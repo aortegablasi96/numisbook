@@ -6,8 +6,16 @@ import { getPortfolioSummary } from "@/services/analytics.service";
 import { COMMON_CURRENCIES, formatMoney as money } from "@/lib/currencies";
 import { TrendChart } from "@/components/analytics/TrendChart";
 import { CostBreakdownChart } from "@/components/analytics/CostBreakdownChart";
+import { t, type Locale } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n/server";
 
-function BaseCurrencySelect({ selected }: { selected: string | null }) {
+function BaseCurrencySelect({
+  selected,
+  locale,
+}: {
+  selected: string | null;
+  locale: Locale;
+}) {
   async function update(formData: FormData) {
     "use server";
     const session = await auth();
@@ -19,10 +27,10 @@ function BaseCurrencySelect({ selected }: { selected: string | null }) {
   return (
     <form action={update} className="row base-currency">
       <label htmlFor="baseCurrency" className="mono-label">
-        Base currency
+        {t(locale, "settings.baseCurrency.label")}
       </label>
       <select id="baseCurrency" name="baseCurrency" defaultValue={selected ?? ""}>
-        <option value="">Auto (largest holding)</option>
+        <option value="">{t(locale, "settings.baseCurrency.auto")}</option>
         {COMMON_CURRENCIES.map((c) => (
           <option key={c} value={c}>
             {c}
@@ -30,7 +38,7 @@ function BaseCurrencySelect({ selected }: { selected: string | null }) {
         ))}
       </select>
       <button type="submit" className="btn-sm">
-        Apply
+        {t(locale, "action.apply")}
       </button>
     </form>
   );
@@ -39,13 +47,14 @@ function BaseCurrencySelect({ selected }: { selected: string | null }) {
 export default async function PortfolioPage() {
   const session = await auth();
   const user = await resolveCurrentUser(session);
+  const locale = await getRequestLocale(user?.locale);
 
   if (!user) {
     return (
       <main className="stack">
-        <h1>Portfolio</h1>
+        <h1>{t(locale, "nav.portfolio")}</h1>
         <div className="card stack">
-          <p>Sign in to view your portfolio analytics.</p>
+          <p>{t(locale, "portfolio.signInPrompt")}</p>
           <form
             action={async () => {
               "use server";
@@ -53,7 +62,7 @@ export default async function PortfolioPage() {
             }}
           >
             <button type="submit" className="btn-primary">
-              Sign in with Google
+              {t(locale, "nav.signInWithGoogle")}
             </button>
           </form>
         </div>
@@ -66,36 +75,44 @@ export default async function PortfolioPage() {
 
   return (
     <main className="stack portfolio-page">
-      <h1 style={{ margin: 0 }}>Portfolio</h1>
+      <h1 style={{ margin: 0 }}>{t(locale, "nav.portfolio")}</h1>
 
       {summary.pricedCoins === 0 || !baseCurrency ? (
         <>
-          <BaseCurrencySelect selected={user.baseCurrency} />
-          <p className="empty">
-            No prices yet. Add coins with a price paid to see your portfolio cost,
-            breakdown, and acquisition trend. (Market valuations and gain/loss come
-            in a later stage.)
-          </p>
+          <BaseCurrencySelect selected={user.baseCurrency} locale={locale} />
+          <p className="empty">{t(locale, "portfolio.empty")}</p>
         </>
       ) : (
         <>
           <section className="card portfolio-summary">
             <div className="portfolio-summary-line">
-              <span className="mono-label">Total paid</span>
+              <span className="mono-label">{t(locale, "portfolio.totalPaid")}</span>
               <span className="portfolio-total">
                 {money(summary.totalFinal, baseCurrency)}
               </span>
               <span className="muted portfolio-note">
-                of which hammer {money(summary.costBreakdown.hammer, baseCurrency)} ·{" "}
-                {summary.pricedCoins} of {summary.totalCoins} coin
-                {summary.totalCoins === 1 ? "" : "s"} priced
+                {t(locale, "portfolio.ofWhichHammer", {
+                  amount: money(summary.costBreakdown.hammer, baseCurrency),
+                })}
+                {" · "}
+                {t(
+                  locale,
+                  summary.totalCoins === 1
+                    ? "portfolio.pricedOne"
+                    : "portfolio.pricedOther",
+                  { priced: summary.pricedCoins, total: summary.totalCoins },
+                )}
                 {summary.unconvertible > 0 &&
-                  ` · ${summary.unconvertible} coin${
-                    summary.unconvertible === 1 ? "" : "s"
-                  } not converted`}
+                  ` · ${t(
+                    locale,
+                    summary.unconvertible === 1
+                      ? "portfolio.notConvertedOne"
+                      : "portfolio.notConvertedOther",
+                    { count: summary.unconvertible },
+                  )}`}
               </span>
             </div>
-            <BaseCurrencySelect selected={user.baseCurrency} />
+            <BaseCurrencySelect selected={user.baseCurrency} locale={locale} />
           </section>
 
           <div className="analytics-grid">

@@ -6,6 +6,8 @@ import { getCollection } from "@/services/collection.service";
 import { searchCoins } from "@/services/coin.service";
 import { NotFoundError } from "@/lib/errors";
 import { CoinsManager } from "@/components/coins/CoinsManager";
+import { t } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n/server";
 
 // Server Component for a single collection: guards on auth + ownership, then
 // loads its coins. Mutations happen client-side against the coin API.
@@ -17,13 +19,14 @@ export default async function CollectionDetailPage({
   const { id } = await params;
   const session = await auth();
   const user = await resolveCurrentUser(session);
+  const locale = await getRequestLocale(user?.locale);
 
   if (!user) {
     return (
       <main className="stack">
-        <h1>Collection</h1>
+        <h1>{t(locale, "collection.fallbackTitle")}</h1>
         <div className="card stack">
-          <p>Sign in to view this collection.</p>
+          <p>{t(locale, "collection.signInPrompt")}</p>
           <form
             action={async () => {
               "use server";
@@ -31,7 +34,7 @@ export default async function CollectionDetailPage({
             }}
           >
             <button type="submit" className="btn-primary">
-              Sign in with Google
+              {t(locale, "nav.signInWithGoogle")}
             </button>
           </form>
         </div>
@@ -49,8 +52,8 @@ export default async function CollectionDetailPage({
 
   return (
     <main className="stack">
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link href="/collections">Collections</Link>
+      <nav className="crumbs" aria-label={t(locale, "breadcrumb.aria")}>
+        <Link href="/collections">{t(locale, "nav.collections")}</Link>
         <span className="crumb-sep" aria-hidden="true">
           ›
         </span>

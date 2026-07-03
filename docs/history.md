@@ -653,6 +653,42 @@ Tracked as GitHub Epic #120 (stories #121–#125).
 
 ---
 
+# Phase 14 — Internationalization (Deep Domain Screens)
+
+Status: Complete
+
+Follow-up pass to Phase 13 that extends i18n coverage from the app shell to the
+**deep domain screens**, so a non-English collector sees the whole working app —
+not just the chrome — in their language. Mechanical, behaviour-preserving sweep
+on the existing machinery; no new architecture (`ADR-014`).
+
+## Achievements
+
+- **Domain screens localized** — all static UI text in the coin, collection,
+  valuation, assistant, and analytics surfaces now renders via `t()` / `useT()`:
+  `CoinsManager` (+ `ColumnPicker`), `CoinDetailsCard`, `CoinImage`,
+  `CoinInvoices`, `CollectionsManager`, `ValuationsManager`, `AssistantWidget`,
+  the `TrendChart` / `CostBreakdownChart` / `ExpandChartButton` analytics
+  components, and the `collections`, `collections/[id]`, `coins/[id]`, and
+  `portfolio` pages.
+- **~180 new catalog keys** added to the canonical English catalog, grouped by
+  area, with shared `field.*` / `action.*` / `unit.*` keys reused across the
+  filters, list columns, forms, and detail tiles. Module-level label constants
+  (`COLUMN_DEFS`, `TEXT_FIELDS`, chart `SEGMENTS`, range presets) switched from
+  literal `label` strings to typed `MessageKey`s translated at render.
+- **Seven locales complete** — Spanish, German, French, Italian, Chinese
+  (Simplified) and Russian translations added for every new key; the key-parity
+  test stays green for all locales. Assistant suggestion prompts are translated
+  so the model receives the question in the user's language (and answers in kind).
+- **Behaviour-preserving** — the English UI is visually unchanged; interpolated
+  placeholders and pluralization (coin/coins, priced counts) preserved. Full
+  suite green (207 tests), `typecheck` / `lint` / `build` clean, and signed-out
+  domain pages verified rendering in ES / DE / ZH via the `NEXT_LOCALE` cookie.
+
+Tracked as GitHub Story #126 (under Epic #120).
+
+---
+
 # Major Architectural Decisions
 
 See:

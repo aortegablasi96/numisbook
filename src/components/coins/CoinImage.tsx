@@ -4,6 +4,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { ALLOWED_IMAGE_TYPES } from "@/lib/images";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { readError, NETWORK_ERROR } from "@/lib/http";
+import { useT } from "@/components/i18n/LocaleProvider";
 
 function IconExpand() {
   return (
@@ -22,6 +23,7 @@ function IconUpload() {
 }
 
 export function CoinImage({ coinId }: { coinId: string }) {
+  const t = useT();
   const [imageIds, setImageIds] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -68,7 +70,7 @@ export function CoinImage({ coinId }: { coinId: string }) {
         body,
       });
       if (!response.ok) {
-        setError(await readError(response, "Upload failed."));
+        setError(await readError(response, t("upload.failed")));
         return;
       }
       const { id: newId } = (await response.json()) as { id: string };
@@ -94,7 +96,7 @@ export function CoinImage({ coinId }: { coinId: string }) {
         method: "DELETE",
       });
       if (!response.ok) {
-        setError(await readError(response, "Couldn’t remove the image."));
+        setError(await readError(response, t("coinImage.removeError")));
         return;
       }
       const removedId = currentId;
@@ -131,7 +133,7 @@ export function CoinImage({ coinId }: { coinId: string }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={src}
-              alt={`Coin picture ${currentIndex + 1}`}
+              alt={t("coinImage.pictureAlt", { n: currentIndex + 1 })}
               className="coin-photo"
               key={currentId}
             />
@@ -139,8 +141,8 @@ export function CoinImage({ coinId }: { coinId: string }) {
               type="button"
               className="coin-photo-expand"
               onClick={openLightbox}
-              aria-label="Expand image"
-              title="Expand image"
+              aria-label={t("coinImage.expandAria")}
+              title={t("coinImage.expandAria")}
             >
               <IconExpand />
             </button>
@@ -150,12 +152,12 @@ export function CoinImage({ coinId }: { coinId: string }) {
               onClick={closeLightboxOnBackdrop}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="Coin (full size)" />
+              <img src={src} alt={t("coinImage.fullAlt")} />
             </dialog>
           </>
         ) : (
           <p className="muted" style={{ margin: 0 }}>
-            No image yet.
+            {t("coinImage.none")}
           </p>
         )}
       </div>
@@ -163,14 +165,14 @@ export function CoinImage({ coinId }: { coinId: string }) {
       {/* Selectable thumbnail strip — pick which picture to view. Only useful
           with more than one image. */}
       {hasMultiple && (
-        <div className="coin-thumbs" role="group" aria-label="Coin pictures">
+        <div className="coin-thumbs" role="group" aria-label={t("coinImage.thumbsAria")}>
           {imageIds.map((id, i) => (
             <button
               key={id}
               type="button"
               className={`coin-thumb${i === currentIndex ? " is-active" : ""}`}
               onClick={() => setCurrentIndex(i)}
-              aria-label={`Show picture ${i + 1}`}
+              aria-label={t("coinImage.showPictureAria", { n: i + 1 })}
               aria-current={i === currentIndex}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -186,8 +188,9 @@ export function CoinImage({ coinId }: { coinId: string }) {
 
       {hasImages && (
         <p className="coin-photo-caption mono-label">
-          Picture {currentIndex + 1}
-          {hasMultiple ? ` of ${imageIds.length}` : ""}
+          {hasMultiple
+            ? t("coinImage.captionOf", { n: currentIndex + 1, total: imageIds.length })
+            : t("coinImage.caption", { n: currentIndex + 1 })}
         </p>
       )}
 
@@ -198,7 +201,7 @@ export function CoinImage({ coinId }: { coinId: string }) {
           accept={ALLOWED_IMAGE_TYPES.join(",")}
           onChange={handleUpload}
           disabled={busy}
-          aria-label="Coin image"
+          aria-label={t("coinImage.fileAria")}
           style={{ display: "none" }}
         />
         <button
@@ -208,17 +211,17 @@ export function CoinImage({ coinId }: { coinId: string }) {
           disabled={busy}
         >
           <IconUpload />
-          Add photo
+          {t("coinImage.addPhoto")}
         </button>
         {hasImages && (
           <ConfirmButton
             className="btn-sm btn-danger"
             disabled={busy}
-            message="Remove this photo?"
-            confirmLabel="Remove"
+            message={t("coinImage.removeConfirm")}
+            confirmLabel={t("action.remove")}
             onConfirm={handleRemove}
           >
-            Remove
+            {t("action.remove")}
           </ConfirmButton>
         )}
       </div>

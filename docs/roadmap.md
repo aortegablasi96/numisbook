@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — Additional Settings in progress (foundation + i18n shell shipped)**
+Current maturity: **Live in production — Additional Settings in progress (foundation + full i18n shipped; dark mode remaining)**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -49,8 +49,9 @@ working and `/api/health` green, with CI/CD, observability, and auth resilience
 in place (see `history.md` Phases 10–11 and ADR-010/011/012). The active
 milestone is **Additional Settings**, whose **foundation** has now shipped — a
 dedicated `/settings` area with profile editing, self-service account deletion,
-and the base-currency preference (see `history.md` Phase 12 and ADR-013); the
-remaining passes are internationalization and dark mode.
+and the base-currency preference (see `history.md` Phase 12 and ADR-013) — as
+has **internationalization** across the full interface (Phases 13–14, ADR-014);
+the remaining pass is dark mode.
 
 Primary objective:
 
@@ -80,23 +81,24 @@ The **Settings foundation** has shipped (see `history.md` Phase 12 and
 page + navigation, display-name editing, self-service account deletion, and the
 base-currency preference's canonical home.
 
-**Internationalization** has now shipped for the app shell (see `history.md`
-Phase 13 and `docs/decisions/ADR-014-internationalization.md`): a dependency-free
-i18n layer, a per-user `locale` preference with a language selector in
-`/settings`, and seven locales (English + Spanish, German, French, Italian,
-Chinese, Russian) covering the global chrome, home, settings, and entry/error
-pages. Extracting the deep domain screens is a tracked follow-up. **Dark mode**
-remains the last pass (blocked on a DDR superseding DDR-001).
+**Internationalization** has now fully shipped (see `history.md` Phases 13–14
+and `docs/decisions/ADR-014-internationalization.md`): a dependency-free i18n
+layer, a per-user `locale` preference with a language selector in `/settings`,
+and seven locales (English + Spanish, German, French, Italian, Chinese, Russian)
+covering the **entire interface** — the app shell (chrome, home, settings,
+entry/error pages) and the deep domain screens (coins, collections, valuations,
+assistant, and portfolio analytics). **Dark mode** remains the last pass
+(blocked on a DDR superseding DDR-001).
 
 ## Features
 
 - [x] Settings page (route + navigation entry)
 - [x] View/edit user profile (display name, account info)
 - [x] Account/data controls (e.g. account deletion)
-- [~] Add languages (i18n / multi-language support) — machinery + 7 locales
-      shipped for the app shell (chrome, home, settings, entry/error pages);
-      deep domain screens (coins/collections/valuations/assistant) are a
-      follow-up extraction pass (ADR-014, `history.md` Phase 13)
+- [x] Add languages (i18n / multi-language support) — machinery + 7 locales
+      covering the full interface: the app shell (Phase 13) and the deep domain
+      screens (coins/collections/valuations/assistant/analytics, Phase 14)
+      (ADR-014)
 - [ ] Add night mode (dark theme)
   > ⚠️ Reverses `DDR-001-figma-ui-redesign`, which made the app light-only
   > (`globals.css` ships light theme tokens only). Requires a new DDR
@@ -271,30 +273,6 @@ Product positioning and user segmentation remain incomplete.
 ---
 
 ## Internationalization
-
-### Localize the deep domain screens
-
-**Problem**
-
-The i18n shell pass (ADR-014, `history.md` Phase 13) localized the app shell —
-global chrome, home, settings, and the entry/error pages — into all seven
-locales, but the **deep domain screens still render hardcoded English** via the
-per-key fallback: the coin, collection, valuation, assistant, and analytics
-managers and their pages (`CoinsManager`, `CoinDetailsCard`, `CoinImage`,
-`CoinInvoices`, `CollectionsManager`, `ValuationsManager`, `AssistantWidget`, the
-analytics charts, and the `collections`, `collections/[id]`, `coins/[id]`,
-`portfolio` pages). A user who switches to a non-English language still sees
-English across most of the working app.
-
-**Fix**
-
-- Extract the static strings in those screens to keyed catalog lookups
-  (`t()` / `useT()`), extending the canonical English catalog.
-- Add the six non-English translations; the key-parity test must stay green.
-- Mechanical, behavior-preserving sweep using the existing machinery — no new
-  architecture. Refactoring Reviewer recommended.
-
-Tracked as GitHub issue #126 (under Epic #120).
 
 ### Translation quality review
 

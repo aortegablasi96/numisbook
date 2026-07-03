@@ -85,6 +85,11 @@ page) — and ships all seven locales for it. The **deep domain screens**
 English via the per-key fallback. `global-error` stays English by necessity — it
 renders its own `<html>` outside the `LocaleProvider` (the DB-outage path).
 
+> **Update (2026-07-03):** the follow-up pass has shipped — the deep domain
+> screens are now fully localized into all seven locales (see `history.md`
+> Phase 14, GitHub Story #126). The whole interface, not just the shell, now
+> honours the user's language.
+
 `userId` always comes from the authenticated session (`currentUser()`), never
 client input — the tenant-isolation invariant is unchanged.
 
