@@ -19,8 +19,11 @@ const fraunces = Fraunces({
   variable: "--font-serif",
   display: "swap",
 });
+// DM Sans carries the body/UI text. Its Google build offers no Cyrillic or CJK
+// coverage, so Russian (Cyrillic) and Chinese both fall back to the platform's
+// system fonts for those scripts — an accepted MVP tradeoff (ADR-014).
 const dmSans = DM_Sans({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600"],
   variable: "--font-sans",
   display: "swap",

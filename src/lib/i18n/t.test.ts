@@ -24,9 +24,15 @@ describe("getMessages", () => {
     expect(getMessages("en")["app.name"]).toBe("NumisBook");
   });
 
-  it("falls back to English for a locale with no override yet", () => {
-    // Spanish catalog is empty until story #125; every key resolves to English.
-    expect(getMessages("es")).toEqual(en);
+  it("returns locale strings for a translated locale", () => {
+    expect(getMessages("es")["nav.settings"]).toBe("Ajustes");
+  });
+
+  it("always returns a catalog covering every English key (per-key fallback)", () => {
+    // The merge over English guarantees completeness even if a locale omits a
+    // key; a locale value overrides English where present.
+    const es = getMessages("es");
+    expect(Object.keys(es).sort()).toEqual(Object.keys(en).sort());
   });
 });
 
