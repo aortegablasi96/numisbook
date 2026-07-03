@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — next: Additional Settings**
+Current maturity: **Live in production — Additional Settings in progress (foundation shipped)**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -46,8 +46,11 @@ and `docs/decisions/ADR-009-ux-and-feature-refinement.md`). **Production
 Readiness** has now shipped: NumisBook is **live in production** — deployed on
 Vercel against Neon, schema applied via the gated `migrate` job, Google sign-in
 working and `/api/health` green, with CI/CD, observability, and auth resilience
-in place (see `history.md` Phases 10–11 and ADR-010/011/012). The next milestone
-is **Additional Settings**.
+in place (see `history.md` Phases 10–11 and ADR-010/011/012). The active
+milestone is **Additional Settings**, whose **foundation** has now shipped — a
+dedicated `/settings` area with profile editing, self-service account deletion,
+and the base-currency preference (see `history.md` Phase 12 and ADR-013); the
+remaining passes are internationalization and dark mode.
 
 Primary objective:
 
@@ -72,11 +75,17 @@ Give users control over their account and preferences through a dedicated
 settings area — profile/account details, a preferred base currency for
 portfolio analytics, interface language, and theme (day/night).
 
+The **Settings foundation** has shipped (see `history.md` Phase 12 and
+`docs/decisions/ADR-013-account-settings-and-deletion.md`): the `/settings`
+page + navigation, display-name editing, self-service account deletion, and the
+base-currency preference's canonical home. The remaining features —
+internationalization and dark mode — are the later passes of this milestone.
+
 ## Features
 
-- [ ] Settings page (route + navigation entry)
-- [ ] View/edit user profile (display name, account info)
-- [ ] Account/data controls (e.g. account deletion)
+- [x] Settings page (route + navigation entry)
+- [x] View/edit user profile (display name, account info)
+- [x] Account/data controls (e.g. account deletion)
 - [ ] Add languages (i18n / multi-language support)
 - [ ] Add night mode (dark theme)
   > ⚠️ Reverses `DDR-001-figma-ui-redesign`, which made the app light-only
@@ -85,7 +94,7 @@ portfolio analytics, interface language, and theme (day/night).
   > implementation.
 - [ ] Settings menu controls
   - [ ] Select language
-  - [ ] Select default currency (base currency applied to portfolio analytics)
+  - [x] Select default currency (base currency applied to portfolio analytics)
   - [ ] Select day/night mode
 
 ---

@@ -576,6 +576,44 @@ Implemented:
 
 ---
 
+# Phase 12 — Settings Foundation
+
+Status: Complete
+
+First pass of the **Additional Settings** milestone: a dedicated `/settings` area
+giving signed-in collectors control over their account (see
+`docs/decisions/ADR-013-account-settings-and-deletion.md`). Internationalization
+and dark mode are deferred to later passes of the milestone.
+
+## Achievements
+
+- **Settings page + navigation** — a new auth-gated `/settings` route, reached
+  from a Settings entry in the header's account cluster; card sections for
+  Profile, Preferences, and a Danger zone, built entirely on the existing design
+  system (a small `.field`/`.alert-ok`/`.danger-zone` addition to `globals.css`,
+  no new UI dependency).
+- **Profile editing** — collectors can edit their display name (`users.name`,
+  previously OAuth-seeded and read-only) via a new app-owned mutation:
+  `displayNameSchema` → `userRepository.updateName` →
+  `user.service.updateDisplayName` → `PATCH /api/user`. Email stays read-only
+  (OAuth-owned).
+- **Base currency in Settings** — the existing base-currency preference (ADR-007)
+  gets its canonical home on the settings page, reusing `setBaseCurrency`
+  unchanged; the `/portfolio` control remains as a convenience.
+- **Self-service account deletion** — `DELETE /api/user` →
+  `account.service.deleteAccount`: enumerate the user's image/invoice storage
+  keys, delete the user row (Postgres cascade removes the full owned graph plus
+  Auth.js accounts/sessions), then best-effort purge the object-storage blobs a
+  DB cascade cannot reach (logged on failure). Gated behind `<ConfirmButton>`;
+  the client signs out on success.
+- **Schema-stable** — no migration (`users.name`/`users.baseCurrency` already
+  existed); tenant isolation preserved (storage-key enumeration scoped via the
+  user's collections). 22 new tests; full suite green (166).
+
+Tracked as GitHub Epic #114 (stories #115–#118).
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -592,6 +630,7 @@ See:
 - `docs/decisions/ADR-010-ci-pipeline-github-actions.md`
 - `docs/decisions/ADR-011-observability.md`
 - `docs/decisions/ADR-012-production-deployment.md`
+- `docs/decisions/ADR-013-account-settings-and-deletion.md`
 
 # Design Decisions
 

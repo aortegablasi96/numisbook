@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { coinInvoices } from "@/db/schema";
+import { coinInvoices, coins, collections } from "@/db/schema";
 import { objectStorage } from "@/lib/storage";
 
 export type CoinInvoiceData = {
@@ -80,5 +80,19 @@ export const coinInvoiceRepository = {
     if (!row) return false;
     await objectStorage.delete(row.storageKey).catch(() => {});
     return true;
+  },
+
+  /**
+   * All invoice storage keys owned by a user (via their collections' coins).
+   * Used by account deletion to purge blobs the DB cascade can't reach (ADR-013).
+   */
+  async listStorageKeysForUser(userId: string): Promise<string[]> {
+    const rows = await db
+      .select({ storageKey: coinInvoices.storageKey })
+      .from(coinInvoices)
+      .innerJoin(coins, eq(coinInvoices.coinId, coins.id))
+      .innerJoin(collections, eq(coins.collectionId, collections.id))
+      .where(eq(collections.userId, userId));
+    return rows.map((r) => r.storageKey);
   },
 };

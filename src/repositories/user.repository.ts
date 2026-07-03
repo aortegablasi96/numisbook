@@ -26,11 +26,26 @@ export const userRepository = {
     return row ?? null;
   },
 
+  /** Update the user's display name. */
+  async updateName(id: string, name: string): Promise<void> {
+    await db.update(users).set({ name }).where(eq(users.id, id));
+  },
+
   /** Set (or clear, with null) the user's preferred base currency. */
   async updateBaseCurrency(
     id: string,
     baseCurrency: string | null,
   ): Promise<void> {
     await db.update(users).set({ baseCurrency }).where(eq(users.id, id));
+  },
+
+  /**
+   * Permanently delete the user row. Postgres foreign keys cascade the entire
+   * owned graph (collections → coins → images/invoices/valuations, and the
+   * Auth.js accounts/sessions). Object-storage blobs are purged separately by
+   * the account service — a DB cascade cannot reach them (see ADR-013).
+   */
+  async deleteById(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   },
 };
