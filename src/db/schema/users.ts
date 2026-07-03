@@ -11,6 +11,10 @@ export const users = pgTable("users", {
   // collector's dominant valuation currency (see analytics.service). Conversion
   // uses ECB reference rates — see ADR-007.
   baseCurrency: text("base_currency"),
+  // Preferred interface language (a supported `Locale` code). Null = not chosen;
+  // resolve from the `NEXT_LOCALE` cookie / Accept-Language, defaulting to
+  // English. See ADR-014.
+  locale: text("locale"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

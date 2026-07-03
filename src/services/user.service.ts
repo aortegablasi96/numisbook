@@ -1,5 +1,9 @@
 import { userRepository } from "@/repositories/user.repository";
-import { baseCurrencySchema, displayNameSchema } from "@/lib/validation/user";
+import {
+  baseCurrencySchema,
+  displayNameSchema,
+  localeSchema,
+} from "@/lib/validation/user";
 
 // User-preferences business logic. Framework-agnostic; data access goes through
 // the repository. The acting userId always comes from the session, never client
@@ -28,4 +32,18 @@ export async function setBaseCurrency(
 ): Promise<void> {
   const baseCurrency = baseCurrencySchema.parse(input);
   await userRepository.updateBaseCurrency(userId, baseCurrency);
+}
+
+/**
+ * Set the user's preferred interface language. Accepts a supported locale code,
+ * or null/"" to clear it (revert to cookie / Accept-Language). Returns the
+ * stored value so the caller can sync the `NEXT_LOCALE` cookie. See ADR-014.
+ */
+export async function setLocale(
+  userId: string,
+  input: string | null,
+): Promise<string | null> {
+  const locale = localeSchema.parse(input);
+  await userRepository.updateLocale(userId, locale);
+  return locale;
 }

@@ -37,19 +37,16 @@ export const metadata: Metadata = {
   description: "Collection management for coin collectors.",
 };
 
-async function FloatingAssistant() {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Resolve the session user once: it decides both the active locale (their
+  // saved preference wins over cookie / Accept-Language) and whether the
+  // auth-gated assistant renders.
   const session = await auth();
   const user = await resolveCurrentUser(session);
-  if (!user) return null;
-  return <AssistantWidget />;
-}
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
   // Resolve the active locale once on the server and seed the client provider so
-  // both render the same language (no hydration mismatch). User preference is
-  // threaded in once `users.locale` exists (story #122); for now cookie +
-  // Accept-Language decide.
-  const locale = await getRequestLocale();
+  // both render the same language (no hydration mismatch — ADR-014).
+  const locale = await getRequestLocale(user?.locale);
   const messages = getMessages(locale);
 
   return (
@@ -66,7 +63,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <div id="main-content" tabIndex={-1} className="container">
             {children}
           </div>
-          <FloatingAssistant />
+          {user ? <AssistantWidget /> : null}
         </LocaleProvider>
       </body>
     </html>

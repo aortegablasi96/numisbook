@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ZodError } from "zod";
-import { setBaseCurrency, updateDisplayName } from "./user.service";
+import { setBaseCurrency, setLocale, updateDisplayName } from "./user.service";
 import { userRepository } from "@/repositories/user.repository";
 
 vi.mock("@/repositories/user.repository", () => ({
-  userRepository: { updateBaseCurrency: vi.fn(), updateName: vi.fn() },
+  userRepository: {
+    updateBaseCurrency: vi.fn(),
+    updateName: vi.fn(),
+    updateLocale: vi.fn(),
+  },
 }));
 
 const repo = vi.mocked(userRepository);
@@ -13,6 +17,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   repo.updateBaseCurrency.mockResolvedValue(undefined);
   repo.updateName.mockResolvedValue(undefined);
+  repo.updateLocale.mockResolvedValue(undefined);
 });
 
 describe("setBaseCurrency", () => {
@@ -71,4 +76,32 @@ describe("updateDisplayName", () => {
     ).rejects.toBeInstanceOf(ZodError);
     expect(repo.updateName).not.toHaveBeenCalled();
   });
+});
+
+describe("setLocale", () => {
+  it("persists a supported locale and returns it", async () => {
+    const result = await setLocale("user-1", "es");
+    expect(repo.updateLocale).toHaveBeenCalledWith("user-1", "es");
+    expect(result).toBe("es");
+  });
+
+  it("treats an empty string as clearing the preference (null)", async () => {
+    const result = await setLocale("user-1", "");
+    expect(repo.updateLocale).toHaveBeenCalledWith("user-1", null);
+    expect(result).toBeNull();
+  });
+
+  it("accepts null to clear the preference", async () => {
+    const result = await setLocale("user-1", null);
+    expect(repo.updateLocale).toHaveBeenCalledWith("user-1", null);
+    expect(result).toBeNull();
+  });
+
+  it.each(["EN", "xx", "en-US", "klingon"])(
+    "rejects an unsupported locale (%s) without touching the repository",
+    async (bad) => {
+      await expect(setLocale("user-1", bad)).rejects.toBeInstanceOf(ZodError);
+      expect(repo.updateLocale).not.toHaveBeenCalled();
+    },
+  );
 });

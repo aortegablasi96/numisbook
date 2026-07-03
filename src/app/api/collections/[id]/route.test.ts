@@ -23,6 +23,7 @@ const user = {
   emailVerified: null,
   image: null,
   baseCurrency: null,
+  locale: null,
   createdAt: new Date(),
 };
 

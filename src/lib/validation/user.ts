@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LOCALES } from "@/lib/i18n/locales";
 
 // Display name: trimmed, 1–80 characters. Empty/whitespace-only is rejected so
 // a user can't blank out their name. The Auth.js adapter seeds `users.name`
@@ -17,5 +18,13 @@ export const updateProfileSchema = z.object({ name: displayNameSchema });
 // null so an "Auto" option in the UI can submit "".
 export const baseCurrencySchema = z
   .union([z.literal(""), z.string().regex(/^[A-Z]{3}$/, "Invalid currency code")])
+  .nullable()
+  .transform((value) => (value ? value : null));
+
+// Interface-language preference: one of the supported locales, or null/"" to
+// clear it (revert to cookie / Accept-Language). Empty string maps to null so
+// an explicit "system default" option in the UI can submit "". See ADR-014.
+export const localeSchema = z
+  .union([z.literal(""), z.enum(LOCALES)])
   .nullable()
   .transform((value) => (value ? value : null));
