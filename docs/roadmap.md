@@ -270,6 +270,60 @@ Product positioning and user segmentation remain incomplete.
 
 ---
 
+## Internationalization
+
+### Localize the deep domain screens
+
+**Problem**
+
+The i18n shell pass (ADR-014, `history.md` Phase 13) localized the app shell —
+global chrome, home, settings, and the entry/error pages — into all seven
+locales, but the **deep domain screens still render hardcoded English** via the
+per-key fallback: the coin, collection, valuation, assistant, and analytics
+managers and their pages (`CoinsManager`, `CoinDetailsCard`, `CoinImage`,
+`CoinInvoices`, `CollectionsManager`, `ValuationsManager`, `AssistantWidget`, the
+analytics charts, and the `collections`, `collections/[id]`, `coins/[id]`,
+`portfolio` pages). A user who switches to a non-English language still sees
+English across most of the working app.
+
+**Fix**
+
+- Extract the static strings in those screens to keyed catalog lookups
+  (`t()` / `useT()`), extending the canonical English catalog.
+- Add the six non-English translations; the key-parity test must stay green.
+- Mechanical, behavior-preserving sweep using the existing machinery — no new
+  architecture. Refactoring Reviewer recommended.
+
+Tracked as GitHub issue #126 (under Epic #120).
+
+### Translation quality review
+
+**Problem**
+
+The shipped non-English catalogs (`es`, `de`, `fr`, `it`, `zh`, `ru`) are
+MVP machine-quality with English per-key fallback; they have not had native
+review.
+
+**Fix**
+
+- Have each locale reviewed by a native/fluent speaker before any
+  language-targeted marketing.
+
+### CJK / Cyrillic web font
+
+**Problem**
+
+DM Sans / Fraunces (the `next/font` families) cover Latin only, so Russian
+(Cyrillic) and Chinese currently fall back to system fonts for those scripts —
+inconsistent typography across platforms (ADR-014).
+
+**Fix**
+
+- Evaluate adding a CJK/Cyrillic-capable web font behind the existing
+  `next/font` setup if consistent rendering becomes a priority.
+
+---
+
 # Out of Scope
 
 The following are not currently planned:
