@@ -654,6 +654,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `ADR-011-observability` — Observability (structured logger, `ErrorReporter` seam, `/api/health`)
 * `ADR-012-production-deployment` — Production deployment (Vercel + Neon; migrations via a gated CI `migrate` job). Runbook: `docs/deployment.md`
 * `ADR-013-account-settings-and-deletion` — Account settings & self-service account deletion (`/settings`; app-owned profile mutations; DB cascade + object-storage purge)
+* `ADR-014-internationalization` — Internationalization (custom no-dependency i18n; cookie + per-user `locale` preference, no URL routing; 7 locales; `zh` via system CJK fallback)
 
 (`template.md` is the scaffold for new ADRs.)
 
