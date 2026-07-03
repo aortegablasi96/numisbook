@@ -6,6 +6,9 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { auth } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { AssistantWidget } from "@/components/assistant/AssistantWidget";
+import { LocaleProvider } from "@/components/i18n/LocaleProvider";
+import { getMessages } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n/server";
 
 // Self-hosted via next/font (no runtime request, no layout shift). Exposed as CSS
 // variables consumed by globals.css: Fraunces (serif display/numerals), DM Sans
@@ -41,21 +44,30 @@ async function FloatingAssistant() {
   return <AssistantWidget />;
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Resolve the active locale once on the server and seed the client provider so
+  // both render the same language (no hydration mismatch). User preference is
+  // threaded in once `users.locale` exists (story #122); for now cookie +
+  // Accept-Language decide.
+  const locale = await getRequestLocale();
+  const messages = getMessages(locale);
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${fraunces.variable} ${dmSans.variable} ${dmMono.variable}`}
     >
       <body>
-        <a href="#main-content" className="skip-link">
-          Skip to content
-        </a>
-        <SiteHeader />
-        <div id="main-content" tabIndex={-1} className="container">
-          {children}
-        </div>
-        <FloatingAssistant />
+        <LocaleProvider locale={locale} messages={messages}>
+          <a href="#main-content" className="skip-link">
+            Skip to content
+          </a>
+          <SiteHeader />
+          <div id="main-content" tabIndex={-1} className="container">
+            {children}
+          </div>
+          <FloatingAssistant />
+        </LocaleProvider>
       </body>
     </html>
   );
