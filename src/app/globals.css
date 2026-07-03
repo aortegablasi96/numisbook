@@ -236,6 +236,14 @@ main {
   flex-wrap: wrap;
 }
 
+/* Vertical label + control grouping for forms (e.g. Settings). */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
 .spread {
   display: flex;
   align-items: center;
@@ -951,6 +959,18 @@ button:disabled {
   border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
+}
+
+/* Success counterpart to .alert (e.g. "Profile updated"). */
+.alert-ok {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--ok) 30%, var(--border));
+}
+
+/* Settings "Danger zone": a card whose border signals destructive intent. */
+.danger-zone {
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
 }
 
 /* ---- Analytics bars ----------------------------------------------------- */
