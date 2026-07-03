@@ -2,7 +2,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
-import { setBaseCurrency, setLocale } from "@/services/user.service";
+import { setBaseCurrency, setLocale, setTheme } from "@/services/user.service";
 import { COMMON_CURRENCIES } from "@/lib/currencies";
 import {
   LOCALES,
@@ -12,23 +12,26 @@ import {
   type Locale,
 } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/i18n/server";
+import { THEMES, THEME_COOKIE } from "@/lib/theme";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 
 export const metadata = { title: "Settings · NumisBook" };
 
-const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // one year
+const PREF_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // one year
 
-// Preferences: language + base currency, each a Server Component form reusing
-// the framework-agnostic services (setLocale / setBaseCurrency). Rendered
-// between Profile and the Danger zone.
+// Preferences: language, theme + base currency, each a Server Component form
+// reusing the framework-agnostic services (setLocale / setTheme /
+// setBaseCurrency). Rendered between Profile and the Danger zone.
 function PreferencesSection({
   activeLocale,
   localePref,
+  themePref,
   baseCurrency,
 }: {
   activeLocale: Locale;
   localePref: string | null;
+  themePref: string | null;
   baseCurrency: string | null;
 }) {
   async function updateLocale(formData: FormData) {
@@ -43,13 +46,35 @@ function PreferencesSection({
     if (resolved) {
       store.set(LOCALE_COOKIE, resolved, {
         path: "/",
-        maxAge: LOCALE_COOKIE_MAX_AGE,
+        maxAge: PREF_COOKIE_MAX_AGE,
         sameSite: "lax",
       });
     } else {
       store.delete(LOCALE_COOKIE);
     }
     // Re-render the whole tree (header + page) in the new language.
+    revalidatePath("/", "layout");
+  }
+
+  async function updateTheme(formData: FormData) {
+    "use server";
+    const session = await auth();
+    const user = await resolveCurrentUser(session);
+    if (!user) return;
+    const resolved = await setTheme(user.id, String(formData.get("theme") ?? ""));
+    // Sync the THEME cookie so SSR / signed-out visits match; clearing the
+    // preference clears the cookie and reverts to "system" (DDR-003).
+    const store = await cookies();
+    if (resolved) {
+      store.set(THEME_COOKIE, resolved, {
+        path: "/",
+        maxAge: PREF_COOKIE_MAX_AGE,
+        sameSite: "lax",
+      });
+    } else {
+      store.delete(THEME_COOKIE);
+    }
+    // Re-render the whole tree so <html data-theme> updates immediately.
     revalidatePath("/", "layout");
   }
 
@@ -85,6 +110,28 @@ function PreferencesSection({
         </div>
         <p className="muted" style={{ margin: 0 }}>
           {t(activeLocale, "settings.language.help")}
+        </p>
+      </form>
+
+      <form action={updateTheme} className="field">
+        <label htmlFor="theme" className="mono-label">
+          {t(activeLocale, "settings.theme.label")}
+        </label>
+        <div className="row">
+          <select id="theme" name="theme" defaultValue={themePref ?? ""}>
+            <option value="">{t(activeLocale, "settings.theme.system")}</option>
+            {THEMES.map((value) => (
+              <option key={value} value={value}>
+                {t(activeLocale, `settings.theme.${value}`)}
+              </option>
+            ))}
+          </select>
+          <button type="submit" className="btn-sm">
+            {t(activeLocale, "action.apply")}
+          </button>
+        </div>
+        <p className="muted" style={{ margin: 0 }}>
+          {t(activeLocale, "settings.theme.help")}
         </p>
       </form>
 
@@ -146,6 +193,7 @@ export default async function SettingsPage() {
       <PreferencesSection
         activeLocale={locale}
         localePref={user.locale}
+        themePref={user.theme}
         baseCurrency={user.baseCurrency}
       />
       <DeleteAccountSection />

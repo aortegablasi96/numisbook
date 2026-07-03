@@ -3,6 +3,7 @@ import {
   baseCurrencySchema,
   displayNameSchema,
   localeSchema,
+  themeSchema,
 } from "@/lib/validation/user";
 
 // User-preferences business logic. Framework-agnostic; data access goes through
@@ -46,4 +47,18 @@ export async function setLocale(
   const locale = localeSchema.parse(input);
   await userRepository.updateLocale(userId, locale);
   return locale;
+}
+
+/**
+ * Set the user's preferred interface theme. Accepts "light"/"dark", or null/""
+ * to clear it (revert to "system"). Returns the stored value so the caller can
+ * sync the `THEME` cookie. See DDR-003.
+ */
+export async function setTheme(
+  userId: string,
+  input: string | null,
+): Promise<string | null> {
+  const theme = themeSchema.parse(input);
+  await userRepository.updateTheme(userId, theme);
+  return theme;
 }

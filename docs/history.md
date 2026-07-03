@@ -689,6 +689,46 @@ Tracked as GitHub Story #126 (under Epic #120).
 
 ---
 
+# Phase 15 — Dark Mode (night theme)
+
+Status: Complete
+
+Final pass of the **Additional Settings** milestone: a **day/night theme**, the
+last of the milestone's four preferences. It reintroduces a dark scheme that
+DDR-001 had deliberately omitted (light-only), so this pass is governed by a new
+**DDR-003** that supersedes DDR-001 on that one point.
+
+## Achievements
+
+- **Warm dark token set** — `[data-theme="dark"]` overrides the same design-system
+  tokens (a warm near-black stone palette), so every surface, the SVG charts, and
+  their legends flip as one. `color-scheme` is set per theme for native controls.
+- **Gold-contrast fix (`--on-gold`)** — DDR-001's `--accent` served double duty
+  (gold text *and* the background of white-text CTAs), which conflicts on dark.
+  A new `--on-gold` token (light `#fff` / dark near-black ink) lets the five gold-
+  filled surfaces (`.btn-primary`, `.brand-logo`, `.chat-avatar`, `.chat-send-btn`,
+  `.msg-user`) carry dark ink on bright gold in dark mode — AA holds in both
+  schemes.
+- **Per-user theme preference** — a nullable `users.theme` column (migration
+  `0006`, additive), `userRepository.updateTheme`, a Zod `themeSchema`, and
+  `user.service.setTheme`, mirroring the locale/base-currency pattern. A `THEME`
+  cookie keeps SSR / signed-out visits in sync.
+- **Theme selector in Settings** — a Preferences control: **System default /
+  Light / Dark**. Its server action persists the preference, syncs the cookie,
+  and revalidates the root layout so `<html data-theme>` updates immediately.
+- **System-follow, no flash** — the layout renders `data-theme` only for an
+  explicit choice and omits it for "system"; a `prefers-color-scheme` CSS block
+  then resolves "system" at paint time. No theme script, no FOUC — consistent
+  with the dependency-free ethos.
+- **Verified** — new `setTheme` service tests + a `resolveTheme` unit test
+  (226 tests green); `typecheck` / `lint` / `build` clean; both themes checked in
+  the browser (dark palette + AA gold buttons; light pixel-unchanged).
+
+Governed by **DDR-003 (Dark Mode)**, which supersedes DDR-001's light-only
+decision. Completes the Additional Settings milestone.
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -713,8 +753,12 @@ See:
 See:
 
 - `docs/design-decisions/DDR-001-figma-ui-redesign.md` — Figma "stone & gold"
-  re-skin (Phase 8; visual-only, light-only; originally an ADR, relocated to the
-  Design Decisions)
+  re-skin (Phase 8; visual-only; originally an ADR, relocated to the Design
+  Decisions). Its **light-only** stance is superseded by DDR-003.
+- `docs/design-decisions/DDR-002-global-display-density.md` — global `zoom: 0.75`
+  on `html` (renders the whole app at 75% density; builds on DDR-001)
+- `docs/design-decisions/DDR-003-dark-mode.md` — warm dark theme + per-user
+  Light/Dark/System preference (Phase 15; supersedes DDR-001's light-only point)
 
 ---
 
@@ -728,7 +772,8 @@ Current stack:
 - React
 - TypeScript
 - Dependency-free CSS design system (`src/app/globals.css`; no Tailwind/CSS-in-JS) —
-  "stone & gold" theme, light-only, `next/font` typography (DDR-001)
+  "stone & gold" theme with light + dark token sets, `next/font` typography
+  (DDR-001; dark mode DDR-003)
 
 ## Backend
 

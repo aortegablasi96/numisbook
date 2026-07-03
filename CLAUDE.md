@@ -274,16 +274,22 @@ The app uses a **dependency-free CSS design system** defined entirely in
 `src/app/globals.css`, themed to the "stone & gold" Figma spec (DDR-001). It
 provides:
 
-* CSS custom-property theme tokens (**light-only** — dark mode was dropped in
-  DDR-001): palette (`--bg`, `--surface`, `--text`, `--muted`, `--border`, the
-  golds `--gold`/`--accent`, `--primary`, `--ink`), `--radius-*`, and the font
-  variables `--font-display` (Fraunces), `--font-body` (DM Sans), `--font-micro`
-  (DM Mono, the `.mono-label` utility). Fonts load via `next/font` in `layout.tsx`.
+* CSS custom-property theme tokens with a **light + dark** pair (DDR-003; the
+  dark set overrides the same token names under `[data-theme="dark"]`, plus a
+  `prefers-color-scheme` block for the "system" preference): palette (`--bg`,
+  `--surface`, `--text`, `--muted`, `--border`, the golds `--gold`/`--accent`,
+  `--primary`, `--on-gold`, `--ink`), `--radius-*`, and the font variables
+  `--font-display` (Fraunces), `--font-body` (DM Sans), `--font-micro` (DM Mono,
+  the `.mono-label` utility). Fonts load via `next/font` in `layout.tsx`.
 * Utility component classes: `.card`, `.row`, `.badge`, `.chip`, `.alert`,
   `.mono-label`, `.crumbs`, `.analytics-bar`, and themed buttons/inputs/tables.
 
 Gold (`--gold #B8871E`) is for **fills only**; gold **text** uses the deeper
-`--accent`, and primary buttons use ink-on-gold — all for WCAG AA (see DDR-001).
+`--accent`, and text/icons on a gold fill use `--on-gold` (white on light, dark
+ink on dark) — all for WCAG AA in both schemes (see DDR-001, DDR-003). The active
+theme is a per-user preference (`users.theme`, Light/Dark/System) applied as
+`<html data-theme>` in the root layout (`src/lib/theme`); "system" renders no
+attribute and CSS follows the OS — no theme script, no flash.
 
 The whole app is rendered at **75% density** via `zoom: 0.75` on `html` — a global
 display scale on top of the design system, so all token/px values stay nominal
@@ -660,8 +666,9 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 
 Accepted **design** decisions are stored in `docs/design-decisions/`:
 
-* `DDR-001-figma-ui-redesign` — Figma "stone & gold" re-skin (visual-only, light-only; originally an ADR, relocated to the DDRs)
+* `DDR-001-figma-ui-redesign` — Figma "stone & gold" re-skin (visual-only; originally an ADR, relocated to the DDRs). Its light-only stance is **superseded by DDR-003**.
 * `DDR-002-global-display-density` — global `zoom: 0.75` on `html` (renders the whole app at 75% density; builds on, does not supersede, DDR-001)
+* `DDR-003-dark-mode` — warm dark theme + per-user Light/Dark/System `theme` preference (supersedes DDR-001's light-only decision; adds the `--on-gold` token)
 
 (`docs/design-decisions/template.md` is the scaffold for new DDRs.)
 

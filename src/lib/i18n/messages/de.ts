@@ -61,6 +61,12 @@ export const de: Partial<Messages> = {
   "settings.language.systemDefault": "Systemstandard",
   "settings.language.help":
     "Die Sprache, in der die NumisBook-Oberfläche angezeigt wird.",
+  "settings.theme.label": "Design",
+  "settings.theme.system": "Systemstandard",
+  "settings.theme.light": "Hell",
+  "settings.theme.dark": "Dunkel",
+  "settings.theme.help":
+    "Das Farbschema von NumisBook. „Systemstandard“ folgt deinem Gerät.",
   "settings.danger.heading": "Gefahrenzone",
   "settings.danger.body":
     "Das Löschen deines Kontos entfernt dauerhaft deine Sammlungen, Münzen, Bilder, Rechnungen und Bewertungen. Dies kann nicht rückgängig gemacht werden.",

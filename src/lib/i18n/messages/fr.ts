@@ -61,6 +61,12 @@ export const fr: Partial<Messages> = {
   "settings.language.systemDefault": "Par défaut du système",
   "settings.language.help":
     "La langue dans laquelle l’interface de NumisBook s’affiche.",
+  "settings.theme.label": "Thème",
+  "settings.theme.system": "Valeur système par défaut",
+  "settings.theme.light": "Clair",
+  "settings.theme.dark": "Sombre",
+  "settings.theme.help":
+    "Le thème de couleurs de NumisBook. « Valeur système par défaut » suit votre appareil.",
   "settings.danger.heading": "Zone sensible",
   "settings.danger.body":
     "Supprimer votre compte efface définitivement vos collections, pièces, images, factures et estimations. Cette action est irréversible.",

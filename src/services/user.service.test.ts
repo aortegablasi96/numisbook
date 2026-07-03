@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ZodError } from "zod";
-import { setBaseCurrency, setLocale, updateDisplayName } from "./user.service";
+import {
+  setBaseCurrency,
+  setLocale,
+  setTheme,
+  updateDisplayName,
+} from "./user.service";
 import { userRepository } from "@/repositories/user.repository";
 
 vi.mock("@/repositories/user.repository", () => ({
@@ -8,6 +13,7 @@ vi.mock("@/repositories/user.repository", () => ({
     updateBaseCurrency: vi.fn(),
     updateName: vi.fn(),
     updateLocale: vi.fn(),
+    updateTheme: vi.fn(),
   },
 }));
 
@@ -18,6 +24,7 @@ beforeEach(() => {
   repo.updateBaseCurrency.mockResolvedValue(undefined);
   repo.updateName.mockResolvedValue(undefined);
   repo.updateLocale.mockResolvedValue(undefined);
+  repo.updateTheme.mockResolvedValue(undefined);
 });
 
 describe("setBaseCurrency", () => {
@@ -102,6 +109,37 @@ describe("setLocale", () => {
     async (bad) => {
       await expect(setLocale("user-1", bad)).rejects.toBeInstanceOf(ZodError);
       expect(repo.updateLocale).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe("setTheme", () => {
+  it.each(["light", "dark"] as const)(
+    "persists a supported theme (%s) and returns it",
+    async (theme) => {
+      const result = await setTheme("user-1", theme);
+      expect(repo.updateTheme).toHaveBeenCalledWith("user-1", theme);
+      expect(result).toBe(theme);
+    },
+  );
+
+  it("treats an empty string as clearing the preference (null → system)", async () => {
+    const result = await setTheme("user-1", "");
+    expect(repo.updateTheme).toHaveBeenCalledWith("user-1", null);
+    expect(result).toBeNull();
+  });
+
+  it("accepts null to clear the preference", async () => {
+    const result = await setTheme("user-1", null);
+    expect(repo.updateTheme).toHaveBeenCalledWith("user-1", null);
+    expect(result).toBeNull();
+  });
+
+  it.each(["Light", "system", "sepia", "DARK"])(
+    "rejects an unsupported theme (%s) without touching the repository",
+    async (bad) => {
+      await expect(setTheme("user-1", bad)).rejects.toBeInstanceOf(ZodError);
+      expect(repo.updateTheme).not.toHaveBeenCalled();
     },
   );
 });

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { LOCALES } from "@/lib/i18n/locales";
+import { THEMES } from "@/lib/theme";
 
 // Display name: trimmed, 1–80 characters. Empty/whitespace-only is rejected so
 // a user can't blank out their name. The Auth.js adapter seeds `users.name`
@@ -26,5 +27,13 @@ export const baseCurrencySchema = z
 // an explicit "system default" option in the UI can submit "". See ADR-014.
 export const localeSchema = z
   .union([z.literal(""), z.enum(LOCALES)])
+  .nullable()
+  .transform((value) => (value ? value : null));
+
+// Interface-theme preference: "light" | "dark", or null/"" to clear it (revert
+// to "system", i.e. follow the OS via CSS). Empty string maps to null so an
+// explicit "system default" option in the UI can submit "". See DDR-003.
+export const themeSchema = z
+  .union([z.literal(""), z.enum(THEMES)])
   .nullable()
   .transform((value) => (value ? value : null));

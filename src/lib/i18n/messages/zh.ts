@@ -56,6 +56,11 @@ export const zh: Partial<Messages> = {
   "settings.language.label": "语言",
   "settings.language.systemDefault": "系统默认",
   "settings.language.help": "NumisBook 界面显示所用的语言。",
+  "settings.theme.label": "主题",
+  "settings.theme.system": "跟随系统",
+  "settings.theme.light": "浅色",
+  "settings.theme.dark": "深色",
+  "settings.theme.help": "NumisBook 使用的配色方案。“跟随系统”将跟随你的设备。",
   "settings.danger.heading": "危险区域",
   "settings.danger.body":
     "删除账户将永久移除你的收藏集、钱币、图片、发票和估值。此操作无法撤销。",

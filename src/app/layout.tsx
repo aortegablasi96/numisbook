@@ -9,6 +9,7 @@ import { AssistantWidget } from "@/components/assistant/AssistantWidget";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 import { getMessages, t } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/i18n/server";
+import { getRequestTheme } from "@/lib/theme/server";
 
 // Self-hosted via next/font (no runtime request, no layout shift). Exposed as CSS
 // variables consumed by globals.css: Fraunces (serif display/numerals), DM Sans
@@ -52,9 +53,14 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const locale = await getRequestLocale(user?.locale);
   const messages = getMessages(locale);
 
+  // Resolve the theme too (DDR-003). "system" renders no attribute, letting the
+  // `prefers-color-scheme` CSS decide — no theme script, no flash.
+  const theme = await getRequestTheme(user?.theme);
+
   return (
     <html
       lang={locale}
+      data-theme={theme === "system" ? undefined : theme}
       className={`${fraunces.variable} ${dmSans.variable} ${dmMono.variable}`}
     >
       <body>
