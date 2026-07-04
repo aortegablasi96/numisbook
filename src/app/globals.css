@@ -1,8 +1,10 @@
 /* ---- NumisBook design system -------------------------------------------- */
-/* "Stone & gold" — a warm, editorial light theme translated from the Figma
-   redesign (DDR-001). Light-only by design: the Figma defines no real dark
-   variant, so we ship a single scheme. Fonts arrive as CSS variables from
-   next/font (see src/app/layout.tsx): Fraunces (serif), DM Sans, DM Mono. */
+/* "Stone & gold" — a warm, editorial theme translated from the Figma redesign
+   (DDR-001). Ships a light (default, below) + dark pair driven by the same
+   tokens (DDR-003): the dark override lives in `[data-theme="dark"]` and, for
+   the "system" preference, in the `prefers-color-scheme` block further down.
+   Fonts arrive as CSS variables from next/font (see src/app/layout.tsx):
+   Fraunces (serif), DM Sans, DM Mono. */
 
 :root {
   --bg: #ECEAE5; /* warm stone */
@@ -29,6 +31,11 @@
   /* Dark ink surfaces (assistant header + FAB) — near-black per the Figma. */
   --ink: #1c1917;
   --ink-text: #ffffff;
+
+  /* Text/icon colour on a gold fill (primary button, brand logo, chat avatar/
+     send, user bubble). White on the deep gold clears AA on light; dark mode
+     flips this to dark ink on bright gold so those surfaces stay AA (DDR-003). */
+  --on-gold: #ffffff;
 
   --stone: #c4bfb8; /* light stone (cost-breakdown "shipping" segment) */
   --danger: #dc2626;
@@ -84,6 +91,97 @@
   --font-micro: var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   color-scheme: light;
+}
+
+/* ---- Dark theme (DDR-003) ------------------------------------------------ */
+/* A warm night palette overriding the same tokens, so the whole system — cards,
+   tables, inputs, badges, chips, the SVG charts and their legends — flips as one.
+   Gold stays bright and carries dark ink (--on-gold) on filled surfaces, keeping
+   DDR-001's AA gold-contrast rule (verified with axe in both schemes).
+
+   IMPORTANT: the declarations here and in the `prefers-color-scheme: dark` block
+   below are identical and must be kept in sync — one covers the explicit "dark"
+   choice, the other the "system" preference (no `data-theme` attribute). */
+[data-theme="dark"] {
+  --bg: #17130d; /* warm near-black stone */
+  --surface: #211c14; /* card */
+  --surface-2: #2c261c; /* muted / secondary */
+  --text: #ece5d8; /* warm off-white ink */
+  --muted: #a99f8d; /* muted-foreground — ~6.6:1 on --surface, clears AA */
+  --border: rgba(236, 229, 216, 0.14); /* light hairline */
+
+  --gold: #d0a03f; /* brighter gold fill so it reads on dark */
+  --accent: #e7ba5c; /* bright gold: AA as text on dark, and as a fill for ink */
+  --accent-weak: rgba(224, 176, 78, 0.16);
+  --primary: #d0a03f;
+
+  --on-gold: #201a12; /* dark ink on gold fills (buttons, avatar, user bubble) */
+
+  --ink: #0e0c08; /* assistant ink surface — darker than --bg to separate */
+  --ink-text: #f3efe6;
+
+  --stone: #6c6456; /* dark stone (cost-breakdown "shipping" segment) */
+  --danger: #f0766b;
+  --ok: #82b391;
+
+  --chart-1: #d0a03f;
+  --chart-2: #82b391;
+  --chart-3: #6ea6c6;
+  --chart-4: #cf805e;
+  --chart-5: #ab8dcb;
+
+  /* Ink-tinted shadows vanish on dark; deepen to black so cards still lift. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 28px -6px rgba(0, 0, 0, 0.6), 0 4px 10px -4px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 24px 56px -12px rgba(0, 0, 0, 0.7), 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+
+  color-scheme: dark;
+  scrollbar-color: rgba(236, 229, 216, 0.22) transparent;
+}
+
+/* "System" preference (no explicit data-theme): follow the OS. Mirrors the block
+   above; the :not() guards keep an explicit light/dark choice from being
+   overridden by the OS. Keep in sync with [data-theme="dark"]. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    --bg: #17130d;
+    --surface: #211c14;
+    --surface-2: #2c261c;
+    --text: #ece5d8;
+    --muted: #a99f8d;
+    --border: rgba(236, 229, 216, 0.14);
+
+    --gold: #d0a03f;
+    --accent: #e7ba5c;
+    --accent-weak: rgba(224, 176, 78, 0.16);
+    --primary: #d0a03f;
+
+    --on-gold: #201a12;
+
+    --ink: #0e0c08;
+    --ink-text: #f3efe6;
+
+    --stone: #6c6456;
+    --danger: #f0766b;
+    --ok: #82b391;
+
+    --chart-1: #d0a03f;
+    --chart-2: #82b391;
+    --chart-3: #6ea6c6;
+    --chart-4: #cf805e;
+    --chart-5: #ab8dcb;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 28px -6px rgba(0, 0, 0, 0.6), 0 4px 10px -4px rgba(0, 0, 0, 0.45);
+    --shadow-xl: 0 24px 56px -12px rgba(0, 0, 0, 0.7), 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+
+    color-scheme: dark;
+    scrollbar-color: rgba(236, 229, 216, 0.22) transparent;
+  }
 }
 
 * {
@@ -320,7 +418,7 @@ main {
   height: 28px;
   border-radius: 50%;
   background: var(--gold);
-  color: #fff;
+  color: var(--on-gold);
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 0.82rem;
@@ -582,7 +680,7 @@ button:disabled {
    gold stays reserved for fills/tints/borders. See DDR-001 §4. */
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-gold);
   border-color: var(--accent);
   box-shadow: var(--shadow);
 }
@@ -1803,7 +1901,7 @@ button:disabled {
   height: 38px;
   border-radius: 50%;
   background: var(--gold);
-  color: #fff;
+  color: var(--on-gold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1943,7 +2041,7 @@ button:disabled {
   justify-content: center;
   flex-shrink: 0;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-gold);
   border-color: var(--accent);
   transition: opacity 0.12s ease, transform 0.12s ease, background 0.12s ease;
 }
@@ -2038,7 +2136,7 @@ button:disabled {
 .msg-user {
   align-self: flex-end;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-gold);
   border-radius: 16px 16px 4px 16px;
 }
 .msg-assistant {

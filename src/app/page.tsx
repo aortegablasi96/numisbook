@@ -4,6 +4,8 @@ import { resolveCurrentUser } from "@/services/auth.service";
 import { listCollections } from "@/services/collection.service";
 import { getPortfolioSummary } from "@/services/analytics.service";
 import { formatMoney } from "@/lib/currencies";
+import { t, type Locale, type MessageKey } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n/server";
 
 function IconFolder() {
   return (
@@ -89,17 +91,22 @@ function IconChevron() {
   );
 }
 
-const FEATURES = [
+const FEATURES: {
+  href: string;
+  titleKey: MessageKey;
+  bodyKey: MessageKey;
+  icon: React.ReactNode;
+}[] = [
   {
     href: "/collections",
-    title: "Collections",
-    body: "Organize your coins into collections — add, rename, and curate.",
+    titleKey: "nav.collections",
+    bodyKey: "feature.collections.body",
     icon: <IconFolder />,
   },
   {
     href: "/portfolio",
-    title: "Portfolio",
-    body: "Aggregate value, allocation by metal and collection, and trends.",
+    titleKey: "nav.portfolio",
+    bodyKey: "feature.portfolio.body",
     icon: <IconChart />,
   },
 ];
@@ -107,24 +114,33 @@ const FEATURES = [
 export default async function Home() {
   const session = await auth();
   const user = await resolveCurrentUser(session);
+  const locale = await getRequestLocale(user?.locale);
 
   return (
     <main className="dashboard">
       <header className="dash-head">
-        <h1>NumisBook</h1>
-        <p className="muted dash-sub">Collection management for coin collectors.</p>
+        <h1>{t(locale, "app.name")}</h1>
+        <p className="muted dash-sub">{t(locale, "app.tagline")}</p>
         {user && (
           <p className="dash-signed">
-            Signed in as <strong>{user.name ?? user.email ?? "there"}</strong>.
+            {t(locale, "home.signedInAs")}{" "}
+            <strong>
+              {user.name ?? user.email ?? t(locale, "home.thereFallback")}
+            </strong>
+            .
           </p>
         )}
       </header>
 
       {user ? (
-        <SignedInHome userId={user.id} baseCurrencyPref={user.baseCurrency} />
+        <SignedInHome
+          userId={user.id}
+          baseCurrencyPref={user.baseCurrency}
+          locale={locale}
+        />
       ) : (
         <div className="card stack" style={{ textAlign: "center" }}>
-          <p>Sign in to start cataloguing and valuing your coin collection.</p>
+          <p>{t(locale, "home.signInPrompt")}</p>
           <form
             action={async () => {
               "use server";
@@ -132,7 +148,7 @@ export default async function Home() {
             }}
           >
             <button type="submit" className="btn-primary">
-              Sign in with Google
+              {t(locale, "nav.signInWithGoogle")}
             </button>
           </form>
         </div>
@@ -148,9 +164,11 @@ export default async function Home() {
 async function SignedInHome({
   userId,
   baseCurrencyPref,
+  locale,
 }: {
   userId: string;
   baseCurrencyPref: string | null;
+  locale: Locale;
 }) {
   const [collections, summary] = await Promise.all([
     listCollections(userId),
@@ -167,7 +185,12 @@ async function SignedInHome({
         <li className="card stat">
           <div className="stat-head">
             <span className="stat-label">
-              Collection{collectionsCount === 1 ? "" : "s"}
+              {t(
+                locale,
+                collectionsCount === 1
+                  ? "home.stat.collectionsOne"
+                  : "home.stat.collections",
+              )}
             </span>
             <span className="stat-icon" aria-hidden="true">
               <StatIconFolder />
@@ -177,7 +200,12 @@ async function SignedInHome({
         </li>
         <li className="card stat">
           <div className="stat-head">
-            <span className="stat-label">Coin{totalCoins === 1 ? "" : "s"}</span>
+            <span className="stat-label">
+              {t(
+                locale,
+                totalCoins === 1 ? "home.stat.coinsOne" : "home.stat.coins",
+              )}
+            </span>
             <span className="stat-icon" aria-hidden="true">
               <StatIconCoins />
             </span>
@@ -188,23 +216,25 @@ async function SignedInHome({
           <div className="stat-head">
             <span className="stat-label">
               {hasTotal
-                ? `Total paid · ${summary.baseCurrency}`
-                : "Total paid · no prices yet"}
+                ? t(locale, "home.stat.totalPaid", {
+                    currency: summary.baseCurrency!,
+                  })
+                : t(locale, "home.stat.totalPaidNone")}
             </span>
             <span className="stat-icon" aria-hidden="true">
               <StatIconTrend />
             </span>
           </div>
           <span className="stat-value is-money">
-            {hasTotal ? formatMoney(summary.totalFinal, summary.baseCurrency!) : "—"}
+            {hasTotal
+              ? formatMoney(summary.totalFinal, summary.baseCurrency!)
+              : t(locale, "home.stat.noValue")}
           </span>
         </li>
       </ul>
 
       {collectionsCount === 0 && (
-        <p className="empty">
-          Start by creating a collection, then add coins to it.
-        </p>
+        <p className="empty">{t(locale, "home.emptyHint")}</p>
       )}
 
       <ul className="cards">
@@ -217,9 +247,9 @@ async function SignedInHome({
                   <IconChevron />
                 </span>
               </div>
-              <h2>{feature.title}</h2>
+              <h2>{t(locale, feature.titleKey)}</h2>
               <p className="muted" style={{ margin: 0 }}>
-                {feature.body}
+                {t(locale, feature.bodyKey)}
               </p>
             </Link>
           </li>

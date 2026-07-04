@@ -5,6 +5,7 @@ import { ALLOWED_INVOICE_TYPES } from "@/lib/invoices";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { IconTrash } from "@/components/ui/icons";
 import { readError, NETWORK_ERROR } from "@/lib/http";
+import { useT } from "@/components/i18n/LocaleProvider";
 
 type Invoice = { id: string; filename: string | null; sizeBytes: number; createdAt: string };
 
@@ -35,6 +36,7 @@ function formatBytes(bytes: number): string {
 // Auction/seller invoices (PDF receipts) for a coin: list, upload, view, download,
 // and delete. Mirrors CoinImage's client-side flow against /api/coins/[id]/invoices.
 export function CoinInvoices({ coinId }: { coinId: string }) {
+  const t = useT();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -63,7 +65,7 @@ export function CoinInvoices({ coinId }: { coinId: string }) {
       body.append("file", file);
       const response = await fetch(`/api/coins/${coinId}/invoices`, { method: "POST", body });
       if (!response.ok) {
-        setError(await readError(response, "Upload failed."));
+        setError(await readError(response, t("upload.failed")));
         return;
       }
       await fetchInvoices();
@@ -81,7 +83,7 @@ export function CoinInvoices({ coinId }: { coinId: string }) {
     try {
       const response = await fetch(`/api/coins/${coinId}/invoices/${invoiceId}`, { method: "DELETE" });
       if (!response.ok) {
-        setError(await readError(response, "Couldn’t remove the invoice."));
+        setError(await readError(response, t("invoices.removeError")));
         return;
       }
       setInvoices((prev) => prev.filter((inv) => inv.id !== invoiceId));
@@ -94,17 +96,17 @@ export function CoinInvoices({ coinId }: { coinId: string }) {
 
   return (
     <section className="card stack coin-invoices-card">
-      <p className="mono-label" style={{ margin: 0 }}>Invoices</p>
+      <p className="mono-label" style={{ margin: 0 }}>{t("invoices.title")}</p>
 
       {!loaded ? (
         <span className="skeleton" style={{ height: "2.5rem" }} aria-hidden />
       ) : invoices.length === 0 ? (
-        <p className="muted" style={{ margin: 0 }}>No invoice yet. Upload the auction or seller receipt (PDF).</p>
+        <p className="muted" style={{ margin: 0 }}>{t("invoices.empty")}</p>
       ) : (
         <ul className="invoice-list">
           {invoices.map((invoice, i) => {
             const href = `/api/coins/${coinId}/invoices/${invoice.id}`;
-            const name = invoice.filename || `Invoice ${i + 1}.pdf`;
+            const name = invoice.filename || t("invoices.fallbackName", { n: i + 1 });
             return (
               <li key={invoice.id} className="invoice-row">
                 <span className="invoice-icon" aria-hidden><IconPdf /></span>
@@ -118,13 +120,13 @@ export function CoinInvoices({ coinId }: { coinId: string }) {
                 </span>
                 <span className="row invoice-actions" style={{ gap: "0.4rem" }}>
                   <a href={`${href}?download=1`} download={name} className="btn-sm btn-icon">
-                    Download
+                    {t("action.download")}
                   </a>
                   <ConfirmButton
                     className="btn-sm btn-danger btn-icon"
                     disabled={busy}
-                    message={`Remove "${name}"?`}
-                    confirmLabel="Remove"
+                    message={t("invoices.removeConfirm", { name })}
+                    confirmLabel={t("action.remove")}
                     onConfirm={() => handleRemove(invoice.id)}
                   >
                     <IconTrash />
@@ -143,7 +145,7 @@ export function CoinInvoices({ coinId }: { coinId: string }) {
           accept={ALLOWED_INVOICE_TYPES.join(",")}
           onChange={handleUpload}
           disabled={busy}
-          aria-label="Coin invoice (PDF)"
+          aria-label={t("invoices.fileAria")}
           style={{ display: "none" }}
         />
         <button
@@ -153,7 +155,7 @@ export function CoinInvoices({ coinId }: { coinId: string }) {
           disabled={busy}
         >
           <IconUpload />
-          {busy ? "Uploading…" : "Add invoice (PDF)"}
+          {busy ? t("invoices.uploading") : t("invoices.add")}
         </button>
       </div>
 

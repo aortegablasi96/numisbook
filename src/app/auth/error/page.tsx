@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { signIn } from "@/auth";
 import { authErrorMessage } from "@/lib/auth-errors";
+import { t } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n/server";
 
 // Branded sign-in error page, wired via Auth.js `pages.error` (src/auth.ts).
 // Auth.js redirects here with `?error=<code>` when an OAuth sign-in fails. This
@@ -13,6 +15,7 @@ export default async function AuthErrorPage({
 }) {
   const { error } = await searchParams;
   const { title, body } = authErrorMessage(error);
+  const locale = await getRequestLocale();
 
   return (
     <main className="stack">
@@ -29,11 +32,11 @@ export default async function AuthErrorPage({
           }}
         >
           <button type="submit" className="btn-primary">
-            Try signing in again
+            {t(locale, "action.trySignInAgain")}
           </button>
         </form>
         <p style={{ margin: 0, textAlign: "center" }}>
-          <Link href="/">Back to home</Link>
+          <Link href="/">{t(locale, "action.backToHome")}</Link>
         </p>
       </div>
     </main>

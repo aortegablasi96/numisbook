@@ -1,11 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useT } from "@/components/i18n/LocaleProvider";
+import type { MessageKey } from "@/lib/i18n";
 
-const SUGGESTIONS = [
-  "What's my most valuable coin?",
-  "Show my collection summary",
-  "Add a coin to my collection",
+// Example prompts shown on the empty state. Translated so the model receives the
+// question in the user's language (and answers in kind — ADR-014).
+const SUGGESTION_KEYS: MessageKey[] = [
+  "assistant.suggestion.mostValuable",
+  "assistant.suggestion.summary",
+  "assistant.suggestion.addCoin",
 ];
 
 type Message = { role: "user" | "assistant"; content: string };
@@ -17,12 +21,12 @@ type Turn = {
   actions?: string[];
 };
 
-async function readError(response: Response): Promise<string> {
+async function readError(response: Response, fallback: string): Promise<string> {
   try {
     const body = (await response.json()) as { error?: string };
-    return body.error ?? "Something went wrong";
+    return body.error ?? fallback;
   } catch {
-    return "Something went wrong";
+    return fallback;
   }
 }
 
@@ -98,6 +102,7 @@ function IconAttach() {
 }
 
 export function AssistantWidget() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
@@ -140,7 +145,7 @@ export function AssistantWidget() {
         body: JSON.stringify({ messages: history, attachedImage: imageToSend }),
       });
       if (!response.ok) {
-        setError(await readError(response));
+        setError(await readError(response, t("assistant.errorGeneric")));
         return;
       }
       const { reply, actions } = (await response.json()) as {
@@ -164,7 +169,7 @@ export function AssistantWidget() {
       const dataUrl = await resizeImage(file);
       setPendingImage(dataUrl);
     } catch {
-      setError("Could not load image. Please try a different file.");
+      setError(t("assistant.errorImage"));
     }
   }
 
@@ -175,10 +180,10 @@ export function AssistantWidget() {
           <div className="chat-panel-header">
             <div className="chat-avatar">◈</div>
             <div className="chat-panel-meta">
-              <span className="chat-panel-name">NumisBook Assistant</span>
+              <span className="chat-panel-name">{t("assistant.name")}</span>
               <span className="chat-panel-online">
                 <span className="chat-online-dot" />
-                Online
+                {t("assistant.online")}
               </span>
             </div>
             {turns.length > 0 && (
@@ -186,8 +191,8 @@ export function AssistantWidget() {
                 type="button"
                 className="chat-close-btn"
                 onClick={() => { setTurns([]); setPendingImage(null); setHeldImage(null); }}
-                aria-label="Clear conversation"
-                title="Clear conversation"
+                aria-label={t("assistant.clearAria")}
+                title={t("assistant.clearAria")}
               >
                 <IconTrash />
               </button>
@@ -196,7 +201,7 @@ export function AssistantWidget() {
               type="button"
               className="chat-close-btn"
               onClick={() => setOpen(false)}
-              aria-label="Close"
+              aria-label={t("action.close")}
             >
               <IconClose />
             </button>
@@ -205,20 +210,17 @@ export function AssistantWidget() {
           <div className="chat-panel-body">
             {turns.length === 0 ? (
               <div className="chat-welcome">
-                <p>
-                  Hi! I can help you manage your coin collection. What would
-                  you like to do?
-                </p>
+                <p>{t("assistant.welcome")}</p>
                 <div className="chat-suggestions">
-                  {SUGGESTIONS.map((s) => (
+                  {SUGGESTION_KEYS.map((key) => (
                     <button
-                      key={s}
+                      key={key}
                       type="button"
                       className="chat-suggestion"
-                      onClick={() => send(s)}
+                      onClick={() => send(t(key))}
                       disabled={busy}
                     >
-                      {s}
+                      {t(key)}
                     </button>
                   ))}
                 </div>
@@ -234,7 +236,7 @@ export function AssistantWidget() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={turn.imageUrl}
-                        alt="Attached coin"
+                        alt={t("assistant.attachedAlt")}
                         className="chat-msg-image"
                       />
                     )}
@@ -267,12 +269,12 @@ export function AssistantWidget() {
           {pendingImage && (
             <div className="chat-image-preview">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={pendingImage} alt="Pending attachment" className="chat-image-thumb" />
+              <img src={pendingImage} alt={t("assistant.pendingAlt")} className="chat-image-thumb" />
               <button
                 type="button"
                 className="chat-image-remove"
                 onClick={() => setPendingImage(null)}
-                aria-label="Remove image"
+                aria-label={t("assistant.removeImageAria")}
               >
                 <IconClose />
               </button>
@@ -295,8 +297,8 @@ export function AssistantWidget() {
               className="chat-attach-btn"
               onClick={() => fileRef.current?.click()}
               disabled={busy}
-              aria-label="Attach image"
-              title="Attach a coin photo"
+              aria-label={t("assistant.attachAria")}
+              title={t("assistant.attachTitle")}
             >
               <IconAttach />
             </button>
@@ -304,8 +306,8 @@ export function AssistantWidget() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything about your collection…"
-              aria-label="Message"
+              placeholder={t("assistant.inputPlaceholder")}
+              aria-label={t("assistant.messageAria")}
               disabled={busy}
               // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
@@ -314,7 +316,7 @@ export function AssistantWidget() {
               type="submit"
               className="chat-send-btn"
               disabled={busy || (input.trim() === "" && !pendingImage)}
-              aria-label="Send"
+              aria-label={t("assistant.sendAria")}
             >
               <IconSend />
             </button>
@@ -326,7 +328,7 @@ export function AssistantWidget() {
         type="button"
         className="chat-fab"
         onClick={() => setOpen((o) => !o)}
-        aria-label={open ? "Close assistant" : "Open assistant"}
+        aria-label={open ? t("assistant.closeAria") : t("assistant.openAria")}
         aria-expanded={open}
       >
         {open ? <IconClose /> : <IconChat />}

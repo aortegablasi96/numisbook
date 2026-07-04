@@ -4,6 +4,16 @@ import { useMemo, useRef, useState } from "react";
 import type { AcquisitionEvent } from "@/services/analytics.service";
 import { RANGES, money, niceTicks } from "./chart-utils";
 import { ExpandChartButton } from "./ExpandChartButton";
+import { useT } from "@/components/i18n/LocaleProvider";
+import type { MessageKey } from "@/lib/i18n";
+
+// Range presets are index-aligned with RANGES (3M / 6M / 1Y / All).
+const RANGE_KEYS: MessageKey[] = [
+  "chart.range.3m",
+  "chart.range.6m",
+  "chart.range.1y",
+  "chart.range.all",
+];
 import {
   AXIS_W,
   PAD,
@@ -57,7 +67,7 @@ function filterByRange(points: TrendPoint[], days: number): TrendPoint[] {
 export function TrendChart({
   events,
   currency,
-  title = "Acquisition cost over time",
+  title,
   inModal = false,
 }: {
   events: AcquisitionEvent[];
@@ -65,6 +75,8 @@ export function TrendChart({
   title?: string;
   inModal?: boolean;
 }) {
+  const t = useT();
+  const resolvedTitle = title ?? t("chart.trend.title");
   const [rangeIdx, setRangeIdx] = useState(RANGES.length - 1); // default: All
 
   const data = useMemo(
@@ -77,9 +89,9 @@ export function TrendChart({
   return (
     <section className="card stack">
       <div className="spread">
-        <h3 className="chart-title">{title}</h3>
+        <h3 className="chart-title">{resolvedTitle}</h3>
         <div className="row" style={{ gap: "var(--space-2)" }}>
-          <div className="row" role="group" aria-label="Date range">
+          <div className="row" role="group" aria-label={t("chart.dateRangeAria")}>
             {RANGES.map((r, i) => (
               <button
                 key={r.label}
@@ -88,13 +100,13 @@ export function TrendChart({
                 aria-pressed={i === rangeIdx}
                 onClick={() => setRangeIdx(i)}
               >
-                {r.label}
+                {t(RANGE_KEYS[i])}
               </button>
             ))}
           </div>
           {!inModal && (
-            <ExpandChartButton label={title}>
-              <TrendChart events={events} currency={currency} title={title} inModal />
+            <ExpandChartButton label={resolvedTitle}>
+              <TrendChart events={events} currency={currency} title={resolvedTitle} inModal />
             </ExpandChartButton>
           )}
         </div>
@@ -104,14 +116,16 @@ export function TrendChart({
           cards share identical vertical rhythm and line up at equal height. */}
       <div className="spread legend-top">
         <span className="muted">
-          {events.length} acquisition{events.length === 1 ? "" : "s"} · cumulative
+          {t(events.length === 1 ? "chart.trend.acqOne" : "chart.trend.acqOther", {
+            count: events.length,
+          })}
         </span>
       </div>
 
       {data.length === 0 ? (
-        <p className="empty">No acquisitions in this range.</p>
+        <p className="empty">{t("chart.noneInRange")}</p>
       ) : (
-        <ChartSvg data={data} currency={currency} title={title} inModal={inModal} />
+        <ChartSvg data={data} currency={currency} title={resolvedTitle} inModal={inModal} />
       )}
     </section>
   );
@@ -128,6 +142,7 @@ function ChartSvg({
   title: string;
   inModal: boolean;
 }) {
+  const t = useT();
   const [scrollRef, viewport] = useMeasuredWidth<HTMLDivElement>();
   const chartH = useChartHeight(inModal);
   const plotRef = useRef<HTMLDivElement>(null);
@@ -166,7 +181,11 @@ function ChartSvg({
       : "";
 
   const last = data[data.length - 1];
-  const label = `${title}. Latest ${money(last.total, currency, true)} on ${last.date}.`;
+  const label = t("chart.trend.ariaLabel", {
+    title,
+    amount: money(last.total, currency, true),
+    date: last.date,
+  });
 
   // Horizontal gridlines at rounded values, mirroring the cost-breakdown chart so
   // the cumulative total is as easy to read off. yMin is 0 for real data; clamp
@@ -275,7 +294,7 @@ function ChartSvg({
           role="presentation"
         >
           <p className="chart-tooltip-title">{money(hoverPoint.total, currency)}</p>
-          <p className="chart-tooltip-sub mono-label">{hoverPoint.date} · cumulative</p>
+          <p className="chart-tooltip-sub mono-label">{t("chart.trend.tooltipSub", { date: hoverPoint.date })}</p>
         </div>
       )}
     </div>

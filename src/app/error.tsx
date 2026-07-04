@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useT } from "@/components/i18n/LocaleProvider";
 
 // App-level error boundary. Renders inside the root layout, so SiteHeader stays
 // visible while the page content is replaced. Catches render-time throws from
@@ -19,25 +20,25 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useT();
   return (
     <main className="stack">
-      <h1>Something went wrong</h1>
+      <h1>{t("error.title")}</h1>
       <div className="card stack">
         <p className="muted" style={{ margin: 0 }}>
-          Your collection is safe — we&rsquo;re having trouble reaching our
-          servers right now. Please try again in a moment.
+          {t("error.body")}
         </p>
         <div className="row">
           <button type="button" className="btn-primary" onClick={() => reset()}>
-            Try again
+            {t("action.tryAgain")}
           </button>
           <Link href="/" className="btn-ghost">
-            Back to home
+            {t("action.backToHome")}
           </Link>
         </div>
         {error.digest && (
           <p className="muted mono-label" style={{ margin: 0 }}>
-            Reference: {error.digest}
+            {t("error.reference")}: {error.digest}
           </p>
         )}
       </div>

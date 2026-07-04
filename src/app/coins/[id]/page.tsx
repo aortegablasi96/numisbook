@@ -11,6 +11,8 @@ import { ValuationsManager } from "@/components/valuations/ValuationsManager";
 import { CoinImage } from "@/components/coins/CoinImage";
 import { CoinInvoices } from "@/components/coins/CoinInvoices";
 import { CoinDetailsCard } from "@/components/coins/CoinDetailsCard";
+import { t } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n/server";
 
 // Server Component for a single coin: guards on auth + ownership, lists its
 // valuation history, and hosts the record-valuation form.
@@ -22,13 +24,14 @@ export default async function CoinDetailPage({
   const { id } = await params;
   const session = await auth();
   const user = await resolveCurrentUser(session);
+  const locale = await getRequestLocale(user?.locale);
 
   if (!user) {
     return (
       <main className="stack">
-        <h1>Coin</h1>
+        <h1>{t(locale, "coin.fallbackTitle")}</h1>
         <div className="card stack">
-          <p>Sign in to view this coin.</p>
+          <p>{t(locale, "coin.signInPrompt")}</p>
           <form
             action={async () => {
               "use server";
@@ -36,7 +39,7 @@ export default async function CoinDetailPage({
             }}
           >
             <button type="submit" className="btn-primary">
-              Sign in with Google
+              {t(locale, "nav.signInWithGoogle")}
             </button>
           </form>
         </div>
@@ -71,13 +74,13 @@ export default async function CoinDetailPage({
 
   return (
     <main className="stack">
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link href="/collections">Collections</Link>
+      <nav className="crumbs" aria-label={t(locale, "breadcrumb.aria")}>
+        <Link href="/collections">{t(locale, "nav.collections")}</Link>
         <span className="crumb-sep" aria-hidden="true">
           ›
         </span>
         <Link href={`/collections/${coin.collectionId}`}>
-          {collection?.name ?? "Collection"}
+          {collection?.name ?? t(locale, "collection.fallbackTitle")}
         </Link>
         <span className="crumb-sep" aria-hidden="true">
           ›
@@ -94,7 +97,7 @@ export default async function CoinDetailPage({
             className="stack"
             defaultCurrency={coin.priceCurrency ?? user.baseCurrency ?? "USD"}
           />
-          <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>Added {addedLabel}</p>
+          <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>{t(locale, "coinDetail.added", { date: addedLabel })}</p>
         </CoinDetailsCard>
         <div className="coin-side">
           <CoinImage coinId={id} />

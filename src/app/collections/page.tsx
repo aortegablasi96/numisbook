@@ -3,19 +3,22 @@ import { resolveCurrentUser } from "@/services/auth.service";
 import { listCollections } from "@/services/collection.service";
 import { getCollectionCosts } from "@/services/analytics.service";
 import { CollectionsManager } from "@/components/collections/CollectionsManager";
+import { t } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n/server";
 
 // Server Component: guards on auth and loads the initial list directly through
 // the service. Mutations happen client-side against /api/collections.
 export default async function CollectionsPage() {
   const session = await auth();
   const user = await resolveCurrentUser(session);
+  const locale = await getRequestLocale(user?.locale);
 
   if (!user) {
     return (
       <main className="stack">
-        <h1>Collections</h1>
+        <h1>{t(locale, "nav.collections")}</h1>
         <div className="card stack">
-          <p>Sign in to manage your collections.</p>
+          <p>{t(locale, "collections.signInPrompt")}</p>
           <form
             action={async () => {
               "use server";
@@ -23,7 +26,7 @@ export default async function CollectionsPage() {
             }}
           >
             <button type="submit" className="btn-primary">
-              Sign in with Google
+              {t(locale, "nav.signInWithGoogle")}
             </button>
           </form>
         </div>
@@ -48,7 +51,7 @@ export default async function CollectionsPage() {
 
   return (
     <main className="stack">
-      <h1>Collections</h1>
+      <h1>{t(locale, "nav.collections")}</h1>
       <CollectionsManager initialCollections={views} baseCurrency={costs.baseCurrency} />
     </main>
   );

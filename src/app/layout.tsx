@@ -6,6 +6,10 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { auth } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { AssistantWidget } from "@/components/assistant/AssistantWidget";
+import { LocaleProvider } from "@/components/i18n/LocaleProvider";
+import { getMessages, t } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n/server";
+import { getRequestTheme } from "@/lib/theme/server";
 
 // Self-hosted via next/font (no runtime request, no layout shift). Exposed as CSS
 // variables consumed by globals.css: Fraunces (serif display/numerals), DM Sans
@@ -16,8 +20,11 @@ const fraunces = Fraunces({
   variable: "--font-serif",
   display: "swap",
 });
+// DM Sans carries the body/UI text. Its Google build offers no Cyrillic or CJK
+// coverage, so Russian (Cyrillic) and Chinese both fall back to the platform's
+// system fonts for those scripts — an accepted MVP tradeoff (ADR-014).
 const dmSans = DM_Sans({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600"],
   variable: "--font-sans",
   display: "swap",
@@ -34,28 +41,39 @@ export const metadata: Metadata = {
   description: "Collection management for coin collectors.",
 };
 
-async function FloatingAssistant() {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Resolve the session user once: it decides both the active locale (their
+  // saved preference wins over cookie / Accept-Language) and whether the
+  // auth-gated assistant renders.
   const session = await auth();
   const user = await resolveCurrentUser(session);
-  if (!user) return null;
-  return <AssistantWidget />;
-}
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+  // Resolve the active locale once on the server and seed the client provider so
+  // both render the same language (no hydration mismatch — ADR-014).
+  const locale = await getRequestLocale(user?.locale);
+  const messages = getMessages(locale);
+
+  // Resolve the theme too (DDR-003). "system" renders no attribute, letting the
+  // `prefers-color-scheme` CSS decide — no theme script, no flash.
+  const theme = await getRequestTheme(user?.theme);
+
   return (
     <html
-      lang="en"
+      lang={locale}
+      data-theme={theme === "system" ? undefined : theme}
       className={`${fraunces.variable} ${dmSans.variable} ${dmMono.variable}`}
     >
       <body>
-        <a href="#main-content" className="skip-link">
-          Skip to content
-        </a>
-        <SiteHeader />
-        <div id="main-content" tabIndex={-1} className="container">
-          {children}
-        </div>
-        <FloatingAssistant />
+        <LocaleProvider locale={locale} messages={messages}>
+          <a href="#main-content" className="skip-link">
+            {t(locale, "skip.toContent")}
+          </a>
+          <SiteHeader />
+          <div id="main-content" tabIndex={-1} className="container">
+            {children}
+          </div>
+          {user ? <AssistantWidget /> : null}
+        </LocaleProvider>
       </body>
     </html>
   );

@@ -6,6 +6,7 @@ import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { IconPencil, IconTrash, IconPlus, IconCheck, IconX } from "@/components/ui/icons";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { formatMoney } from "@/lib/currencies";
+import { useT } from "@/components/i18n/LocaleProvider";
 
 export type CollectionView = {
   id: string;
@@ -23,6 +24,7 @@ export function CollectionsManager({
   initialCollections: CollectionView[];
   baseCurrency: string | null;
 }) {
+  const t = useT();
   const [collections, setCollections] = useState<CollectionView[]>(initialCollections);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
@@ -129,8 +131,8 @@ export function CollectionsManager({
             type="text"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter collections…"
-            aria-label="Filter collections"
+            placeholder={t("collections.filterPlaceholder")}
+            aria-label={t("collections.filterAria")}
             style={{ maxWidth: "220px" }}
           />
         )}
@@ -139,7 +141,7 @@ export function CollectionsManager({
           className="btn-primary btn-sm btn-icon"
           onClick={() => { setShowAddForm(true); setNewName(""); setError(null); }}
         >
-          <IconPlus size={13} /> New collection
+          <IconPlus size={13} /> {t("collections.new")}
         </button>
       </div>
 
@@ -149,8 +151,8 @@ export function CollectionsManager({
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Collection name…"
-            aria-label="New collection name"
+            placeholder={t("collections.namePlaceholder")}
+            aria-label={t("collections.newNameAria")}
             autoFocus
             style={{ flex: 1 }}
           />
@@ -159,13 +161,13 @@ export function CollectionsManager({
             className="btn-sm btn-primary btn-icon"
             disabled={busy || newName.trim() === ""}
           >
-            <IconCheck size={12} /> Create
+            <IconCheck size={12} /> {t("action.create")}
           </button>
           <button
             type="button"
             className="btn-sm btn-ghost btn-icon"
             onClick={() => { setShowAddForm(false); setNewName(""); setError(null); }}
-            aria-label="Cancel"
+            aria-label={t("action.cancel")}
           >
             <IconX size={12} />
           </button>
@@ -175,9 +177,9 @@ export function CollectionsManager({
       {error && <p className="alert">{error}</p>}
 
       {collections.length === 0 ? (
-        <p className="empty">No collections yet. Use the button above to create one.</p>
+        <p className="empty">{t("collections.empty")}</p>
       ) : visible.length === 0 ? (
-        <p className="empty">No collections match &ldquo;{filter}&rdquo;.</p>
+        <p className="empty">{t("collections.noMatch", { filter })}</p>
       ) : (
         <ul className="collection-grid">
           {visible.map((collection) => {
@@ -197,7 +199,7 @@ export function CollectionsManager({
                       type="text"
                       value={editingName}
                       onChange={(e) => setEditingName(e.target.value)}
-                      aria-label="Collection name"
+                      aria-label={t("collections.nameAria")}
                       autoFocus
                     />
                     <div className="row" style={{ gap: "0.5rem", justifyContent: "flex-end" }}>
@@ -206,7 +208,7 @@ export function CollectionsManager({
                         className="btn-sm btn-primary"
                         disabled={busy || editingName.trim() === ""}
                       >
-                        Save
+                        {t("action.save")}
                       </button>
                       <button
                         type="button"
@@ -214,7 +216,7 @@ export function CollectionsManager({
                         onClick={() => setEditingId(null)}
                         disabled={busy}
                       >
-                        Cancel
+                        {t("action.cancel")}
                       </button>
                     </div>
                   </form>
@@ -224,7 +226,10 @@ export function CollectionsManager({
                       <span className="collection-card-panel">
                         <span className="collection-card-name">{collection.name}</span>
                         <span className="collection-card-meta mono-label">
-                          {collection.coinCount} coin{collection.coinCount === 1 ? "" : "s"}
+                          {t(
+                            collection.coinCount === 1 ? "unit.coinOne" : "unit.coinOther",
+                            { count: collection.coinCount },
+                          )}
                           {collection.totalPaid !== null && baseCurrency
                             ? ` · ${formatMoney(collection.totalPaid, baseCurrency)}`
                             : ""}
@@ -237,17 +242,17 @@ export function CollectionsManager({
                         className="btn-sm btn-icon"
                         onClick={() => startRename(collection)}
                         disabled={busy}
-                        aria-label={`Rename ${collection.name}`}
+                        aria-label={t("collections.renameAria", { name: collection.name })}
                       >
-                        <IconPencil /> Rename
+                        <IconPencil /> {t("action.rename")}
                       </button>
                       <ConfirmButton
                         className="btn-sm btn-danger btn-icon"
                         disabled={busy}
-                        message={`Delete "${collection.name}" and all of its coins? This cannot be undone.`}
+                        message={t("collections.deleteConfirm", { name: collection.name })}
                         onConfirm={() => handleDelete(collection.id)}
                       >
-                        <IconTrash /> Delete
+                        <IconTrash /> {t("action.delete")}
                       </ConfirmButton>
                     </div>
                   </>

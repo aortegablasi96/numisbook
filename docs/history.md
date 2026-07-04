@@ -614,6 +614,121 @@ Tracked as GitHub Epic #114 (stories #115–#118).
 
 ---
 
+# Phase 13 — Internationalization (Shell)
+
+Status: Complete (shell); deep domain screens tracked as a follow-up
+
+Second pass of the **Additional Settings** milestone: multi-language support for
+the app shell, so non-English collectors can use NumisBook in their own language
+(see `docs/decisions/ADR-014-internationalization.md`).
+
+## Achievements
+
+- **Dependency-free i18n layer** (`src/lib/i18n/`) — supported-locale set +
+  endonyms, an English source catalog that defines the `MessageKey` type, SSR-safe
+  locale resolution (user preference → `NEXT_LOCALE` cookie → `Accept-Language` →
+  English), and `t()` (server) / `useT()` via a client `LocaleProvider`. No new
+  dependency, consistent with the hand-rolled design system.
+- **Per-user language preference** — a nullable `users.locale` column
+  (migration `0005`, additive) with `userRepository.updateLocale`, a Zod
+  `localeSchema`, and `user.service.setLocale`, mirroring the base-currency
+  preference. The root layout resolves the active locale from the session user's
+  preference first and seeds the client provider (no hydration mismatch).
+- **Language selector in Settings** — a Preferences control listing the seven
+  languages by endonym; its server action persists the preference, syncs the
+  `NEXT_LOCALE` cookie, and revalidates the root layout so the whole app
+  re-renders in the chosen language.
+- **Seven locales for the shell** — English + Spanish, German, French, Italian,
+  Chinese (Simplified), Russian, covering the global chrome (header/nav), home
+  dashboard, settings, and the not-found / error / auth-error pages. Catalogs
+  merge over English with per-key fallback; a parity test guards completeness.
+- **Fonts** — DM Sans/Fraunces cover Latin only, so Russian (Cyrillic) and
+  Chinese fall back to system fonts for those scripts (documented MVP tradeoff).
+  `global-error` stays English (renders outside the provider).
+- **Deep domain screens** (coins/collections/valuations/assistant/analytics) are
+  a tracked follow-up extraction using the same machinery; they render in English
+  via fallback until then. Full suite green (207 tests).
+
+Tracked as GitHub Epic #120 (stories #121–#125).
+
+---
+
+# Phase 14 — Internationalization (Deep Domain Screens)
+
+Status: Complete
+
+Follow-up pass to Phase 13 that extends i18n coverage from the app shell to the
+**deep domain screens**, so a non-English collector sees the whole working app —
+not just the chrome — in their language. Mechanical, behaviour-preserving sweep
+on the existing machinery; no new architecture (`ADR-014`).
+
+## Achievements
+
+- **Domain screens localized** — all static UI text in the coin, collection,
+  valuation, assistant, and analytics surfaces now renders via `t()` / `useT()`:
+  `CoinsManager` (+ `ColumnPicker`), `CoinDetailsCard`, `CoinImage`,
+  `CoinInvoices`, `CollectionsManager`, `ValuationsManager`, `AssistantWidget`,
+  the `TrendChart` / `CostBreakdownChart` / `ExpandChartButton` analytics
+  components, and the `collections`, `collections/[id]`, `coins/[id]`, and
+  `portfolio` pages.
+- **~180 new catalog keys** added to the canonical English catalog, grouped by
+  area, with shared `field.*` / `action.*` / `unit.*` keys reused across the
+  filters, list columns, forms, and detail tiles. Module-level label constants
+  (`COLUMN_DEFS`, `TEXT_FIELDS`, chart `SEGMENTS`, range presets) switched from
+  literal `label` strings to typed `MessageKey`s translated at render.
+- **Seven locales complete** — Spanish, German, French, Italian, Chinese
+  (Simplified) and Russian translations added for every new key; the key-parity
+  test stays green for all locales. Assistant suggestion prompts are translated
+  so the model receives the question in the user's language (and answers in kind).
+- **Behaviour-preserving** — the English UI is visually unchanged; interpolated
+  placeholders and pluralization (coin/coins, priced counts) preserved. Full
+  suite green (207 tests), `typecheck` / `lint` / `build` clean, and signed-out
+  domain pages verified rendering in ES / DE / ZH via the `NEXT_LOCALE` cookie.
+
+Tracked as GitHub Story #126 (under Epic #120).
+
+---
+
+# Phase 15 — Dark Mode (night theme)
+
+Status: Complete
+
+Final pass of the **Additional Settings** milestone: a **day/night theme**, the
+last of the milestone's four preferences. It reintroduces a dark scheme that
+DDR-001 had deliberately omitted (light-only), so this pass is governed by a new
+**DDR-003** that supersedes DDR-001 on that one point.
+
+## Achievements
+
+- **Warm dark token set** — `[data-theme="dark"]` overrides the same design-system
+  tokens (a warm near-black stone palette), so every surface, the SVG charts, and
+  their legends flip as one. `color-scheme` is set per theme for native controls.
+- **Gold-contrast fix (`--on-gold`)** — DDR-001's `--accent` served double duty
+  (gold text *and* the background of white-text CTAs), which conflicts on dark.
+  A new `--on-gold` token (light `#fff` / dark near-black ink) lets the five gold-
+  filled surfaces (`.btn-primary`, `.brand-logo`, `.chat-avatar`, `.chat-send-btn`,
+  `.msg-user`) carry dark ink on bright gold in dark mode — AA holds in both
+  schemes.
+- **Per-user theme preference** — a nullable `users.theme` column (migration
+  `0006`, additive), `userRepository.updateTheme`, a Zod `themeSchema`, and
+  `user.service.setTheme`, mirroring the locale/base-currency pattern. A `THEME`
+  cookie keeps SSR / signed-out visits in sync.
+- **Theme selector in Settings** — a Preferences control: **System default /
+  Light / Dark**. Its server action persists the preference, syncs the cookie,
+  and revalidates the root layout so `<html data-theme>` updates immediately.
+- **System-follow, no flash** — the layout renders `data-theme` only for an
+  explicit choice and omits it for "system"; a `prefers-color-scheme` CSS block
+  then resolves "system" at paint time. No theme script, no FOUC — consistent
+  with the dependency-free ethos.
+- **Verified** — new `setTheme` service tests + a `resolveTheme` unit test
+  (226 tests green); `typecheck` / `lint` / `build` clean; both themes checked in
+  the browser (dark palette + AA gold buttons; light pixel-unchanged).
+
+Governed by **DDR-003 (Dark Mode)**, which supersedes DDR-001's light-only
+decision. Completes the Additional Settings milestone.
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -631,14 +746,19 @@ See:
 - `docs/decisions/ADR-011-observability.md`
 - `docs/decisions/ADR-012-production-deployment.md`
 - `docs/decisions/ADR-013-account-settings-and-deletion.md`
+- `docs/decisions/ADR-014-internationalization.md`
 
 # Design Decisions
 
 See:
 
 - `docs/design-decisions/DDR-001-figma-ui-redesign.md` — Figma "stone & gold"
-  re-skin (Phase 8; visual-only, light-only; originally an ADR, relocated to the
-  Design Decisions)
+  re-skin (Phase 8; visual-only; originally an ADR, relocated to the Design
+  Decisions). Its **light-only** stance is superseded by DDR-003.
+- `docs/design-decisions/DDR-002-global-display-density.md` — global `zoom: 0.75`
+  on `html` (renders the whole app at 75% density; builds on DDR-001)
+- `docs/design-decisions/DDR-003-dark-mode.md` — warm dark theme + per-user
+  Light/Dark/System preference (Phase 15; supersedes DDR-001's light-only point)
 
 ---
 
@@ -652,7 +772,8 @@ Current stack:
 - React
 - TypeScript
 - Dependency-free CSS design system (`src/app/globals.css`; no Tailwind/CSS-in-JS) —
-  "stone & gold" theme, light-only, `next/font` typography (DDR-001)
+  "stone & gold" theme with light + dark token sets, `next/font` typography
+  (DDR-001; dark mode DDR-003)
 
 ## Backend
 

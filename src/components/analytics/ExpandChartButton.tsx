@@ -2,6 +2,7 @@
 
 import { useRef, type ReactNode } from "react";
 import { IconExpand, IconX } from "@/components/ui/icons";
+import { useT } from "@/components/i18n/LocaleProvider";
 
 // An expand control for the portfolio charts: a small icon button that opens a
 // wide native <dialog> (the app's `.modal` pattern) containing a full-view copy
@@ -16,6 +17,7 @@ export function ExpandChartButton({
   label: string;
   children: ReactNode;
 }) {
+  const t = useT();
   const ref = useRef<HTMLDialogElement>(null);
 
   return (
@@ -23,15 +25,15 @@ export function ExpandChartButton({
       <button
         type="button"
         className="btn-sm btn-icon"
-        aria-label={`Expand ${label}`}
-        title="Expand"
+        aria-label={t("chart.expandAria", { label })}
+        title={t("action.expand")}
         onClick={() => ref.current?.showModal()}
       >
         <IconExpand size={16} />
       </button>
-      <dialog ref={ref} className="modal modal-chart" aria-label={`${label} (expanded)`}>
+      <dialog ref={ref} className="modal modal-chart" aria-label={t("chart.expandedAria", { label })}>
         <form method="dialog" className="chart-modal-close">
-          <button type="submit" className="btn-sm btn-icon" aria-label="Close">
+          <button type="submit" className="btn-sm btn-icon" aria-label={t("action.close")}>
             <IconX size={16} />
           </button>
         </form>

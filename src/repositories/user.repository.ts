@@ -39,6 +39,16 @@ export const userRepository = {
     await db.update(users).set({ baseCurrency }).where(eq(users.id, id));
   },
 
+  /** Set (or clear, with null) the user's preferred interface language. */
+  async updateLocale(id: string, locale: string | null): Promise<void> {
+    await db.update(users).set({ locale }).where(eq(users.id, id));
+  },
+
+  /** Set (or clear, with null) the user's preferred interface theme. */
+  async updateTheme(id: string, theme: string | null): Promise<void> {
+    await db.update(users).set({ theme }).where(eq(users.id, id));
+  },
+
   /**
    * Permanently delete the user row. Postgres foreign keys cascade the entire
    * owned graph (collections → coins → images/invoices/valuations, and the

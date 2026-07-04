@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { readError, NETWORK_ERROR } from "@/lib/http";
+import { useT } from "@/components/i18n/LocaleProvider";
 
 // Profile section of the Settings page: edit the display name. Email is shown
 // read-only (it's owned by the OAuth provider). Talks to PATCH /api/user via the
@@ -13,6 +14,7 @@ export function ProfileForm({
   initialName: string;
   email: string;
 }) {
+  const t = useT();
   const [name, setName] = useState(initialName);
   const [saved, setSaved] = useState(initialName);
   const [status, setStatus] = useState<
@@ -39,7 +41,7 @@ export function ProfileForm({
       const { name: updated } = (await response.json()) as { name: string };
       setName(updated);
       setSaved(updated);
-      setStatus({ kind: "ok", text: "Profile updated." });
+      setStatus({ kind: "ok", text: t("settings.profile.saved") });
     } catch {
       setStatus({ kind: "error", text: NETWORK_ERROR });
     } finally {
@@ -49,11 +51,11 @@ export function ProfileForm({
 
   return (
     <section className="card stack">
-      <h2 style={{ margin: 0 }}>Profile</h2>
+      <h2 style={{ margin: 0 }}>{t("settings.profile.heading")}</h2>
       <form onSubmit={handleSubmit} className="stack">
         <div className="field">
           <label htmlFor="displayName" className="mono-label">
-            Display name
+            {t("settings.profile.name")}
           </label>
           <input
             id="displayName"
@@ -65,7 +67,7 @@ export function ProfileForm({
           />
         </div>
         <div className="field">
-          <span className="mono-label">Email</span>
+          <span className="mono-label">{t("settings.profile.email")}</span>
           <span className="muted">{email}</span>
         </div>
         {status && (
@@ -83,7 +85,7 @@ export function ProfileForm({
             className="btn-primary btn-sm"
             disabled={busy || !dirty}
           >
-            {busy ? "Saving…" : "Save"}
+            {busy ? t("action.saving") : t("action.save")}
           </button>
         </div>
       </form>

@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — Additional Settings in progress (foundation shipped)**
+Current maturity: **Live in production — Additional Settings complete (foundation + i18n + dark mode all shipped)**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -47,27 +47,31 @@ Readiness** has now shipped: NumisBook is **live in production** — deployed on
 Vercel against Neon, schema applied via the gated `migrate` job, Google sign-in
 working and `/api/health` green, with CI/CD, observability, and auth resilience
 in place (see `history.md` Phases 10–11 and ADR-010/011/012). The active
-milestone is **Additional Settings**, whose **foundation** has now shipped — a
-dedicated `/settings` area with profile editing, self-service account deletion,
-and the base-currency preference (see `history.md` Phase 12 and ADR-013); the
-remaining passes are internationalization and dark mode.
+milestone is **Additional Settings**, now **complete**: a dedicated `/settings`
+area with profile editing, self-service account deletion, and the base-currency
+preference (Phase 12, ADR-013); **internationalization** across the full
+interface (Phases 13–14, ADR-014); and **dark mode** — a warm night theme with a
+per-user Light / Dark / System preference (Phase 15, DDR-003). The next
+milestone is **Rework Filters**.
 
 Primary objective:
 
 **Give users control over their account and preferences through a dedicated
-settings area.**
+settings area.** — ✅ delivered.
 
 Current priorities:
 
 - Production readiness — ✅ complete (live in production)
-- Additional settings (current)
-- (then) rework filters
+- Additional settings — ✅ complete (settings area, i18n, dark mode)
+- Rework filters (next)
 - (then) hosted error monitoring
 - (then) valuation-based analytics
 
 ---
 
-# Current Milestone — Additional Settings
+# Completed Milestone — Additional Settings
+
+Status: ✅ Complete (all passes shipped — see `history.md` Phases 12–15).
 
 Goal:
 
@@ -78,24 +82,35 @@ portfolio analytics, interface language, and theme (day/night).
 The **Settings foundation** has shipped (see `history.md` Phase 12 and
 `docs/decisions/ADR-013-account-settings-and-deletion.md`): the `/settings`
 page + navigation, display-name editing, self-service account deletion, and the
-base-currency preference's canonical home. The remaining features —
-internationalization and dark mode — are the later passes of this milestone.
+base-currency preference's canonical home.
+
+**Internationalization** has now fully shipped (see `history.md` Phases 13–14
+and `docs/decisions/ADR-014-internationalization.md`): a dependency-free i18n
+layer, a per-user `locale` preference with a language selector in `/settings`,
+and seven locales (English + Spanish, German, French, Italian, Chinese, Russian)
+covering the **entire interface** — the app shell (chrome, home, settings,
+entry/error pages) and the deep domain screens (coins, collections, valuations,
+assistant, and portfolio analytics). **Dark mode** has now also shipped (see
+`history.md` Phase 15 and `docs/design-decisions/DDR-003-dark-mode.md`): a warm
+night theme driven by the same design tokens, with a per-user `theme` preference
+(Light / Dark / System default) in `/settings` — completing the milestone.
 
 ## Features
 
 - [x] Settings page (route + navigation entry)
 - [x] View/edit user profile (display name, account info)
 - [x] Account/data controls (e.g. account deletion)
-- [ ] Add languages (i18n / multi-language support)
-- [ ] Add night mode (dark theme)
-  > ⚠️ Reverses `DDR-001-figma-ui-redesign`, which made the app light-only
-  > (`globals.css` ships light theme tokens only). Requires a new DDR
-  > superseding DDR-001 — re-introducing dark theme tokens — before
-  > implementation.
-- [ ] Settings menu controls
-  - [ ] Select language
+- [x] Add languages (i18n / multi-language support) — machinery + 7 locales
+      covering the full interface: the app shell (Phase 13) and the deep domain
+      screens (coins/collections/valuations/assistant/analytics, Phase 14)
+      (ADR-014)
+- [x] Add night mode (dark theme) — warm dark token set + per-user `theme`
+      preference (Light / Dark / System), no-flash SSR; supersedes DDR-001's
+      light-only stance via DDR-003 (`history.md` Phase 15)
+- [x] Settings menu controls
+  - [x] Select language (settings language selector + per-user `locale`; ADR-014)
   - [x] Select default currency (base currency applied to portfolio analytics)
-  - [ ] Select day/night mode
+  - [x] Select day/night mode (settings theme selector + per-user `theme`; DDR-003)
 
 ---
 
@@ -257,6 +272,36 @@ Product positioning and user segmentation remain incomplete.
 **Fix**
 
 - Migrate to the ESLint CLI
+
+---
+
+## Internationalization
+
+### Translation quality review
+
+**Problem**
+
+The shipped non-English catalogs (`es`, `de`, `fr`, `it`, `zh`, `ru`) are
+MVP machine-quality with English per-key fallback; they have not had native
+review.
+
+**Fix**
+
+- Have each locale reviewed by a native/fluent speaker before any
+  language-targeted marketing.
+
+### CJK / Cyrillic web font
+
+**Problem**
+
+DM Sans / Fraunces (the `next/font` families) cover Latin only, so Russian
+(Cyrillic) and Chinese currently fall back to system fonts for those scripts —
+inconsistent typography across platforms (ADR-014).
+
+**Fix**
+
+- Evaluate adding a CJK/Cyrillic-capable web font behind the existing
+  `next/font` setup if consistent rendering becomes a priority.
 
 ---
 

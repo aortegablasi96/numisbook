@@ -15,6 +15,8 @@ const fakeUser: User = {
   emailVerified: null,
   image: null,
   baseCurrency: null,
+  locale: null,
+  theme: null,
   createdAt: new Date(),
 };
 

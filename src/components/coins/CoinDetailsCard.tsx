@@ -6,6 +6,10 @@ import { COIN_GRADES } from "@/lib/validation/coin";
 import { formatCoinTitle, formatYearRange } from "@/lib/coin-format";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { IconPencil } from "@/components/ui/icons";
+import { useT } from "@/components/i18n/LocaleProvider";
+import type { MessageKey } from "@/lib/i18n";
+
+type Translate = ReturnType<typeof useT>;
 
 type CoinFields = Pick<
   Coin,
@@ -66,26 +70,26 @@ type Block = { label: string; value: string; multiline?: boolean };
 
 // The detail card's elements, in the order defined by the roadmap. Missing
 // fields are dropped. Title + characteristics are rendered separately above.
-function buildBlocks(coin: CoinFields): Block[] {
+function buildBlocks(coin: CoinFields, t: Translate): Block[] {
   const pricePaid = formatMoney(coin.finalPrice, coin.priceCurrency);
   const breakdown = [
-    coin.hammerPrice && `hammer ${formatMoney(coin.hammerPrice, coin.priceCurrency)}`,
-    coin.auctionPremium && `premium ${formatMoney(coin.auctionPremium, coin.priceCurrency)}`,
-    coin.taxCost && `tax ${formatMoney(coin.taxCost, coin.priceCurrency)}`,
-    coin.shippingCost && `shipping ${formatMoney(coin.shippingCost, coin.priceCurrency)}`,
+    coin.hammerPrice && `${t("coinDetail.breakdown.hammer")} ${formatMoney(coin.hammerPrice, coin.priceCurrency)}`,
+    coin.auctionPremium && `${t("coinDetail.breakdown.premium")} ${formatMoney(coin.auctionPremium, coin.priceCurrency)}`,
+    coin.taxCost && `${t("coinDetail.breakdown.tax")} ${formatMoney(coin.taxCost, coin.priceCurrency)}`,
+    coin.shippingCost && `${t("coinDetail.breakdown.shipping")} ${formatMoney(coin.shippingCost, coin.priceCurrency)}`,
   ].filter(Boolean);
 
   return [
-    coin.obverseDescription && { label: "Obverse", value: coin.obverseDescription, multiline: true },
-    coin.reverseDescription && { label: "Reverse", value: coin.reverseDescription, multiline: true },
-    coin.catalogueReferences && { label: "Catalogue references", value: coin.catalogueReferences },
-    coin.observations && { label: "Observations", value: coin.observations, multiline: true },
-    coin.pedigree && { label: "Pedigree", value: coin.pedigree, multiline: true },
+    coin.obverseDescription && { label: t("coinDetail.block.obverse"), value: coin.obverseDescription, multiline: true },
+    coin.reverseDescription && { label: t("coinDetail.block.reverse"), value: coin.reverseDescription, multiline: true },
+    coin.catalogueReferences && { label: t("coinDetail.catalogueReferences"), value: coin.catalogueReferences },
+    coin.observations && { label: t("coinDetail.observations"), value: coin.observations, multiline: true },
+    coin.pedigree && { label: t("coinDetail.pedigree"), value: coin.pedigree, multiline: true },
     pricePaid && {
-      label: "Price paid",
+      label: t("coinDetail.block.pricePaid"),
       value: breakdown.length ? `${pricePaid} (${breakdown.join(" + ")})` : pricePaid,
     },
-    formatAuctionLine(coin) && { label: "Obtained from", value: formatAuctionLine(coin)! },
+    formatAuctionLine(coin) && { label: t("coinDetail.block.obtainedFrom"), value: formatAuctionLine(coin)! },
   ].filter(Boolean) as Block[];
 }
 
@@ -165,6 +169,7 @@ export function CoinDetailsCard({
   coinId: string;
   children?: React.ReactNode;
 }) {
+  const t = useT();
   const [current, setCurrent] = useState<CoinFields>(coin);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -192,7 +197,7 @@ export function CoinDetailsCard({
         body: JSON.stringify(toPayload(form)),
       });
       if (!res.ok) {
-        setError(await readError(res, "Save failed. Please try again."));
+        setError(await readError(res, t("coinDetail.saveFailed")));
         return;
       }
       const { coin: updated } = (await res.json()) as { coin: CoinFields };
@@ -221,33 +226,33 @@ export function CoinDetailsCard({
   const finalPriceValue = hasComponent ? componentsSum : form.finalPrice;
 
   const title = formatCoinTitle(current);
-  const blocks = buildBlocks(current);
+  const blocks = buildBlocks(current, t);
   const years = formatYearRange(current.yearFrom, current.yearTo);
   // Key attributes as compact tiles (Figma attribute grid). Only present fields
   // are shown; descriptions/price/auction stay in the labelled blocks below.
   const attributes = [
-    current.category && ["Category", current.category],
-    current.metal && ["Metal", current.metal],
-    current.denomination && ["Denomination", current.denomination],
-    current.grade && ["Condition", current.grade],
-    current.weight && ["Weight", `${current.weight} g`],
-    current.diameter && ["Diameter", `${current.diameter} mm`],
-    current.mint && ["Mint", current.mint],
-    years && ["Year", years],
-  ].filter(Boolean) as [string, string][];
+    current.category && ["field.category", current.category],
+    current.metal && ["field.metal", current.metal],
+    current.denomination && ["field.denomination", current.denomination],
+    current.grade && ["field.condition", current.grade],
+    current.weight && ["field.weight", `${current.weight} g`],
+    current.diameter && ["field.diameter", `${current.diameter} mm`],
+    current.mint && ["field.mint", current.mint],
+    years && ["field.year", years],
+  ].filter(Boolean) as [MessageKey, string][];
 
   return (
     <div className="coin-overview-left">
       {editing ? (
         <form onSubmit={handleSave} className="card stack" style={{ gap: "var(--space-3)" }}>
           <div className="head-row" style={{ alignItems: "center" }}>
-            <h2 className="mono-label" style={{ margin: 0, fontSize: "0.8rem" }}>Edit coin</h2>
+            <h2 className="mono-label" style={{ margin: 0, fontSize: "0.8rem" }}>{t("coins.formEditTitle")}</h2>
             <div className="row" style={{ gap: "var(--space-2)" }}>
               <button type="button" className="btn-sm" onClick={() => setEditing(false)} disabled={busy}>
-                Cancel
+                {t("action.cancel")}
               </button>
               <button type="submit" className="btn-sm btn-primary" disabled={busy}>
-                {busy ? "Saving…" : "Save"}
+                {busy ? t("action.saving") : t("action.save")}
               </button>
             </div>
           </div>
@@ -256,105 +261,105 @@ export function CoinDetailsCard({
 
           <div className="coin-edit-grid">
             <label className="coin-edit-label">
-              Category
+              {t("field.category")}
               <input type="text" value={form.category} onChange={(e) => set("category", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Issuing authority
+              {t("field.issuingAuthority")}
               <input type="text" value={form.issuingAuthority} onChange={(e) => set("issuingAuthority", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Denomination
+              {t("field.denomination")}
               <input type="text" value={form.denomination} onChange={(e) => set("denomination", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Mint
+              {t("field.mint")}
               <input type="text" value={form.mint} onChange={(e) => set("mint", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Year from (− for BC)
+              {t("coinDetail.yearFromBcFull")}
               <input type="number" value={form.yearFrom} onChange={(e) => set("yearFrom", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Year to (− for BC)
+              {t("coinDetail.yearToBcFull")}
               <input type="number" value={form.yearTo} onChange={(e) => set("yearTo", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Metal
+              {t("field.metal")}
               <input type="text" value={form.metal} onChange={(e) => set("metal", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Condition (grade)
+              {t("coinDetail.conditionGrade")}
               <select value={form.grade} onChange={(e) => set("grade", e.target.value)} disabled={busy}>
                 <option value="">—</option>
                 {COIN_GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
               </select>
             </label>
             <label className="coin-edit-label">
-              Weight (g)
+              {t("coinDetail.weightG")}
               <input type="number" step="0.01" min="0" value={form.weight} onChange={(e) => set("weight", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Diameter (mm)
+              {t("coinDetail.diameterMm")}
               <input type="number" step="0.01" min="0" value={form.diameter} onChange={(e) => set("diameter", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
-              Catalogue references
-              <input type="text" value={form.catalogueReferences} onChange={(e) => set("catalogueReferences", e.target.value)} disabled={busy} placeholder="e.g. RIC 123; Sear 456" />
+              {t("coinDetail.catalogueReferences")}
+              <input type="text" value={form.catalogueReferences} onChange={(e) => set("catalogueReferences", e.target.value)} disabled={busy} placeholder={t("coinDetail.cataloguePlaceholder")} />
             </label>
 
             <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
-              Obverse description
+              {t("coinDetail.obverseDescription")}
               <textarea rows={2} value={form.obverseDescription} onChange={(e) => set("obverseDescription", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
-              Reverse description
+              {t("coinDetail.reverseDescription")}
               <textarea rows={2} value={form.reverseDescription} onChange={(e) => set("reverseDescription", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
-              Observations
+              {t("coinDetail.observations")}
               <textarea rows={3} value={form.observations} onChange={(e) => set("observations", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label" style={{ gridColumn: "1 / -1" }}>
-              Pedigree
-              <textarea rows={3} value={form.pedigree} onChange={(e) => set("pedigree", e.target.value)} disabled={busy} placeholder="Prior auctions where this coin was hammered, one per line" />
+              {t("coinDetail.pedigree")}
+              <textarea rows={3} value={form.pedigree} onChange={(e) => set("pedigree", e.target.value)} disabled={busy} placeholder={t("coinDetail.pedigreePlaceholder")} />
             </label>
 
             <label className="coin-edit-label">
-              Auction house
+              {t("coinDetail.auctionHouse")}
               <input type="text" value={form.auctionHouse} onChange={(e) => set("auctionHouse", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Auction name
+              {t("coinDetail.auctionName")}
               <input type="text" value={form.auctionName} onChange={(e) => set("auctionName", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Lot number
+              {t("coinDetail.lotNumber")}
               <input type="text" value={form.auctionLot} onChange={(e) => set("auctionLot", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Auction date
+              {t("coinDetail.auctionDate")}
               <input type="date" value={form.auctionDate} onChange={(e) => set("auctionDate", e.target.value)} disabled={busy} />
             </label>
 
             <label className="coin-edit-label">
-              Hammer price
+              {t("coinDetail.hammerPrice")}
               <input type="number" step="0.01" min="0" value={form.hammerPrice} onChange={(e) => set("hammerPrice", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Auction premium
+              {t("coinDetail.auctionPremium")}
               <input type="number" step="0.01" min="0" value={form.auctionPremium} onChange={(e) => set("auctionPremium", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Tax cost
+              {t("coinDetail.taxCost")}
               <input type="number" step="0.01" min="0" value={form.taxCost} onChange={(e) => set("taxCost", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Shipping cost
+              {t("coinDetail.shippingCost")}
               <input type="number" step="0.01" min="0" value={form.shippingCost} onChange={(e) => set("shippingCost", e.target.value)} disabled={busy} />
             </label>
             <label className="coin-edit-label">
-              Final price {hasComponent && <span style={{ color: "var(--muted)" }}>(= sum)</span>}
+              {t("coinDetail.finalPrice")} {hasComponent && <span style={{ color: "var(--muted)" }}>{t("coinDetail.finalPriceSum")}</span>}
               <input
                 type="number"
                 step="0.01"
@@ -365,7 +370,7 @@ export function CoinDetailsCard({
               />
             </label>
             <label className="coin-edit-label">
-              Price currency
+              {t("coinDetail.priceCurrency")}
               <input type="text" maxLength={3} value={form.priceCurrency} onChange={(e) => set("priceCurrency", e.target.value.toUpperCase())} disabled={busy} placeholder="EUR" />
             </label>
           </div>
@@ -379,8 +384,8 @@ export function CoinDetailsCard({
               className="btn-sm btn-icon coin-edit-btn"
               onClick={startEdit}
               style={{ flexShrink: 0 }}
-              aria-label="Edit coin"
-              title="Edit"
+              aria-label={t("coins.editAria")}
+              title={t("action.edit")}
             >
               <IconPencil size={20} />
             </button>
@@ -389,7 +394,7 @@ export function CoinDetailsCard({
             <dl className="attr-grid">
               {attributes.map(([label, value]) => (
                 <div key={label} className="attr-tile">
-                  <dt>{label}</dt>
+                  <dt>{t(label)}</dt>
                   <dd>{value}</dd>
                 </div>
               ))}

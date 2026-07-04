@@ -7,6 +7,8 @@ import { IconPencil, IconTrash } from "@/components/ui/icons";
 import { COIN_GRADES } from "@/lib/validation/coin";
 import { formatYearRange, formatCoinTitle } from "@/lib/coin-format";
 import { readError, NETWORK_ERROR } from "@/lib/http";
+import { useT } from "@/components/i18n/LocaleProvider";
+import type { MessageKey } from "@/lib/i18n";
 
 export type CoinView = {
   id: string;
@@ -37,17 +39,17 @@ const EMPTY_FILTERS: Filters = { q: "", metal: "", category: "", year: "", sortB
 type ColumnKey = "title" | "metal" | "denomination" | "year" | "category" | "issuingAuthority" | "grade" | "mint" | "weight" | "diameter";
 type ColState = { key: ColumnKey; visible: boolean };
 
-const COLUMN_DEFS: { key: ColumnKey; label: string; sortable: boolean; required: boolean; defaultVisible: boolean }[] = [
-  { key: "title",            label: "Coin",              sortable: false, required: true,  defaultVisible: true  },
-  { key: "metal",            label: "Metal",             sortable: true,  required: false, defaultVisible: true  },
-  { key: "denomination",     label: "Denomination",      sortable: true,  required: false, defaultVisible: true  },
-  { key: "year",             label: "Year",              sortable: true,  required: false, defaultVisible: false },
-  { key: "category",         label: "Category",          sortable: true,  required: false, defaultVisible: false },
-  { key: "issuingAuthority", label: "Issuing authority", sortable: false, required: false, defaultVisible: false },
-  { key: "grade",            label: "Grade",             sortable: false, required: false, defaultVisible: false },
-  { key: "mint",             label: "Mint",              sortable: false, required: false, defaultVisible: false },
-  { key: "weight",           label: "Weight",            sortable: false, required: false, defaultVisible: false },
-  { key: "diameter",         label: "Diameter",          sortable: false, required: false, defaultVisible: false },
+const COLUMN_DEFS: { key: ColumnKey; labelKey: MessageKey; sortable: boolean; required: boolean; defaultVisible: boolean }[] = [
+  { key: "title",            labelKey: "field.coin",             sortable: false, required: true,  defaultVisible: true  },
+  { key: "metal",            labelKey: "field.metal",            sortable: true,  required: false, defaultVisible: true  },
+  { key: "denomination",     labelKey: "field.denomination",     sortable: true,  required: false, defaultVisible: true  },
+  { key: "year",             labelKey: "field.year",             sortable: true,  required: false, defaultVisible: false },
+  { key: "category",         labelKey: "field.category",         sortable: true,  required: false, defaultVisible: false },
+  { key: "issuingAuthority", labelKey: "field.issuingAuthority", sortable: false, required: false, defaultVisible: false },
+  { key: "grade",            labelKey: "field.grade",            sortable: false, required: false, defaultVisible: false },
+  { key: "mint",             labelKey: "field.mint",             sortable: false, required: false, defaultVisible: false },
+  { key: "weight",           labelKey: "field.weight",           sortable: false, required: false, defaultVisible: false },
+  { key: "diameter",         labelKey: "field.diameter",         sortable: false, required: false, defaultVisible: false },
 ];
 
 const DEFAULT_COL_STATE: ColState[] = COLUMN_DEFS.map((c) => ({ key: c.key, visible: c.defaultVisible }));
@@ -104,9 +106,9 @@ function renderCell(coin: CoinView, key: ColumnKey): React.ReactNode {
 // managed on the coin detail page; toPayload omits them, so a list edit is a
 // safe partial PATCH that never clears them. (Coins have no name — they are
 // identified by these attributes; see formatCoinTitle.)
-const TEXT_FIELDS = [
-  ["category", "Category"], ["issuingAuthority", "Issuing authority"],
-  ["denomination", "Denomination"], ["mint", "Mint"], ["metal", "Metal"],
+const TEXT_FIELDS: readonly (readonly [string, MessageKey])[] = [
+  ["category", "field.category"], ["issuingAuthority", "field.issuingAuthority"],
+  ["denomination", "field.denomination"], ["mint", "field.mint"], ["metal", "field.metal"],
 ] as const;
 
 type FormState = Record<string, string>;
@@ -138,6 +140,7 @@ function toPayload(form: FormState): Record<string, string | number | null> {
 // ---- Main component ------------------------------------------------------
 
 export function CoinsManager({ collectionId, initial }: { collectionId: string; initial: SearchResult }) {
+  const t = useT();
   const [coins, setCoins] = useState<CoinView[]>(initial.coins);
   const [total, setTotal] = useState(initial.total);
   const [page, setPage] = useState(initial.page);
@@ -262,32 +265,32 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
       <div className="toolbar" style={{ justifyContent: "space-between" }}>
         <div className="row" style={{ flexWrap: "wrap", gap: "0.5rem", flex: 1, alignItems: "flex-end" }}>
           <label>
-            Search
-            <input type="text" value={filters.q} placeholder="category, authority…"
+            {t("coins.search")}
+            <input type="text" value={filters.q} placeholder={t("coins.searchPlaceholder")}
               onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))} />
           </label>
           <label>
-            Metal
+            {t("field.metal")}
             <select value={filters.metal} onChange={(e) => setFilters((f) => ({ ...f, metal: e.target.value }))}>
-              <option value="">All</option>
+              <option value="">{t("coins.filterAll")}</option>
               {facets.metals.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           </label>
           <label>
-            Category
+            {t("field.category")}
             <select value={filters.category} onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))}>
-              <option value="">All</option>
+              <option value="">{t("coins.filterAll")}</option>
               {facets.categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
           <label>
-            Year
+            {t("field.year")}
             <input type="number" value={filters.year} style={{ width: "6rem" }}
               onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value }))} />
           </label>
           <button type="button" onClick={() => setFilters(EMPTY_FILTERS)}
             disabled={filters.q === "" && filters.metal === "" && filters.category === "" && filters.year === "" && filters.sortBy === "createdAt" && filters.sortDir === "desc"}>
-            Clear
+            {t("action.clear")}
           </button>
         </div>
         <div className="row" style={{ gap: "0.5rem", flexShrink: 0 }}>
@@ -297,7 +300,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
               if (showForm && !editingId) { resetForm(); }
               else { setForm(EMPTY_FORM); setEditingId(null); setShowForm(true); setError(null); }
             }}>
-            {showForm && !editingId ? "Cancel" : "+ Add coin"}
+            {showForm && !editingId ? t("action.cancel") : t("coins.add")}
           </button>
         </div>
       </div>
@@ -306,18 +309,18 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
       {showForm && (
         <form onSubmit={handleSubmit} className="card stack">
           <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>
-            {editingId ? "Edit coin" : "Add a coin"}
+            {editingId ? t("coins.formEditTitle") : t("coins.formAddTitle")}
           </h2>
           <div className="row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
-            {TEXT_FIELDS.map(([key, label]) => (
+            {TEXT_FIELDS.map(([key, labelKey]) => (
               <label key={key}>
-                {label}
+                {t(labelKey)}
                 <input type="text" value={form[key]}
                   onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} />
               </label>
             ))}
             <label>
-              Grade
+              {t("field.grade")}
               <select value={form.grade}
                 onChange={(e) => setForm((f) => ({ ...f, grade: e.target.value }))}>
                 <option value="">—</option>
@@ -325,21 +328,21 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
               </select>
             </label>
             <label>
-              Year from (− BC)
+              {t("coins.yearFromBc")}
               <input type="number" value={form.yearFrom} style={{ width: "7rem" }}
                 onChange={(e) => setForm((f) => ({ ...f, yearFrom: e.target.value }))} />
             </label>
             <label>
-              Year to (− BC)
+              {t("coins.yearToBc")}
               <input type="number" value={form.yearTo} style={{ width: "7rem" }}
                 onChange={(e) => setForm((f) => ({ ...f, yearTo: e.target.value }))} />
             </label>
           </div>
           <div className="row">
             <button type="submit" className="btn-primary" disabled={busy}>
-              {editingId ? "Save changes" : "Add coin"}
+              {editingId ? t("coins.saveChanges") : t("coins.addSubmit")}
             </button>
-            <button type="button" onClick={resetForm} disabled={busy}>Cancel</button>
+            <button type="button" onClick={resetForm} disabled={busy}>{t("action.cancel")}</button>
           </div>
         </form>
       )}
@@ -347,12 +350,13 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
       {error && <p className="alert">{error}</p>}
 
       <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>
-        {total} {total === 1 ? "coin" : "coins"}{loading && " · loading…"}
+        {t(total === 1 ? "unit.coinOne" : "unit.coinOther", { count: total })}
+        {loading && ` · ${t("status.loading")}`}
       </p>
 
       {coins.length === 0 ? (
         <p className="empty">
-          {total === 0 ? "No coins yet. Use the button above to add one." : "No coins match the current filters."}
+          {total === 0 ? t("coins.emptyNone") : t("coins.emptyNoMatch")}
         </p>
       ) : (
         <div className="table-wrap">
@@ -360,7 +364,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
           <thead>
             <tr>
               <th className="td-thumb">
-                <span className="sr-only">Image</span>
+                <span className="sr-only">{t("a11y.image")}</span>
               </th>
               {visibleCols.map((col) => {
                 const def = defFor(col.key);
@@ -377,7 +381,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
                 return def.sortable ? (
                   <th key={col.key} {...thShared} onClick={() => handleSort(col.key)}>
                     <span className="th-drag-grip">⠿</span>
-                    {def.label}
+                    {t(def.labelKey)}
                     <span style={{ marginLeft: "0.3rem", opacity: filters.sortBy === col.key ? 1 : 0.3, fontSize: "0.8em" }}>
                       {filters.sortBy === col.key ? (filters.sortDir === "asc" ? "↑" : "↓") : "⇅"}
                     </span>
@@ -385,12 +389,12 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
                 ) : (
                   <th key={col.key} {...thShared}>
                     <span className="th-drag-grip">⠿</span>
-                    {def.label}
+                    {t(def.labelKey)}
                   </th>
                 );
               })}
               <th>
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">{t("a11y.actions")}</span>
               </th>
             </tr>
           </thead>
@@ -406,13 +410,13 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
                 <td className="td-actions">
                   <span className="row row-actions" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
                     <button type="button" className="btn-sm btn-icon" onClick={() => startEdit(coin)} disabled={busy}
-                      aria-label="Edit coin" title="Edit">
+                      aria-label={t("coins.editAria")} title={t("action.edit")}>
                       <IconPencil />
                     </button>
-                    <ConfirmButton className="btn-sm btn-danger btn-icon" disabled={busy} title="Delete"
-                      message={`Delete "${formatCoinTitle(coin)}" and its valuations? This cannot be undone.`}
+                    <ConfirmButton className="btn-sm btn-danger btn-icon" disabled={busy} title={t("action.delete")}
+                      message={t("coins.deleteConfirm", { title: formatCoinTitle(coin) })}
                       onConfirm={() => handleDelete(coin)}>
-                      <IconTrash /><span className="sr-only">Delete coin</span>
+                      <IconTrash /><span className="sr-only">{t("coins.deleteSr")}</span>
                     </ConfirmButton>
                   </span>
                 </td>
@@ -425,9 +429,9 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
 
       {totalPages > 1 && (
         <div className="pager">
-          <button type="button" onClick={() => load(page - 1, filters)} disabled={loading || page <= 1}>← Prev</button>
-          <span className="muted">Page {page} of {totalPages}</span>
-          <button type="button" onClick={() => load(page + 1, filters)} disabled={loading || page >= totalPages}>Next →</button>
+          <button type="button" onClick={() => load(page - 1, filters)} disabled={loading || page <= 1}>{t("pager.prev")}</button>
+          <span className="muted">{t("pager.page", { page, total: totalPages })}</span>
+          <button type="button" onClick={() => load(page + 1, filters)} disabled={loading || page >= totalPages}>{t("pager.next")}</button>
         </div>
       )}
     </section>
@@ -443,6 +447,7 @@ function ColumnPicker({
   onToggle: (key: ColumnKey, checked: boolean) => void;
   onReorder: (from: ColumnKey, to: ColumnKey) => void;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [dragKey, setDragKey] = useState<ColumnKey | null>(null);
   const [dropKey, setDropKey] = useState<ColumnKey | null>(null);
@@ -462,11 +467,11 @@ function ColumnPicker({
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <button type="button" className="btn-sm" onClick={() => setOpen((v) => !v)}>
-        Columns{visibleCount < colState.length ? ` (${visibleCount}/${colState.length})` : ""} {open ? "▴" : "▾"}
+        {t("coins.columns")}{visibleCount < colState.length ? ` (${visibleCount}/${colState.length})` : ""} {open ? "▴" : "▾"}
       </button>
       {open && (
         <div className="col-picker">
-          <p className="col-picker-hint">Drag ⠿ to reorder · check to show</p>
+          <p className="col-picker-hint">{t("coins.columnsHint")}</p>
           {colState.map((col) => {
             const def = defFor(col.key);
             const isDropTarget = dropKey === col.key && dragKey !== col.key;
@@ -480,7 +485,7 @@ function ColumnPicker({
                 onDrop={() => { if (dragKey && dragKey !== col.key) onReorder(dragKey, col.key); setDragKey(null); setDropKey(null); }}
                 onDragEnd={() => { setDragKey(null); setDropKey(null); }}
               >
-                <span className="col-picker-handle" title="Drag to reorder">⠿</span>
+                <span className="col-picker-handle" title={t("coins.dragToReorder")}>⠿</span>
                 <input
                   type="checkbox"
                   checked={col.visible}
@@ -488,8 +493,8 @@ function ColumnPicker({
                   onChange={(e) => onToggle(col.key, e.target.checked)}
                   onMouseDown={(e) => e.stopPropagation()}
                 />
-                <span className="col-picker-label">{def.label}</span>
-                {!col.visible && <span className="col-picker-hidden-badge">hidden</span>}
+                <span className="col-picker-label">{t(def.labelKey)}</span>
+                {!col.visible && <span className="col-picker-hidden-badge">{t("coins.columnHidden")}</span>}
               </div>
             );
           })}

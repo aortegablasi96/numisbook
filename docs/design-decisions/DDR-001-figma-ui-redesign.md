@@ -1,8 +1,15 @@
 # DDR-001-Figma UI Redesign
 
-Status: Accepted
+Status: Accepted (light-only decision **superseded by DDR-003**)
 
 Date: 2026-06-16
+
+> **Update (2026-07-03):** the **light-only** stance below (a single `:root`
+> scheme, no dark variant) is **superseded by DDR-003 (Dark Mode)**, which adds a
+> warm dark theme driven by the same tokens. Everything else in DDR-001 — the
+> "stone & gold" palette intent, typography, spacing scale, geometry, and the
+> gold-for-fills / AA-gold-for-text contrast rules — **still stands** and is
+> extended (not replaced) by DDR-003's `--on-gold` seam.
 
 > Relocated from the architecture decisions (it was originally an ADR) to the
 > Design Decision Records: this is a visual/UX decision (no route, service,
