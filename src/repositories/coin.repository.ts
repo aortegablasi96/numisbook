@@ -23,6 +23,7 @@ export type RecentAcquisition = {
   priceCurrency: string | null;
   auctionDate: string | null; // YYYY-MM-DD; nullable
   firstImageId: string | null; // oldest coin image, for the row thumbnail
+  secondImageId: string | null; // next-oldest image, shown beside the first
 };
 
 export type CoinSortBy = "category" | "metal" | "denomination" | "year" | "createdAt";
@@ -153,6 +154,12 @@ export const coinRepository = {
           WHERE ci.coin_id = ${coins.id}
           ORDER BY ci.created_at ASC, ci.id ASC
           LIMIT 1
+        )`,
+        secondImageId: sql<string | null>`(
+          SELECT ci.id FROM ${coinImages} ci
+          WHERE ci.coin_id = ${coins.id}
+          ORDER BY ci.created_at ASC, ci.id ASC
+          LIMIT 1 OFFSET 1
         )`,
       })
       .from(coins)
