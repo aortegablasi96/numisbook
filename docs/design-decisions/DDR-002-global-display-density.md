@@ -73,6 +73,7 @@ Tradeoffs:
   `window.innerHeight` (`useChartHeight`), so the page now renders shorter than
   the viewport (some empty space below) instead of filling it exactly. Cosmetic;
   not corrected here to avoid coupling chart code to the global scale.
+  **(Since corrected — see the 2026-07-04 addendum below.)**
 * Users who preferred the 100% scale now see a denser UI. Mitigated by browser
   zoom (see below).
 
@@ -113,6 +114,33 @@ one-line zoom.
 
 Do nothing in code; tell users to zoom their browser. Rejected: the owner wants
 the preferred density to be the product default, not a per-user manual step.
+
+## Addendum — 2026-07-04: zoom-aware portfolio chart sizing
+
+The "empty space below the charts" tradeoff recorded above was resolved by making
+the portfolio charts' size explicitly **zoom-aware**, rather than by re-scaling
+tokens (which this DDR deliberately avoids). The coupling is confined to the two
+chart-sizing seams and does not touch the design system:
+
+* **`useChartHeight`** (`src/components/analytics/chart-layout.ts`) computes the
+  vertical space available in on-screen (visual) px, then divides by the `0.75`
+  zoom to get the *nominal* (pre-zoom) SVG height the plot must be to actually
+  fill that space. Without the division the charts were sized ~25% too short —
+  the source of the empty band. Both the inline and the expanded (modal) charts
+  now fill their space; constants are expressed as visual-px chrome around the
+  plot.
+* **`.modal-chart`** (`globals.css`) sizes the expand dialog with
+  `calc(96vw / 0.75)` / `calc(96vh / 0.75)`. Because the dialog renders inside the
+  root `zoom`, its `vw`/`vh` units are themselves scaled, so plain `96vw`/`96vh`
+  only reached ~72% of the real screen and capped the enlarged chart; dividing by
+  the zoom lets it fill ~96% of the actual viewport.
+
+This is the narrow, intentional exception to the "no per-component coupling to the
+global scale" stance: the fit-to-viewport charts are the one place that reads
+`window.innerHeight`/viewport units directly, so they are the one place that must
+account for the zoom. The rest of the app remains scale-agnostic per the Decision
+above. `0.75` is duplicated as a local `ZOOM` constant in the chart module and in
+the `calc()`; if the root zoom ever changes, update those two sites.
 
 ## References
 
