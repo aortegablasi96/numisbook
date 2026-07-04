@@ -261,6 +261,10 @@ export const en = {
   "home.stat.totalPaidNone": "Total paid · no prices yet",
   "home.stat.noValue": "—",
   "home.emptyHint": "Start by creating a collection, then add coins to it.",
+  "home.recent.title": "Recent acquisitions",
+  "home.recent.viewAll": "View all",
+  "home.recent.empty":
+    "Your most recent acquisitions will appear here once you add coins.",
   "feature.collections.body":
     "Organize your coins into collections — add, rename, and curate.",
   "feature.portfolio.body":

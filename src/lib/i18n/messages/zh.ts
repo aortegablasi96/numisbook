@@ -39,6 +39,9 @@ export const zh: Partial<Messages> = {
   "home.stat.totalPaidNone": "已付总额 · 暂无价格",
   "home.stat.noValue": "—",
   "home.emptyHint": "先创建一个收藏集，然后向其中添加钱币。",
+  "home.recent.title": "最近入藏",
+  "home.recent.viewAll": "查看全部",
+  "home.recent.empty": "添加钱币后，你最近的入藏将显示在这里。",
   "feature.collections.body": "将钱币整理到收藏集中——添加、重命名和管理。",
   "feature.portfolio.body": "总价值、按金属和收藏集的分布，以及趋势。",
 

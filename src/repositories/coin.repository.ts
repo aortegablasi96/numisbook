@@ -1,10 +1,29 @@
 import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { coins, collections } from "@/db/schema";
+import { coins, coinImages, collections } from "@/db/schema";
 
 export type Coin = typeof coins.$inferSelect;
 export type NewCoin = typeof coins.$inferInsert;
 export type CoinPatch = Partial<Omit<NewCoin, "id" | "collectionId" | "createdAt">>;
+
+// A recently acquired coin for the home dashboard's "Recent acquisitions" list:
+// enough to derive the title (coins have no name), the category · denomination ·
+// metal line, the price paid, the acquisition date, and a thumbnail.
+export type RecentAcquisition = {
+  id: string;
+  collectionId: string;
+  category: string | null;
+  issuingAuthority: string | null;
+  yearFrom: number | null;
+  yearTo: number | null;
+  mint: string | null;
+  denomination: string | null;
+  metal: string | null;
+  finalPrice: string | null;
+  priceCurrency: string | null;
+  auctionDate: string | null; // YYYY-MM-DD; nullable
+  firstImageId: string | null; // oldest coin image, for the row thumbnail
+};
 
 export type CoinSortBy = "category" | "metal" | "denomination" | "year" | "createdAt";
 export type CoinSortDir = "asc" | "desc";
@@ -102,6 +121,48 @@ export const coinRepository = {
       .where(where);
 
     return { coins: rows, total: counted?.total ?? 0 };
+  },
+
+  /**
+   * The user's most recently acquired coins across all their collections, most
+   * recent first, capped at `limit`. "Acquired" is the auction date; coins
+   * without one fall back to their created-at date, so undated coins still
+   * interleave by when they were added (rather than sinking below every dated
+   * coin). `created_at` breaks ties. Tenant-scoped via the owning collection.
+   */
+  async listRecentAcquisitionsForUser(
+    userId: string,
+    limit: number,
+  ): Promise<RecentAcquisition[]> {
+    return db
+      .select({
+        id: coins.id,
+        collectionId: coins.collectionId,
+        category: coins.category,
+        issuingAuthority: coins.issuingAuthority,
+        yearFrom: coins.yearFrom,
+        yearTo: coins.yearTo,
+        mint: coins.mint,
+        denomination: coins.denomination,
+        metal: coins.metal,
+        finalPrice: coins.finalPrice,
+        priceCurrency: coins.priceCurrency,
+        auctionDate: coins.auctionDate,
+        firstImageId: sql<string | null>`(
+          SELECT ci.id FROM ${coinImages} ci
+          WHERE ci.coin_id = ${coins.id}
+          ORDER BY ci.created_at ASC, ci.id ASC
+          LIMIT 1
+        )`,
+      })
+      .from(coins)
+      .innerJoin(collections, eq(coins.collectionId, collections.id))
+      .where(eq(collections.userId, userId))
+      .orderBy(
+        sql`COALESCE(${coins.auctionDate}, ${coins.createdAt}::date) DESC`,
+        desc(coins.createdAt),
+      )
+      .limit(limit);
   },
 
   /** Find a coin only if it lives in one of the user's collections. */
