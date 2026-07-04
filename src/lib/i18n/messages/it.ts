@@ -39,6 +39,10 @@ export const it: Partial<Messages> = {
   "home.stat.totalPaidNone": "Totale pagato · nessun prezzo ancora",
   "home.stat.noValue": "—",
   "home.emptyHint": "Inizia creando una collezione, poi aggiungi le monete.",
+  "home.recent.title": "Acquisizioni recenti",
+  "home.recent.viewAll": "Vedi tutto",
+  "home.recent.empty":
+    "Le tue acquisizioni più recenti appariranno qui una volta aggiunte le monete.",
   "feature.collections.body":
     "Organizza le tue monete in collezioni: aggiungi, rinomina e gestisci.",
   "feature.portfolio.body":

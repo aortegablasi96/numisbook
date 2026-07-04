@@ -4,6 +4,7 @@ import {
   type CoinPatch,
   type CoinSortBy,
   type CoinSortDir,
+  type RecentAcquisition,
 } from "@/repositories/coin.repository";
 import { collectionRepository } from "@/repositories/collection.repository";
 import {
@@ -14,6 +15,9 @@ import {
 import { NotFoundError, ValidationError } from "@/lib/errors";
 
 export const COINS_PAGE_SIZE = 20;
+
+// How many recent acquisitions the home dashboard surfaces.
+export const RECENT_ACQUISITIONS_LIMIT = 5;
 
 const VALID_SORT_BY = new Set<CoinSortBy>(["category", "metal", "denomination", "year", "createdAt"]);
 
@@ -87,6 +91,17 @@ export async function getCoinFacets(
 ): Promise<{ metals: string[]; categories: string[] }> {
   await assertOwnsCollection(userId, collectionId);
   return coinRepository.getDistinctFacets(collectionId);
+}
+
+// The user's most recent acquisitions across every collection, for the home
+// dashboard. Tenant isolation is enforced by the repository (scoped by userId);
+// there is no per-collection ownership check to make because it spans them all.
+export async function listRecentAcquisitions(
+  userId: string,
+  limit: number = RECENT_ACQUISITIONS_LIMIT,
+): Promise<RecentAcquisition[]> {
+  const capped = Math.max(1, Math.floor(limit));
+  return coinRepository.listRecentAcquisitionsForUser(userId, capped);
 }
 
 export async function getCoin(userId: string, coinId: string): Promise<Coin> {

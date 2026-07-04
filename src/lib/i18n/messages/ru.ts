@@ -39,6 +39,10 @@ export const ru: Partial<Messages> = {
   "home.stat.totalPaidNone": "Всего оплачено · цен пока нет",
   "home.stat.noValue": "—",
   "home.emptyHint": "Начните с создания коллекции, затем добавьте в неё монеты.",
+  "home.recent.title": "Недавние приобретения",
+  "home.recent.viewAll": "Показать все",
+  "home.recent.empty":
+    "Ваши последние приобретения появятся здесь, когда вы добавите монеты.",
   "feature.collections.body":
     "Организуйте монеты по коллекциям — добавляйте, переименовывайте и управляйте.",
   "feature.portfolio.body":

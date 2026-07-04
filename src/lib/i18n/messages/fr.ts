@@ -40,6 +40,10 @@ export const fr: Partial<Messages> = {
   "home.stat.noValue": "—",
   "home.emptyHint":
     "Commencez par créer une collection, puis ajoutez-y des pièces.",
+  "home.recent.title": "Acquisitions récentes",
+  "home.recent.viewAll": "Voir tout",
+  "home.recent.empty":
+    "Vos acquisitions les plus récentes apparaîtront ici une fois des pièces ajoutées.",
   "feature.collections.body":
     "Organisez vos pièces en collections : ajoutez, renommez et gérez.",
   "feature.portfolio.body":

@@ -7,7 +7,9 @@ import {
   addCoin,
   editCoin,
   deleteCoin,
+  listRecentAcquisitions,
   COINS_PAGE_SIZE,
+  RECENT_ACQUISITIONS_LIMIT,
 } from "./coin.service";
 import { coinRepository, type Coin } from "@/repositories/coin.repository";
 import { collectionRepository } from "@/repositories/collection.repository";
@@ -17,6 +19,7 @@ vi.mock("@/repositories/coin.repository", () => ({
   coinRepository: {
     listByCollection: vi.fn(),
     searchInCollection: vi.fn(),
+    listRecentAcquisitionsForUser: vi.fn(),
     findByIdForUser: vi.fn(),
     create: vi.fn(),
     updateForUser: vi.fn(),
@@ -138,6 +141,27 @@ describe("coin.service", () => {
         "col-1",
         expect.objectContaining({ year: undefined, offset: 0, limit: COINS_PAGE_SIZE }),
       );
+    });
+  });
+
+  describe("listRecentAcquisitions", () => {
+    it("returns the user's recent acquisitions with the default limit", async () => {
+      const rows = [{ id: "coin-1" }] as never;
+      coins.listRecentAcquisitionsForUser.mockResolvedValue(rows);
+      const result = await listRecentAcquisitions("user-1");
+      expect(coins.listRecentAcquisitionsForUser).toHaveBeenCalledWith(
+        "user-1",
+        RECENT_ACQUISITIONS_LIMIT,
+      );
+      expect(result).toBe(rows);
+    });
+
+    it("clamps a fractional or below-one limit to at least one", async () => {
+      coins.listRecentAcquisitionsForUser.mockResolvedValue([]);
+      await listRecentAcquisitions("user-1", 0);
+      expect(coins.listRecentAcquisitionsForUser).toHaveBeenCalledWith("user-1", 1);
+      await listRecentAcquisitions("user-1", 3.9);
+      expect(coins.listRecentAcquisitionsForUser).toHaveBeenLastCalledWith("user-1", 3);
     });
   });
 

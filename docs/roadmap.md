@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — Additional Settings complete (foundation + i18n + dark mode all shipped)**
+Current maturity: **Live in production — active milestone: Rework Filters**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -46,75 +46,71 @@ and `docs/decisions/ADR-009-ux-and-feature-refinement.md`). **Production
 Readiness** has now shipped: NumisBook is **live in production** — deployed on
 Vercel against Neon, schema applied via the gated `migrate` job, Google sign-in
 working and `/api/health` green, with CI/CD, observability, and auth resilience
-in place (see `history.md` Phases 10–11 and ADR-010/011/012). The active
-milestone is **Additional Settings**, now **complete**: a dedicated `/settings`
-area with profile editing, self-service account deletion, and the base-currency
-preference (Phase 12, ADR-013); **internationalization** across the full
-interface (Phases 13–14, ADR-014); and **dark mode** — a warm night theme with a
-per-user Light / Dark / System preference (Phase 15, DDR-003). The next
-milestone is **Rework Filters**.
+in place (see `history.md` Phases 10–11 and ADR-010/011/012). The **Additional
+Settings** milestone has shipped (see `history.md` Phases 12–15): a dedicated
+`/settings` area with profile editing, self-service account deletion, and the
+base-currency preference (Phase 12, ADR-013); **internationalization** across the
+full interface (Phases 13–14, ADR-014); and **dark mode** — a warm night theme
+with a per-user Light / Dark / System preference (Phase 15, DDR-003). The
+**Dashboard Recent Acquisitions** milestone has now shipped: the home dashboard
+surfaces the user's most recently acquired coins across all collections below the
+overview cards — each row with a thumbnail, derived title, category · denomination ·
+metal chips, the price paid, and the acquisition date (`auction_date` with a
+`created_at` fallback), plus a "View all →" link and an empty state. The active
+milestone is now **Rework Filters**.
 
 Primary objective:
 
-**Give users control over their account and preferences through a dedicated
-settings area.** — ✅ delivered.
+**Revisit and adjust all filtering across NumisBook** so the available filters
+are consistent, complete, and useful.
 
 Current priorities:
 
 - Production readiness — ✅ complete (live in production)
 - Additional settings — ✅ complete (settings area, i18n, dark mode)
-- Rework filters (next)
+- Dashboard recent acquisitions — ✅ complete
+- Rework filters (active)
 - (then) hosted error monitoring
 - (then) valuation-based analytics
 
 ---
 
-# Completed Milestone — Additional Settings
+# Shipped Milestone — Dashboard Recent Acquisitions
 
-Status: ✅ Complete (all passes shipped — see `history.md` Phases 12–15).
+> ✅ Shipped. Retained here for reference until reconstructed into `history.md`.
 
 Goal:
 
-Give users control over their account and preferences through a dedicated
-settings area — profile/account details, a preferred base currency for
-portfolio analytics, interface language, and theme (day/night).
+Fill the empty space on the home dashboard with a **Recent acquisitions** list —
+the most recently acquired coins across **all** of the user's collections, shown
+below the existing overview cards (see the mock in
+`docs/main-dashboard-example.png`).
 
-The **Settings foundation** has shipped (see `history.md` Phase 12 and
-`docs/decisions/ADR-013-account-settings-and-deletion.md`): the `/settings`
-page + navigation, display-name editing, self-service account deletion, and the
-base-currency preference's canonical home.
+Each row shows the coin's thumbnail, its derived title (`formatCoinTitle`), a
+`category · denomination · metal` chip line, the price paid (in the coin's
+currency), and the acquisition date, ordered most-recent first. A "View all →"
+link leads to the full coin listing.
 
-**Internationalization** has now fully shipped (see `history.md` Phases 13–14
-and `docs/decisions/ADR-014-internationalization.md`): a dependency-free i18n
-layer, a per-user `locale` preference with a language selector in `/settings`,
-and seven locales (English + Spanish, German, French, Italian, Chinese, Russian)
-covering the **entire interface** — the app shell (chrome, home, settings,
-entry/error pages) and the deep domain screens (coins, collections, valuations,
-assistant, and portfolio analytics). **Dark mode** has now also shipped (see
-`history.md` Phase 15 and `docs/design-decisions/DDR-003-dark-mode.md`): a warm
-night theme driven by the same design tokens, with a per-user `theme` preference
-(Light / Dark / System default) in `/settings` — completing the milestone.
+Acquisition date maps to the existing `coins.auction_date` column (the auction a
+coin was obtained from — no dedicated acquisition-date field exists). It is
+**nullable**, so ordering must fall back to `created_at` when it is absent, and
+rows should render gracefully when no date is known.
 
 ## Features
 
-- [x] Settings page (route + navigation entry)
-- [x] View/edit user profile (display name, account info)
-- [x] Account/data controls (e.g. account deletion)
-- [x] Add languages (i18n / multi-language support) — machinery + 7 locales
-      covering the full interface: the app shell (Phase 13) and the deep domain
-      screens (coins/collections/valuations/assistant/analytics, Phase 14)
-      (ADR-014)
-- [x] Add night mode (dark theme) — warm dark token set + per-user `theme`
-      preference (Light / Dark / System), no-flash SSR; supersedes DDR-001's
-      light-only stance via DDR-003 (`history.md` Phase 15)
-- [x] Settings menu controls
-  - [x] Select language (settings language selector + per-user `locale`; ADR-014)
-  - [x] Select default currency (base currency applied to portfolio analytics)
-  - [x] Select day/night mode (settings theme selector + per-user `theme`; DDR-003)
+- [x] Repository/service query for the user's most recent acquisitions across
+      all collections (tenant-scoped; ordered by `auction_date` with a
+      `created_at` fallback)
+- [x] Home dashboard "Recent acquisitions" section below the overview cards
+- [x] Per-row: thumbnail, derived title, category · denomination · metal chips,
+      price paid, acquisition date
+- [x] "View all →" link to the coin listing
+- [x] Empty state when the user has no coins yet
+- [x] i18n strings + light/dark styling consistent with the design system
 
 ---
 
-# Future Milestone — Rework Filters
+# Active Milestone — Rework Filters
 
 Goal:
 

@@ -3,7 +3,9 @@ import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { listCollections } from "@/services/collection.service";
 import { getPortfolioSummary } from "@/services/analytics.service";
+import { listRecentAcquisitions } from "@/services/coin.service";
 import { formatMoney } from "@/lib/currencies";
+import { formatCoinTitle } from "@/lib/coin-format";
 import { t, type Locale, type MessageKey } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/i18n/server";
 
@@ -255,6 +257,97 @@ async function SignedInHome({
           </li>
         ))}
       </ul>
+
+      <RecentAcquisitions userId={userId} locale={locale} />
     </>
+  );
+}
+
+// The most recently acquired coins across all of the user's collections, shown
+// below the feature cards (see docs/main-dashboard-example.png). Each row links
+// to the coin and shows a thumbnail, the derived title, a
+// category · denomination · metal line, the price paid (in the coin's own
+// currency), and the acquisition date. Coins without an acquisition date or a
+// price render without those pieces. A Server Component: it calls the service
+// directly, like the rest of the dashboard.
+async function RecentAcquisitions({
+  userId,
+  locale,
+}: {
+  userId: string;
+  locale: Locale;
+}) {
+  const coins = await listRecentAcquisitions(userId);
+
+  return (
+    <section className="recent">
+      <div className="recent-head">
+        <h2>{t(locale, "home.recent.title")}</h2>
+        {coins.length > 0 && (
+          <Link href="/collections" className="recent-viewall">
+            {t(locale, "home.recent.viewAll")}
+            <span aria-hidden="true"> →</span>
+          </Link>
+        )}
+      </div>
+
+      {coins.length === 0 ? (
+        <div className="card">
+          <p className="empty" style={{ margin: 0 }}>
+            {t(locale, "home.recent.empty")}
+          </p>
+        </div>
+      ) : (
+        <ul className="recent-list card">
+          {coins.map((coin) => {
+            const title = formatCoinTitle(coin);
+            const meta = [coin.category, coin.denomination, coin.metal]
+              .map((s) => s?.trim())
+              .filter(Boolean)
+              .join(" · ");
+            return (
+              <li key={coin.id} className="recent-row">
+                <Link href={`/coins/${coin.id}`} className="recent-link">
+                  <span className="recent-thumb">
+                    {coin.firstImageId ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={`/api/coins/${coin.id}/images/${coin.firstImageId}?w=96`}
+                        alt=""
+                      />
+                    ) : (
+                      <span className="recent-thumb-empty" aria-hidden="true">
+                        <StatIconCoins />
+                      </span>
+                    )}
+                  </span>
+                  <span className="recent-main">
+                    <span className="recent-title">{title}</span>
+                    {meta && (
+                      <span className="recent-meta mono-label">{meta}</span>
+                    )}
+                  </span>
+                  <span className="recent-aside">
+                    {coin.finalPrice && coin.priceCurrency && (
+                      <span className="recent-price">
+                        {formatMoney(
+                          Number.parseFloat(coin.finalPrice),
+                          coin.priceCurrency,
+                        )}
+                      </span>
+                    )}
+                    {coin.auctionDate && (
+                      <span className="recent-date mono-label">
+                        {coin.auctionDate}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

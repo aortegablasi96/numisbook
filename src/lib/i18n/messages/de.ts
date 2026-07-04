@@ -40,6 +40,10 @@ export const de: Partial<Messages> = {
   "home.stat.noValue": "—",
   "home.emptyHint":
     "Erstelle zunächst eine Sammlung und füge dann Münzen hinzu.",
+  "home.recent.title": "Neueste Zugänge",
+  "home.recent.viewAll": "Alle anzeigen",
+  "home.recent.empty":
+    "Deine neuesten Zugänge erscheinen hier, sobald du Münzen hinzufügst.",
   "feature.collections.body":
     "Organisiere deine Münzen in Sammlungen – hinzufügen, umbenennen und pflegen.",
   "feature.portfolio.body":
