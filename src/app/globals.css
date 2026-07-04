@@ -2169,11 +2169,14 @@ dialog.modal::backdrop {
 }
 
 /* Expand-chart dialog: nearly fills the viewport so the enlarged chart has the
-   most room, with a close button pinned top-right above it. */
+   most room, with a close button pinned top-right above it. The dialog sits
+   inside the global `zoom: 0.75` (DDR-002), which also scales vw/vh units — so
+   plain 96vw/96vh would only reach ~72% of the real screen. Dividing by the zoom
+   lets the expanded chart genuinely fill ~96% of the actual viewport. */
 dialog.modal.modal-chart {
-  max-width: 96vw;
-  width: 96vw;
-  max-height: 96vh; /* guard; chart height is sized to fit without scrolling */
+  max-width: calc(96vw / 0.75);
+  width: calc(96vw / 0.75);
+  max-height: calc(96vh / 0.75); /* guard; chart height is sized to fit without scrolling */
   padding: var(--space-5);
 }
 .chart-modal-close {
