@@ -308,16 +308,24 @@ async function RecentAcquisitions({
             return (
               <li key={coin.id} className="recent-row">
                 <Link href={`/coins/${coin.id}`} className="recent-link">
-                  <span className="recent-thumb">
+                  <span className="recent-thumbs">
                     {coin.firstImageId ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={`/api/coins/${coin.id}/images/${coin.firstImageId}?w=96`}
-                        alt=""
-                      />
+                      [coin.firstImageId, coin.secondImageId]
+                        .filter((id): id is string => Boolean(id))
+                        .map((imageId) => (
+                          <span key={imageId} className="recent-thumb">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={`/api/coins/${coin.id}/images/${imageId}?w=128`}
+                              alt=""
+                            />
+                          </span>
+                        ))
                     ) : (
-                      <span className="recent-thumb-empty" aria-hidden="true">
-                        <StatIconCoins />
+                      <span className="recent-thumb">
+                        <span className="recent-thumb-empty" aria-hidden="true">
+                          <StatIconCoins />
+                        </span>
                       </span>
                     )}
                   </span>
