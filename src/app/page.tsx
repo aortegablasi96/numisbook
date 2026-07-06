@@ -258,7 +258,11 @@ async function SignedInHome({
         ))}
       </ul>
 
-      <RecentAcquisitions userId={userId} locale={locale} />
+      <RecentAcquisitions
+        userId={userId}
+        locale={locale}
+        baseCurrency={summary.baseCurrency}
+      />
     </>
   );
 }
@@ -266,18 +270,21 @@ async function SignedInHome({
 // The most recently acquired coins across all of the user's collections, shown
 // below the feature cards (see docs/main-dashboard-example.png). Each row links
 // to the coin and shows a thumbnail, the derived title, a
-// category · denomination · metal line, the price paid (in the coin's own
-// currency), and the acquisition date. Coins without an acquisition date or a
-// price render without those pieces. A Server Component: it calls the service
-// directly, like the rest of the dashboard.
+// category · denomination · metal line, the price paid (converted to the user's
+// base currency, matching the "total paid" stat; the coin's own currency is a
+// fallback when a rate is unavailable), and the acquisition date. Coins without
+// an acquisition date or a price render without those pieces. A Server Component:
+// it calls the service directly, like the rest of the dashboard.
 async function RecentAcquisitions({
   userId,
   locale,
+  baseCurrency,
 }: {
   userId: string;
   locale: Locale;
+  baseCurrency: string | null;
 }) {
-  const coins = await listRecentAcquisitions(userId);
+  const coins = await listRecentAcquisitions(userId, baseCurrency);
 
   return (
     <section className="recent">
@@ -336,13 +343,20 @@ async function RecentAcquisitions({
                     )}
                   </span>
                   <span className="recent-aside">
-                    {coin.finalPrice && coin.priceCurrency && (
+                    {coin.basePrice != null && coin.baseCurrency ? (
                       <span className="recent-price">
-                        {formatMoney(
-                          Number.parseFloat(coin.finalPrice),
-                          coin.priceCurrency,
-                        )}
+                        {formatMoney(coin.basePrice, coin.baseCurrency)}
                       </span>
+                    ) : (
+                      coin.finalPrice &&
+                      coin.priceCurrency && (
+                        <span className="recent-price">
+                          {formatMoney(
+                            Number.parseFloat(coin.finalPrice),
+                            coin.priceCurrency,
+                          )}
+                        </span>
+                      )
                     )}
                     {coin.auctionDate && (
                       <span className="recent-date mono-label">

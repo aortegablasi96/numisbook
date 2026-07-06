@@ -7,6 +7,7 @@ import {
   type RecentAcquisition,
 } from "@/repositories/coin.repository";
 import { collectionRepository } from "@/repositories/collection.repository";
+import { buildConverter } from "@/services/fx.service";
 import {
   createCoinSchema,
   updateCoinSchema,
@@ -93,15 +94,76 @@ export async function getCoinFacets(
   return coinRepository.getDistinctFacets(collectionId);
 }
 
+// A recent acquisition with its price paid converted to the dashboard's base
+// currency (ADR-007 FX). `basePrice` is null when the coin has no price or ECB
+// cannot convert its currency — the UI then falls back to the native
+// finalPrice/priceCurrency. `baseCurrency` echoes the resolved base so a row and
+// the "total paid" stat always agree.
+export type RecentAcquisitionView = RecentAcquisition & {
+  basePrice: number | null;
+  baseCurrency: string | null;
+};
+
+const round2 = (n: number): number => Math.round(n * 100) / 100;
+const parseDay = (day: string): Date => new Date(`${day}T00:00:00Z`);
+
 // The user's most recent acquisitions across every collection, for the home
-// dashboard. Tenant isolation is enforced by the repository (scoped by userId);
-// there is no per-collection ownership check to make because it spans them all.
+// dashboard, with each price paid converted to `baseCurrency` (the same base the
+// portfolio summary resolves, so the dashboard is internally consistent). Pass
+// null to skip conversion (no priced coins / no base). Each price converts at its
+// acquisition-day rate, falling back to the current rate, mirroring the portfolio.
+// Tenant isolation is enforced by the repository (scoped by userId); there is no
+// per-collection ownership check to make because it spans them all.
 export async function listRecentAcquisitions(
   userId: string,
+  baseCurrency: string | null,
   limit: number = RECENT_ACQUISITIONS_LIMIT,
-): Promise<RecentAcquisition[]> {
+): Promise<RecentAcquisitionView[]> {
   const capped = Math.max(1, Math.floor(limit));
-  return coinRepository.listRecentAcquisitionsForUser(userId, capped);
+  const rows = await coinRepository.listRecentAcquisitionsForUser(userId, capped);
+
+  const priced = rows.filter(
+    (r) => r.finalPrice != null && r.priceCurrency != null,
+  );
+  if (!baseCurrency || priced.length === 0) {
+    return rows.map((r) => ({ ...r, basePrice: null, baseCurrency }));
+  }
+
+  // A converter spanning the currencies and acquisition dates in view.
+  const currencies = new Set<string>();
+  let minDate: Date | null = null;
+  let maxDate: Date | null = null;
+  for (const r of priced) {
+    currencies.add(r.priceCurrency!);
+    if (r.auctionDate) {
+      const d = parseDay(r.auctionDate);
+      if (!minDate || d < minDate) minDate = d;
+      if (!maxDate || d > maxDate) maxDate = d;
+    }
+  }
+  const today = new Date();
+  const converter = await buildConverter(
+    baseCurrency,
+    [...currencies],
+    minDate ?? today,
+    maxDate ?? today,
+  );
+
+  return rows.map((r) => {
+    if (r.finalPrice == null || r.priceCurrency == null) {
+      return { ...r, basePrice: null, baseCurrency };
+    }
+    const amount = Number.parseFloat(r.finalPrice);
+    const atDate = r.auctionDate
+      ? converter.convert(amount, r.priceCurrency, parseDay(r.auctionDate))
+      : null;
+    const converted = atDate ?? converter.convertLatest(amount, r.priceCurrency);
+    return {
+      ...r,
+      basePrice: converted == null ? null : round2(converted),
+      baseCurrency,
+    };
+  });
 }
 
 export async function getCoin(userId: string, coinId: string): Promise<Coin> {

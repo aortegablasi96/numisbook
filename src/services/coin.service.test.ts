@@ -13,6 +13,7 @@ import {
 } from "./coin.service";
 import { coinRepository, type Coin } from "@/repositories/coin.repository";
 import { collectionRepository } from "@/repositories/collection.repository";
+import { buildConverter, type Converter } from "@/services/fx.service";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 
 vi.mock("@/repositories/coin.repository", () => ({
@@ -31,8 +32,11 @@ vi.mock("@/repositories/collection.repository", () => ({
   collectionRepository: { findByIdForUser: vi.fn() },
 }));
 
+vi.mock("@/services/fx.service", () => ({ buildConverter: vi.fn() }));
+
 const coins = vi.mocked(coinRepository);
 const collections = vi.mocked(collectionRepository);
+const fx = vi.mocked(buildConverter);
 
 const ownedCollection = {
   id: "col-1",
@@ -145,22 +149,80 @@ describe("coin.service", () => {
   });
 
   describe("listRecentAcquisitions", () => {
-    it("returns the user's recent acquisitions with the default limit", async () => {
-      const rows = [{ id: "coin-1" }] as never;
+    // A converter into `base` that multiplies by a per-currency factor; an absent
+    // factor means unconvertible (null). Date-agnostic, like the analytics tests.
+    function fakeConverter(base: string, factors: Record<string, number>): Converter {
+      const apply = (amount: number, from: string) =>
+        from === base ? amount : factors[from] == null ? null : amount * factors[from];
+      return {
+        base,
+        convert: (amount, from) => apply(amount, from),
+        convertLatest: (amount, from) => apply(amount, from),
+      };
+    }
+
+    it("returns rows unconverted (basePrice null) when no base currency is given", async () => {
+      const rows = [{ id: "coin-1", finalPrice: "100.00", priceCurrency: "USD" }] as never;
       coins.listRecentAcquisitionsForUser.mockResolvedValue(rows);
-      const result = await listRecentAcquisitions("user-1");
+      const result = await listRecentAcquisitions("user-1", null);
       expect(coins.listRecentAcquisitionsForUser).toHaveBeenCalledWith(
         "user-1",
         RECENT_ACQUISITIONS_LIMIT,
       );
-      expect(result).toBe(rows);
+      expect(fx).not.toHaveBeenCalled();
+      expect(result).toEqual([
+        expect.objectContaining({ id: "coin-1", basePrice: null, baseCurrency: null }),
+      ]);
+    });
+
+    it("converts each price paid to the base currency at its acquisition date", async () => {
+      const rows = [
+        { id: "a", finalPrice: "100.00", priceCurrency: "USD", auctionDate: "2024-06-01" },
+        { id: "b", finalPrice: "200.00", priceCurrency: "EUR", auctionDate: "2025-03-01" },
+        { id: "c", finalPrice: null, priceCurrency: null, auctionDate: null },
+      ] as never;
+      coins.listRecentAcquisitionsForUser.mockResolvedValue(rows);
+      fx.mockResolvedValue(fakeConverter("EUR", { USD: 0.9 }));
+
+      const result = await listRecentAcquisitions("user-1", "EUR");
+
+      expect(fx).toHaveBeenCalledWith(
+        "EUR",
+        expect.arrayContaining(["USD", "EUR"]),
+        expect.any(Date),
+        expect.any(Date),
+      );
+      expect(result[0]).toMatchObject({ id: "a", basePrice: 90, baseCurrency: "EUR" });
+      expect(result[1]).toMatchObject({ id: "b", basePrice: 200, baseCurrency: "EUR" });
+      // Unpriced coin: no conversion, but still carries the resolved base.
+      expect(result[2]).toMatchObject({ id: "c", basePrice: null, baseCurrency: "EUR" });
+    });
+
+    it("leaves basePrice null for a currency ECB cannot convert", async () => {
+      const rows = [
+        { id: "x", finalPrice: "50.00", priceCurrency: "XAU", auctionDate: "2024-01-01" },
+      ] as never;
+      coins.listRecentAcquisitionsForUser.mockResolvedValue(rows);
+      fx.mockResolvedValue(fakeConverter("EUR", {})); // no factor for XAU
+
+      const result = await listRecentAcquisitions("user-1", "EUR");
+      expect(result[0]).toMatchObject({ id: "x", basePrice: null, baseCurrency: "EUR" });
+    });
+
+    it("skips FX entirely when no row is priced", async () => {
+      coins.listRecentAcquisitionsForUser.mockResolvedValue([
+        { id: "n", finalPrice: null, priceCurrency: null } as never,
+      ]);
+      const result = await listRecentAcquisitions("user-1", "EUR");
+      expect(fx).not.toHaveBeenCalled();
+      expect(result[0]).toMatchObject({ basePrice: null, baseCurrency: "EUR" });
     });
 
     it("clamps a fractional or below-one limit to at least one", async () => {
       coins.listRecentAcquisitionsForUser.mockResolvedValue([]);
-      await listRecentAcquisitions("user-1", 0);
+      await listRecentAcquisitions("user-1", null, 0);
       expect(coins.listRecentAcquisitionsForUser).toHaveBeenCalledWith("user-1", 1);
-      await listRecentAcquisitions("user-1", 3.9);
+      await listRecentAcquisitions("user-1", null, 3.9);
       expect(coins.listRecentAcquisitionsForUser).toHaveBeenLastCalledWith("user-1", 3);
     });
   });
