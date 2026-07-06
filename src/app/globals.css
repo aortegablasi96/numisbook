@@ -623,8 +623,8 @@ main {
 .recent-link {
   display: flex;
   align-items: center;
-  gap: var(--space-4); /* Figma gap-[16px] */
-  padding: var(--space-4) var(--space-5);
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
   color: inherit;
   border-radius: var(--radius-sm);
   transition: background-color var(--dur) var(--ease);
@@ -645,8 +645,8 @@ main {
 }
 .recent-thumb {
   flex: 0 0 auto;
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--accent-weak);
@@ -667,28 +667,28 @@ main {
   color: color-mix(in srgb, var(--muted) 55%, transparent);
 }
 .recent-thumb-empty svg {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
 }
 .recent-main {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
 }
 /* The derived title truncates on one line so long titles don't push the price
    off the row. */
 .recent-title {
   font-weight: 500;
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: color var(--dur) var(--ease); /* Figma group-hover:text gold */
 }
 .recent-meta {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -706,12 +706,26 @@ main {
 .recent-price {
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   white-space: nowrap;
 }
 .recent-date {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: var(--muted);
+}
+/* Responsive row count: the list always fetches 5, but shorter viewports show
+   fewer so the whole list stays visible without scrolling (5 / 4 / 3). The
+   "View all →" link still reaches the hidden ones. Heights are real window
+   pixels — unaffected by the app's html { zoom }, which only scales content. */
+@media (max-height: 900px) {
+  .recent-row:nth-child(5) {
+    display: none;
+  }
+}
+@media (max-height: 760px) {
+  .recent-row:nth-child(4) {
+    display: none;
+  }
 }
 
 /* ---- Forms & buttons ---------------------------------------------------- */
