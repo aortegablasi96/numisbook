@@ -601,13 +601,13 @@ main {
 }
 .recent-head h2 {
   font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 1.4rem;
+  font-weight: 300; /* Figma font-light */
+  font-size: 1.25rem; /* Figma 20px */
   margin: 0;
 }
 .recent-viewall {
-  font-family: var(--font-micro);
-  font-size: 0.78rem;
+  font-weight: 500; /* Figma: 12px medium gold link (body font, not mono) */
+  font-size: 0.75rem;
   white-space: nowrap;
 }
 .recent-list {
@@ -623,15 +623,19 @@ main {
 .recent-link {
   display: flex;
   align-items: center;
-  gap: var(--space-5);
+  gap: var(--space-4); /* Figma gap-[16px] */
   padding: var(--space-4) var(--space-5);
   color: inherit;
   border-radius: var(--radius-sm);
   transition: background-color var(--dur) var(--ease);
 }
+/* Figma: neutral row highlight (the title turns gold, not the whole row). */
 .recent-link:hover {
   text-decoration: none;
-  background: var(--accent-weak);
+  background: var(--surface-2);
+}
+.recent-link:hover .recent-title {
+  color: var(--accent);
 }
 /* Up to two thumbnails side by side (the coin's two oldest images). */
 .recent-thumbs {
@@ -681,6 +685,7 @@ main {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color var(--dur) var(--ease); /* Figma group-hover:text gold */
 }
 .recent-meta {
   font-size: 0.8rem;
@@ -697,8 +702,10 @@ main {
   gap: 0.3rem;
   text-align: right;
 }
+/* Figma renders the price in the display serif (Fraunces), not bold sans. */
 .recent-price {
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 500;
   font-size: 1.05rem;
   white-space: nowrap;
 }
