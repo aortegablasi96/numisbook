@@ -314,6 +314,35 @@ key: `numisbook:coin-columns-v4` stores column visibility + order as
 `ColState[]` for the coin list table. Use a versioned key whenever the shape
 changes.
 
+## Internationalization
+
+Custom, dependency-free i18n (ADR-014); no URL routing. The active locale comes
+from a cookie plus a per-user `users.locale` preference; 7 locales, `zh` via
+system CJK fallback. Code lives in `src/lib/i18n`:
+
+* **Server** — `import { t } from "@/lib/i18n"` and call `t(locale, key, params)`
+  in Server Components / routes; resolve the request locale via `@/lib/i18n/server`
+  (which uses `next/headers`, so it is server-only — never import it from client
+  code; the `@/lib/i18n` barrel is client-safe).
+* **Client** — get `useT()` from `LocaleProvider`
+  (`src/components/i18n/LocaleProvider.tsx`, mounted in the root layout).
+* **Messages** are typed catalogs in `src/lib/i18n/messages/<locale>.ts`; `en.ts`
+  defines the `MessageKey` union (the source of truth). Add a key to **every**
+  locale — `messages.test.ts` enforces parity. Placeholders are `{name}`,
+  interpolated by `t`/`useT`.
+
+Mirrors the theme preference (`src/lib/theme`, DDR-003): both are per-user,
+cookie-applied, no flash.
+
+## Account settings
+
+`/settings` (`src/app/settings/page.tsx`, ADR-013): profile edits and
+self-service account deletion. Profile/locale/theme mutations are **app-owned**
+(`user.service`), distinct from the Auth.js-owned `users` identity columns.
+Deletion (`account.service`) cascades in the DB and purges the user's
+object-storage bytes. UI: `src/components/settings/` (`ProfileForm`,
+`DeleteAccountSection` — deletion uses `<ConfirmButton>`).
+
 ## Testing
 
 ### Service tests (primary target)
