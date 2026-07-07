@@ -286,11 +286,9 @@ export const en = {
   "settings.language.systemDefault": "System default",
   "settings.language.help": "The language NumisBook’s interface is shown in.",
   "settings.theme.label": "Theme",
-  "settings.theme.system": "System default",
   "settings.theme.light": "Light",
   "settings.theme.dark": "Dark",
-  "settings.theme.help":
-    "The colour scheme NumisBook uses. “System default” follows your device.",
+  "settings.theme.help": "The colour scheme NumisBook uses.",
   "settings.danger.heading": "Danger zone",
   "settings.danger.body":
     "Deleting your account permanently removes your collections, coins, images, invoices, and valuations. This cannot be undone.",

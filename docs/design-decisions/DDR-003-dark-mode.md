@@ -4,6 +4,13 @@
 
 Accepted
 
+> **Amended by DDR-004** (2026-07-06): §3's Settings control — the three-way
+> **System default / Light / Dark** `<select>` — is replaced by a binary
+> **sun/moon** toggle, and "System" is no longer user-selectable. Everything else
+> in this DDR (token sets, `--on-gold`, the `users.theme` model, the `THEME`
+> cookie, and the no-flash system-follow that still governs never-chosen
+> accounts) stands.
+
 ## Date
 
 2026-07-03
