@@ -12,8 +12,10 @@ import {
   type Locale,
 } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/i18n/server";
-import { THEMES, THEME_COOKIE } from "@/lib/theme";
+import { THEME_COOKIE, type ResolvedTheme, type Theme } from "@/lib/theme";
+import { getRequestTheme } from "@/lib/theme/server";
 import { ProfileForm } from "@/components/settings/ProfileForm";
+import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 
 export const metadata = { title: "Settings · NumisBook" };
@@ -26,12 +28,12 @@ const PREF_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // one year
 function PreferencesSection({
   activeLocale,
   localePref,
-  themePref,
+  resolvedTheme,
   baseCurrency,
 }: {
   activeLocale: Locale;
   localePref: string | null;
-  themePref: string | null;
+  resolvedTheme: ResolvedTheme;
   baseCurrency: string | null;
 }) {
   async function updateLocale(formData: FormData) {
@@ -56,14 +58,14 @@ function PreferencesSection({
     revalidatePath("/", "layout");
   }
 
-  async function updateTheme(formData: FormData) {
+  async function updateTheme(theme: Theme) {
     "use server";
     const session = await auth();
     const user = await resolveCurrentUser(session);
     if (!user) return;
-    const resolved = await setTheme(user.id, String(formData.get("theme") ?? ""));
-    // Sync the THEME cookie so SSR / signed-out visits match; clearing the
-    // preference clears the cookie and reverts to "system" (DDR-003).
+    const resolved = await setTheme(user.id, theme);
+    // Sync the THEME cookie so SSR / signed-out visits match the stored
+    // preference (DDR-003). The toggle only submits light/dark (DDR-004).
     const store = await cookies();
     if (resolved) {
       store.set(THEME_COOKIE, resolved, {
@@ -113,27 +115,13 @@ function PreferencesSection({
         </p>
       </form>
 
-      <form action={updateTheme} className="field">
-        <label htmlFor="theme" className="mono-label">
-          {t(activeLocale, "settings.theme.label")}
-        </label>
-        <div className="row">
-          <select id="theme" name="theme" defaultValue={themePref ?? ""}>
-            <option value="">{t(activeLocale, "settings.theme.system")}</option>
-            {THEMES.map((value) => (
-              <option key={value} value={value}>
-                {t(activeLocale, `settings.theme.${value}`)}
-              </option>
-            ))}
-          </select>
-          <button type="submit" className="btn-sm">
-            {t(activeLocale, "action.apply")}
-          </button>
-        </div>
+      <div className="field">
+        <span className="mono-label">{t(activeLocale, "settings.theme.label")}</span>
+        <ThemeToggle initialTheme={resolvedTheme} action={updateTheme} />
         <p className="muted" style={{ margin: 0 }}>
           {t(activeLocale, "settings.theme.help")}
         </p>
-      </form>
+      </div>
 
       <form action={updateBaseCurrency} className="field">
         <label htmlFor="baseCurrency" className="mono-label">
@@ -164,6 +152,7 @@ export default async function SettingsPage() {
   const session = await auth();
   const user = await resolveCurrentUser(session);
   const locale = await getRequestLocale(user?.locale);
+  const resolvedTheme = await getRequestTheme(user?.theme);
 
   if (!user) {
     return (
@@ -193,7 +182,7 @@ export default async function SettingsPage() {
       <PreferencesSection
         activeLocale={locale}
         localePref={user.locale}
-        themePref={user.theme}
+        resolvedTheme={resolvedTheme}
         baseCurrency={user.baseCurrency}
       />
       <DeleteAccountSection />

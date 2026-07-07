@@ -64,11 +64,9 @@ export const it: Partial<Messages> = {
   "settings.language.help":
     "La lingua in cui viene mostrata l’interfaccia di NumisBook.",
   "settings.theme.label": "Tema",
-  "settings.theme.system": "Predefinito di sistema",
   "settings.theme.light": "Chiaro",
   "settings.theme.dark": "Scuro",
-  "settings.theme.help":
-    "Lo schema di colori di NumisBook. «Predefinito di sistema» segue il tuo dispositivo.",
+  "settings.theme.help": "Lo schema di colori di NumisBook.",
   "settings.danger.heading": "Zona pericolosa",
   "settings.danger.body":
     "L’eliminazione dell’account rimuove definitivamente collezioni, monete, immagini, fatture e valutazioni. L’operazione non può essere annullata.",

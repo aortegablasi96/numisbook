@@ -845,6 +845,79 @@ button:disabled {
   font-size: 0.82rem;
 }
 
+/* Theme switch (Settings → Preferences): a binary sun/moon toggle that replaced
+   the old System/Light/Dark <select> (DDR-004). Rendered by <ThemeToggle> with
+   role="switch"; aria-checked = dark. The gold thumb slides under the active
+   icon, which flips to --on-gold so it reads on the gold fill (AA in both
+   schemes, per DDR-003). The slide transition is neutralised by the global
+   prefers-reduced-motion rule. */
+.theme-toggle {
+  --tt-h: 2.1rem;
+  --tt-w: 4.6rem;
+  appearance: none;
+  width: fit-content;
+  padding: 0;
+  border: none;
+  background: none;
+  line-height: 0;
+  cursor: pointer;
+}
+.theme-toggle:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.theme-toggle-track {
+  position: relative;
+  display: block;
+  width: var(--tt-w);
+  height: var(--tt-h);
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.theme-toggle-icon {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--muted);
+  transition: color 0.18s ease;
+}
+.theme-toggle-sun {
+  left: 0.5rem;
+}
+.theme-toggle-moon {
+  right: 0.5rem;
+}
+/* The icon sitting on the gold thumb reads in ink/white; the other stays muted. */
+.theme-toggle[data-checked="false"] .theme-toggle-sun,
+.theme-toggle[data-checked="true"] .theme-toggle-moon {
+  color: var(--on-gold);
+}
+.theme-toggle-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0.2rem;
+  z-index: 1;
+  width: calc(var(--tt-h) - 0.5rem);
+  height: calc(var(--tt-h) - 0.5rem);
+  border-radius: 50%;
+  background: var(--gold);
+  transform: translateY(-50%);
+  transition: transform 0.18s ease;
+}
+.theme-toggle[data-checked="true"] .theme-toggle-thumb {
+  transform: translateY(-50%) translateX(calc(var(--tt-w) - var(--tt-h)));
+}
+.theme-toggle:focus-visible {
+  outline: none;
+}
+.theme-toggle:focus-visible .theme-toggle-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* Ghost = no chrome until hover (Figma's ghost buttons, e.g. the create-bar
    icon-only cancel). */
 .btn-ghost {

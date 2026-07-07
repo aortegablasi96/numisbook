@@ -697,7 +697,8 @@ Accepted **design** decisions are stored in `docs/design-decisions/`:
 
 * `DDR-001-figma-ui-redesign` — Figma "stone & gold" re-skin (visual-only; originally an ADR, relocated to the DDRs). Its light-only stance is **superseded by DDR-003**.
 * `DDR-002-global-display-density` — global `zoom: 0.75` on `html` (renders the whole app at 75% density; builds on, does not supersede, DDR-001)
-* `DDR-003-dark-mode` — warm dark theme + per-user Light/Dark/System `theme` preference (supersedes DDR-001's light-only decision; adds the `--on-gold` token)
+* `DDR-003-dark-mode` — warm dark theme + per-user Light/Dark/System `theme` preference (supersedes DDR-001's light-only decision; adds the `--on-gold` token). Its Settings control is **amended by DDR-004**.
+* `DDR-004-theme-toggle` — replace the Settings theme `<select>` with a binary sun/moon toggle; drop the user-selectable "System" option (amends DDR-003 §3; the `system` fallback still governs never-chosen accounts)
 
 (`docs/design-decisions/template.md` is the scaffold for new DDRs.)
 

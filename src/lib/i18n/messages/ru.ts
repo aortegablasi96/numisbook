@@ -65,11 +65,9 @@ export const ru: Partial<Messages> = {
   "settings.language.help":
     "Язык, на котором отображается интерфейс NumisBook.",
   "settings.theme.label": "Тема",
-  "settings.theme.system": "Как в системе",
   "settings.theme.light": "Светлая",
   "settings.theme.dark": "Тёмная",
-  "settings.theme.help":
-    "Цветовая схема NumisBook. «Как в системе» следует настройкам устройства.",
+  "settings.theme.help": "Цветовая схема NumisBook.",
   "settings.danger.heading": "Опасная зона",
   "settings.danger.body":
     "Удаление аккаунта безвозвратно удалит ваши коллекции, монеты, изображения, счета и оценки. Это действие нельзя отменить.",
