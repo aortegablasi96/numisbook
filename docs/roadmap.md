@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — active milestone: Rework Filters**
+Current maturity: **Live in production — active milestone: Hosted Error Monitoring**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -56,21 +56,29 @@ with a per-user Light / Dark / System preference (Phase 15, DDR-003). The
 surfaces the user's most recently acquired coins across all collections below the
 overview cards — each row with a thumbnail, derived title, category · denomination ·
 metal chips, the price paid, and the acquisition date (`auction_date` with a
-`created_at` fallback), plus a "View all →" link and an empty state. The active
-milestone is now **Rework Filters**.
+`created_at` fallback), plus a "View all →" link and an empty state. The
+**Rework Filters** milestone has now shipped: coin filtering is multi-value
+(OR within a field, AND across fields) across a widened set — grade,
+denomination, mint and a signed year range join metal and category — and the
+same filter bar now serves a new cross-collection **All coins** view at `/coins`
+(read-only, a top-level nav destination), tenant-scoped through the user's
+collection ids. Validation of the milestone also corrected a WCAG AA contrast
+failure in the light theme's gold text token (see ADR-015, DDR-005 and
+`docs/testing/rework-filters-testing-report.md`). The active milestone is now
+**Hosted Error Monitoring**.
 
 Primary objective:
 
-**Revisit and adjust all filtering across NumisBook** so the available filters
-are consistent, complete, and useful.
+**Turn production errors into proactive, aggregated alerting** by wiring a
+hosted monitor onto the existing `ErrorReporter` seam.
 
 Current priorities:
 
 - Production readiness — ✅ complete (live in production)
 - Additional settings — ✅ complete (settings area, i18n, dark mode)
 - Dashboard recent acquisitions — ✅ complete
-- Rework filters (active)
-- (then) hosted error monitoring
+- Rework filters — ✅ complete
+- Hosted error monitoring (active)
 - (then) valuation-based analytics
 
 ---
@@ -110,7 +118,9 @@ rows should render gracefully when no date is known.
 
 ---
 
-# Active Milestone — Rework Filters
+# Shipped Milestone — Rework Filters
+
+> ✅ Shipped. Retained here for reference until reconstructed into `history.md`.
 
 Goal:
 
@@ -119,24 +129,57 @@ consistent, complete, and useful — building on today's coin search/filter set
 (`q`, `metal`, `category`, `year`, sort by category/metal/denomination/year/
 createdAt; facets endpoint — see `CLAUDE.md` "Coin search and filtering").
 
+Planning is complete (Product / UI / Architecture / Database reviews). The
+approved scope is recorded in `docs/decisions/ADR-015-coin-filter-rework.md` and
+`docs/design-decisions/DDR-005-filter-bar-pattern.md`.
+
+The audit found that filtering is not merely thin but structurally confined:
+it exists on exactly **one** surface (the coin table inside a single collection).
+There is no cross-collection coin listing at all — so the milestone now includes
+building one, since the most valuable place to filter is the whole inventory.
+
 ## Features
 
-- [ ] Audit existing filters and identify gaps/inconsistencies
-- [ ] Review and adjust the coin filter set (e.g. denomination, country/issuing
-      authority, year range, condition/grade)
-- [ ] Consistent filter UX across collections, coins, and portfolio views
-- [ ] Combinable/multi-select filters where it makes sense
-- [ ] Clear-all and active-filter indicators
+- [x] Audit existing filters and identify gaps/inconsistencies
+- [x] Composite index `coins (collection_id, created_at DESC)` for the default
+      listing (Database Review) — migration `0007`
+- [x] Widen the coin filter set: grade, year **range** (signed; negative = BC),
+      denomination, mint — and broaden free-text `q` to also match denomination,
+      mint, and catalogue references
+- [x] Cross-collection coin search + facets (`GET /api/coins`,
+      `GET /api/coins/facets`) — tenant-scoped indirectly via the user's
+      collection ids
+- [x] Multi-select facet filters (OR within a field, AND across fields), with
+      active-filter chips and a working clear-all
+- [x] Global **All coins** view at `/coins` (read-only), added to the header nav;
+      the dashboard's "View all →" repoints to it
+- [x] A11y fix found in validation: light-mode `--accent` deepened to `#7f5612`
+      — gold text on its own tint failed WCAG AA off-card (DDR-005 §7, amends
+      DDR-001)
+
+## Explicitly deferred
+
+- **Price-paid range filtering** — a coin's price is stored in its own currency,
+  so "under €500" across a mixed-currency inventory needs FX conversion at a
+  chosen rate. That is analytics-grade semantics; it belongs with the
+  valuation-based analytics milestone, where the currency question is answered
+  properly.
+- **URL-synced filter state** — filters stay component-local for now, so filtered
+  views are not shareable or bookmarkable (product decision).
+- **`pg_trgm` / indexed substring search** — the broadened `ILIKE` only ever runs
+  against one tenant's rows; revisit with a measurement rather than adopting a
+  Postgres extension pre-emptively (ADR-015).
+- Filters on the **portfolio** and **collections** views; filter-aware facet
+  counts; saved filter presets.
 
 ---
 
-# Future Milestone — Hosted Error Monitoring
+# Active Milestone — Hosted Error Monitoring
 
 Goal:
 
 Turn production errors from a pull-based log stream into proactive,
-aggregated alerting — to be picked up **post-deployment**, once a hosting
-platform and a monitor account/DSN exist.
+aggregated alerting.
 
 Today the `ErrorReporter` seam (`src/lib/observability`) only logs; finding a
 production error means grepping the deploy platform's runtime logs by `errorId`,
@@ -258,6 +301,31 @@ Product positioning and user segmentation remain incomplete.
 ---
 
 ## Tooling
+
+### Automated accessibility checks in CI
+
+**Problem**
+
+The Rework Filters milestone's only serious defect — a WCAG AA contrast failure
+in the light theme — was invisible to lint, type-check and 263 unit tests. It
+required rendering the page, which nothing in CI does (there is no DOM test
+environment; `vitest.config.ts` runs `environment: "node"`).
+
+**Fix**
+
+- Evaluate an axe pass over the key pages in CI (headless browser + `@axe-core`),
+  in both colour schemes.
+
+### Filter facet popovers: type-to-filter
+
+**Problem**
+
+Facet lists are unbounded on `/coins` — fine at 6 mints, unpleasant at 60
+(DDR-005 risk).
+
+**Fix**
+
+- Add a type-to-filter box inside the facet popover.
 
 ### Migrate off deprecated next lint
 

@@ -47,6 +47,11 @@ npm run db:studio      # open Drizzle Studio
 
 Run a single test file: `npx vitest run path/to/file.test.ts`.
 
+Node is pinned to 20 by `.nvmrc`. CI (`.github/workflows/ci.yml`, ADR-010) gates
+every PR and push to `main` on `npm run lint` + `npm run typecheck` + `npm test` —
+run all three locally before pushing. On `main`, a second job applies pending
+migrations against production (see ADR-012 / `docs/deployment.md`).
+
 ### MCP servers
 
 These MCP servers are wired up via the committed `.mcp.json` and available in
@@ -254,19 +259,43 @@ migration `0004`). See ADR-009.
 
 ## Coin search and filtering
 
-`GET /api/collections/[id]/coins` accepts query params: `q` (matches `category`
-/ `issuing_authority` — coins have no name), `metal`, `category`, `year`, `page`,
-`sortBy` (category | metal | denomination | year | createdAt), `sortDir` (asc |
-desc). Page size is 20
-(`COINS_PAGE_SIZE` in `src/services/coin.service.ts`). Response:
-`{ coins, total, page, pageSize }`.
+Coins are searchable on **two** surfaces, which share one contract (ADR-015):
 
-`GET /api/collections/[id]/coins/facets` returns `{ metals: string[], categories: string[] }` — distinct non-null values for filter dropdowns.
+* `GET /api/collections/[id]/coins` (+ `/facets`) — coins in one collection.
+* `GET /api/coins` (+ `/facets`) — the user's coins across **every** collection.
+  Coins have no `user_id`, so both scope indirectly through
+  `collections.user_id`. **The facets query is scoped identically** — an unscoped
+  `SELECT DISTINCT` would leak another tenant's data through a filter dropdown.
+
+Multi-value filters are **repeated query params** (`?metal=Silver&metal=Gold`),
+read with `getAll`: **OR within a field, AND across fields**. Filterable: `q`,
+`metal`, `category`, `denomination`, `mint`, `grade`, plus a `yearFrom`/`yearTo`
+**range** (signed; negative = BC). `q` matches category, issuing authority,
+denomination, mint, and catalogue references. Also `page`, `sortBy`, `sortDir`;
+page size 20 (`COINS_PAGE_SIZE`). Response: `{ coins, total, page, pageSize }`.
+
+The query contract is defined **once** in `coinSearchParamsSchema`
+(`src/lib/validation/coin.ts`) and the SQL conditions **once** in
+`buildCoinConditions` (`coin.repository`) — both surfaces compose them, so they
+cannot drift. Add a filter in those two places, not per-route.
+
+`issuing_authority` is searchable but deliberately **not faceted** (high-cardinality
+free text). UI: `CoinFilters` is shared by both surfaces (DDR-005); `/coins` is
+read-only — coins are created inside a collection.
 
 Coins have no `name` column (removed in the Data Model Reform, ADR-006). The
 display title is **derived** from attributes by `formatCoinTitle`
 (`src/lib/coin-format.ts`) — the single source of truth for a coin's title;
 search/sort operate on the underlying attributes, not a stored name.
+
+## Home dashboard
+
+`/` (`src/app/page.tsx`) is a Server Component with no client manager: signed-out
+it renders the marketing/sign-in view; signed-in it composes services directly —
+portfolio stat tiles (`analytics.service`), collection shortcuts
+(`collection.service`), and recent acquisitions (`coin.service`
+`listRecentAcquisitions`, which converts each price into the user's base currency
+via the FX converter, falling back to the original currency when no rate applies).
 
 ## UI / Design system
 
@@ -286,7 +315,10 @@ provides:
 
 Gold (`--gold #B8871E`) is for **fills only**; gold **text** uses the deeper
 `--accent`, and text/icons on a gold fill use `--on-gold` (white on light, dark
-ink on dark) — all for WCAG AA in both schemes (see DDR-001, DDR-003). The active
+ink on dark) — all for WCAG AA in both schemes (see DDR-001, DDR-003). Check gold
+text on a `--accent-weak` tint against **`--bg`**, not just `--surface` — the tint
+composites darker off-card, which is what pushed `--accent` below AA and deepened
+it to `#7f5612` (DDR-005 §7). The active
 theme is a per-user preference (`users.theme`, Light/Dark/System) applied as
 `<html data-theme>` in the root layout (`src/lib/theme`); "system" renders no
 attribute and CSS follows the OS — no theme script, no flash.
@@ -308,6 +340,10 @@ wide data tables in `.table-wrap` (scrolls in-region on mobile). Verify with axe
 **Destructive actions** use `<ConfirmButton>` (`src/components/ui/ConfirmButton.tsx`),
 a reusable `<dialog>`-based confirmation prompt. Use it for deletes instead of
 `window.confirm`.
+
+**Icons** are inline SVG, no icon library. Shared ones live in
+`src/components/ui/icons.tsx` (`IconPencil`, `IconPlus`, `IconCheck`, `IconX`,
+`IconExpand`, `IconTrash`); reuse them before hand-rolling a new `<svg>`.
 
 **UI state persistence**: client-side preferences use `localStorage`. Current
 key: `numisbook:coin-columns-v4` stores column visibility + order as
@@ -690,15 +726,17 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `ADR-012-production-deployment` — Production deployment (Vercel + Neon; migrations via a gated CI `migrate` job). Runbook: `docs/deployment.md`
 * `ADR-013-account-settings-and-deletion` — Account settings & self-service account deletion (`/settings`; app-owned profile mutations; DB cascade + object-storage purge)
 * `ADR-014-internationalization` — Internationalization (custom no-dependency i18n; cookie + per-user `locale` preference, no URL routing; 7 locales; `zh` via system CJK fallback)
+* `ADR-015-coin-filter-rework` — Coin filter rework (multi-value filter contract — OR within a field, AND across fields; top-level `/api/coins` cross-collection resource, tenant-scoped via the user's collection ids; `pg_trgm` deferred)
 
 (`template.md` is the scaffold for new ADRs.)
 
 Accepted **design** decisions are stored in `docs/design-decisions/`:
 
-* `DDR-001-figma-ui-redesign` — Figma "stone & gold" re-skin (visual-only; originally an ADR, relocated to the DDRs). Its light-only stance is **superseded by DDR-003**.
+* `DDR-001-figma-ui-redesign` — Figma "stone & gold" re-skin (visual-only; originally an ADR, relocated to the DDRs). Its light-only stance is **superseded by DDR-003**; its `--accent` value is **amended by DDR-005 §7**.
 * `DDR-002-global-display-density` — global `zoom: 0.75` on `html` (renders the whole app at 75% density; builds on, does not supersede, DDR-001)
 * `DDR-003-dark-mode` — warm dark theme + per-user Light/Dark/System `theme` preference (supersedes DDR-001's light-only decision; adds the `--on-gold` token). Its Settings control is **amended by DDR-004**.
 * `DDR-004-theme-toggle` — replace the Settings theme `<select>` with a binary sun/moon toggle; drop the user-selectable "System" option (amends DDR-003 §3; the `system` fallback still governs never-chosen accounts)
+* `DDR-005-filter-bar-pattern` — filter bar pattern (multi-select facet popover, grade toggle chips, active-filter chip row + clear-all) and Coins as a top-level nav destination (`/coins`, read-only). §7 **amends DDR-001**: light-mode `--accent` deepened to `#7f5612` (gold text failed AA on its own tint off-card)
 
 (`docs/design-decisions/template.md` is the scaffold for new DDRs.)
 
