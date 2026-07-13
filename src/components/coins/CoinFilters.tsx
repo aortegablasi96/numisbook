@@ -125,7 +125,6 @@ export function CoinFilters({
           <input
             type="number"
             value={filters.yearFrom}
-            style={{ width: "7rem" }}
             onChange={(e) => set({ yearFrom: e.target.value })}
           />
         </label>
@@ -134,7 +133,6 @@ export function CoinFilters({
           <input
             type="number"
             value={filters.yearTo}
-            style={{ width: "7rem" }}
             onChange={(e) => set({ yearTo: e.target.value })}
           />
         </label>

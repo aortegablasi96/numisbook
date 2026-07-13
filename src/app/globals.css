@@ -2415,9 +2415,43 @@ dialog.modal.modal-chart {
   gap: 0.5rem;
   flex-wrap: wrap;
   align-items: flex-end;
+
+  /* One height for every control in the bar. Left to their own sizing, the three
+     control types disagree — inputs 38.8px, facet triggers 32.5px, grade chips
+     32px — and because the row aligns on flex-end, the tops stagger. Scoped to
+     the bar: .chip and .btn-sm keep their own size everywhere else. */
+  --filter-control-h: 2.25rem;
+}
+/* The facet popover lives inside .filters, so its checkboxes must be excluded —
+   they are not controls on the bar and must keep their native size. */
+.filters input:not([type="checkbox"]),
+.filters .btn-sm,
+.filters .chip {
+  min-height: var(--filter-control-h);
+  font-size: 0.82rem;
+  padding: 0 0.7rem;
+}
+.filters .btn-sm,
+.filters .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 .filters input {
   min-width: 0;
+}
+/* Field widths belong to the bar, not to the markup: the search box takes the
+   room a free-text query needs, the two year bounds stay equal to each other. */
+.filters input[type="text"] {
+  width: 15rem;
+}
+.filters input[type="number"] {
+  width: 7rem;
+}
+/* The year hint is a readout, not a control, so it keeps its badge size and
+   centres against the taller controls instead of faking their height. */
+.filters .badge {
+  align-self: center;
 }
 
 /* Grade: a fixed, ordered scale, so its values toggle inline rather than hiding
@@ -2489,6 +2523,11 @@ dialog.modal.modal-chart {
 }
 .col-picker-item {
   display: flex;
+  /* Explicit: the facet popover renders its rows as <label>, and the global label
+     rule stacks its children in a column — which turned every facet row into a
+     checkbox sitting above its value. The column picker's rows are <div>s and so
+     never showed it. */
+  flex-direction: row;
   align-items: center;
   gap: 0.45rem;
   padding: 0.35rem 0.5rem;
