@@ -594,7 +594,7 @@ main {
 
 /* The "Recent acquisitions" block sits below the feature cards: a section
    heading with a "View all →" link, then a single card whose rows are the
-   most recent coins (see docs/main-dashboard-example.png). */
+   most recent coins. */
 .recent {
   margin-top: var(--space-6);
 }
