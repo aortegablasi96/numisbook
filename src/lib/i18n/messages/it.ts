@@ -10,6 +10,7 @@ export const it: Partial<Messages> = {
   "nav.primaryAria": "Principale",
   "nav.home": "Home",
   "nav.collections": "Collezioni",
+  "nav.coins": "Monete",
   "nav.portfolio": "Portafoglio",
   "nav.assistant": "Assistente",
   "nav.settings": "Impostazioni",
@@ -89,6 +90,7 @@ export const it: Partial<Messages> = {
   "action.edit": "Modifica",
   "action.remove": "Rimuovi",
   "action.clear": "Cancella",
+  "action.clearAll": "Cancella tutto",
   "action.close": "Chiudi",
   "action.download": "Scarica",
   "action.expand": "Ingrandisci",
@@ -96,6 +98,7 @@ export const it: Partial<Messages> = {
   "status.loading": "caricamento…",
 
   "field.coin": "Moneta",
+  "field.collection": "Collezione",
   "field.metal": "Metallo",
   "field.denomination": "Denominazione",
   "field.year": "Anno",
@@ -139,7 +142,7 @@ export const it: Partial<Messages> = {
     "Eliminare \"{name}\" e tutte le sue monete? L’operazione è irreversibile.",
 
   "coins.search": "Cerca",
-  "coins.searchPlaceholder": "categoria, autorità…",
+  "coins.searchPlaceholder": "categoria, autorità, zecca…",
   "coins.filterAll": "Tutte",
   "coins.columns": "Colonne",
   "coins.columnsHint": "Trascina ⠿ per riordinare · seleziona per mostrare",
@@ -155,6 +158,9 @@ export const it: Partial<Messages> = {
   "coins.emptyNone":
     "Ancora nessuna moneta. Usa il pulsante qui sopra per aggiungerne una.",
   "coins.emptyNoMatch": "Nessuna moneta corrisponde ai filtri attuali.",
+  "coins.allTitle": "Tutte le monete",
+  "coins.allEmpty": "Ancora nessuna moneta. Aggiungine una da una collezione.",
+  "coins.filterRemove": "Rimuovi il filtro {filter}",
   "coins.editAria": "Modifica moneta",
   "coins.deleteSr": "Elimina moneta",
   "coins.deleteConfirm":

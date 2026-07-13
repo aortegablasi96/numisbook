@@ -2413,6 +2413,48 @@ dialog.modal.modal-chart {
 .filters input {
   min-width: 0;
 }
+
+/* Grade: a fixed, ordered scale, so its values toggle inline rather than hiding
+   in a popover (DDR-005). A bare fieldset — no border/padding of its own. */
+.filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+.filter-chips legend {
+  float: left;
+  width: 100%;
+  padding: 0 0 0.25rem;
+}
+
+/* The active-filter row: one removable chip per active value, plus "clear all".
+   Rendered only when something is filtering, so an unfiltered list stays clean. */
+.filter-active {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+/* A facet dropdown reuses the column picker's popover surface; it anchors
+   full-width under its trigger on narrow screens. */
+.facet-picker {
+  left: 0;
+  right: auto;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+@media (max-width: 480px) {
+  .facet-picker {
+    left: 0;
+    right: 0;
+    min-width: 0;
+  }
+}
 .pager {
   display: flex;
   align-items: center;

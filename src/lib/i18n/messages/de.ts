@@ -10,6 +10,7 @@ export const de: Partial<Messages> = {
   "nav.primaryAria": "Hauptnavigation",
   "nav.home": "Startseite",
   "nav.collections": "Sammlungen",
+  "nav.coins": "Münzen",
   "nav.portfolio": "Portfolio",
   "nav.assistant": "Assistent",
   "nav.settings": "Einstellungen",
@@ -91,6 +92,7 @@ export const de: Partial<Messages> = {
   "action.edit": "Bearbeiten",
   "action.remove": "Entfernen",
   "action.clear": "Zurücksetzen",
+  "action.clearAll": "Alles zurücksetzen",
   "action.close": "Schließen",
   "action.download": "Herunterladen",
   "action.expand": "Vergrößern",
@@ -98,6 +100,7 @@ export const de: Partial<Messages> = {
   "status.loading": "lädt…",
 
   "field.coin": "Münze",
+  "field.collection": "Sammlung",
   "field.metal": "Metall",
   "field.denomination": "Nennwert",
   "field.year": "Jahr",
@@ -141,7 +144,7 @@ export const de: Partial<Messages> = {
     "\"{name}\" und alle zugehörigen Münzen löschen? Dies kann nicht rückgängig gemacht werden.",
 
   "coins.search": "Suchen",
-  "coins.searchPlaceholder": "Kategorie, Behörde…",
+  "coins.searchPlaceholder": "Kategorie, Behörde, Münzstätte…",
   "coins.filterAll": "Alle",
   "coins.columns": "Spalten",
   "coins.columnsHint": "⠿ ziehen zum Neuordnen · anhaken zum Anzeigen",
@@ -157,6 +160,9 @@ export const de: Partial<Messages> = {
   "coins.emptyNone":
     "Noch keine Münzen. Nutze die Schaltfläche oben, um eine hinzuzufügen.",
   "coins.emptyNoMatch": "Keine Münze passt zu den aktuellen Filtern.",
+  "coins.allTitle": "Alle Münzen",
+  "coins.allEmpty": "Noch keine Münzen. Füge eine in einer Sammlung hinzu.",
+  "coins.filterRemove": "Filter {filter} entfernen",
   "coins.editAria": "Münze bearbeiten",
   "coins.deleteSr": "Münze löschen",
   "coins.deleteConfirm":

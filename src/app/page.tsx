@@ -291,7 +291,7 @@ async function RecentAcquisitions({
       <div className="recent-head">
         <h2>{t(locale, "home.recent.title")}</h2>
         {coins.length > 0 && (
-          <Link href="/collections" className="recent-viewall">
+          <Link href="/coins" className="recent-viewall">
             {t(locale, "home.recent.viewAll")}
             <span aria-hidden="true"> →</span>
           </Link>

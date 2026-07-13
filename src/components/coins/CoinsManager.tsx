@@ -1,103 +1,32 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, memo } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { IconPencil, IconTrash } from "@/components/ui/icons";
 import { COIN_GRADES } from "@/lib/validation/coin";
-import { formatYearRange, formatCoinTitle } from "@/lib/coin-format";
+import { formatCoinTitle } from "@/lib/coin-format";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { useT } from "@/components/i18n/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n";
+import { CoinFilters, EMPTY_FACETS, type CoinFacets } from "./CoinFilters";
+import {
+  CoinTable,
+  ColumnPicker,
+  useCoinColumns,
+  COIN_COLUMNS,
+  COIN_COLUMNS_KEY,
+  type CoinView,
+  type ColumnKey,
+  type SearchResult,
+} from "./CoinTable";
+import {
+  EMPTY_FILTERS,
+  buildSearchParams,
+  nextSort,
+  type CoinFilterState,
+} from "./coin-filters";
 
-export type CoinView = {
-  id: string;
-  issuingAuthority: string | null;
-  category: string | null;
-  yearFrom: number | null;
-  yearTo: number | null;
-  denomination: string | null;
-  mint: string | null;
-  metal: string | null;
-  grade: string | null;
-  weight: string | null;
-  diameter: string | null;
-};
-
-type SearchResult = {
-  coins: CoinView[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
-
-type Filters = { q: string; metal: string; category: string; year: string; sortBy: string; sortDir: "asc" | "desc" };
-const EMPTY_FILTERS: Filters = { q: "", metal: "", category: "", year: "", sortBy: "createdAt", sortDir: "desc" };
-
-// ---- Column configuration ------------------------------------------------
-
-type ColumnKey = "title" | "metal" | "denomination" | "year" | "category" | "issuingAuthority" | "grade" | "mint" | "weight" | "diameter";
-type ColState = { key: ColumnKey; visible: boolean };
-
-const COLUMN_DEFS: { key: ColumnKey; labelKey: MessageKey; sortable: boolean; required: boolean; defaultVisible: boolean }[] = [
-  { key: "title",            labelKey: "field.coin",             sortable: false, required: true,  defaultVisible: true  },
-  { key: "metal",            labelKey: "field.metal",            sortable: true,  required: false, defaultVisible: true  },
-  { key: "denomination",     labelKey: "field.denomination",     sortable: true,  required: false, defaultVisible: true  },
-  { key: "year",             labelKey: "field.year",             sortable: true,  required: false, defaultVisible: false },
-  { key: "category",         labelKey: "field.category",         sortable: true,  required: false, defaultVisible: false },
-  { key: "issuingAuthority", labelKey: "field.issuingAuthority", sortable: false, required: false, defaultVisible: false },
-  { key: "grade",            labelKey: "field.grade",            sortable: false, required: false, defaultVisible: false },
-  { key: "mint",             labelKey: "field.mint",             sortable: false, required: false, defaultVisible: false },
-  { key: "weight",           labelKey: "field.weight",           sortable: false, required: false, defaultVisible: false },
-  { key: "diameter",         labelKey: "field.diameter",         sortable: false, required: false, defaultVisible: false },
-];
-
-const DEFAULT_COL_STATE: ColState[] = COLUMN_DEFS.map((c) => ({ key: c.key, visible: c.defaultVisible }));
-const LS_KEY = "numisbook:coin-columns-v4";
-
-function defFor(key: ColumnKey) {
-  return COLUMN_DEFS.find((d) => d.key === key)!;
-}
-
-function loadColState(): ColState[] {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as ColState[];
-      if (Array.isArray(parsed) && parsed.every((x) => typeof x === "object" && "key" in x && "visible" in x)) {
-        const valid = parsed.filter((c) => COLUMN_DEFS.some((d) => d.key === c.key));
-        // Add any columns added after the user last saved
-        const storedKeys = new Set(valid.map((c) => c.key));
-        for (const def of COLUMN_DEFS) {
-          if (!storedKeys.has(def.key)) valid.push({ key: def.key, visible: def.defaultVisible });
-        }
-        // Required columns are always visible
-        return valid.map((c) => (defFor(c.key).required ? { ...c, visible: true } : c));
-      }
-    }
-  } catch { /* ignore */ }
-  return DEFAULT_COL_STATE.map((c) => ({ ...c }));
-}
-
-function saveColState(state: ColState[]) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch { /* ignore */ }
-}
-
-function renderCell(coin: CoinView, key: ColumnKey): React.ReactNode {
-  switch (key) {
-    case "title":
-      return <Link href={`/coins/${coin.id}`}><strong>{formatCoinTitle(coin)}</strong></Link>;
-    case "metal":            return coin.metal ?? "—";
-    case "denomination":     return coin.denomination ?? "—";
-    case "year":             return formatYearRange(coin.yearFrom, coin.yearTo) ?? "—";
-    case "category":         return coin.category ?? "—";
-    case "issuingAuthority": return coin.issuingAuthority ?? "—";
-    case "grade":            return coin.grade ?? "—";
-    case "mint":             return coin.mint ?? "—";
-    case "weight":           return coin.weight ? `${coin.weight} g` : "—";
-    case "diameter":         return coin.diameter ? `${coin.diameter} mm` : "—";
-  }
-}
+export type { CoinView } from "./CoinTable";
 
 // ---- Form helpers --------------------------------------------------------
 
@@ -139,22 +68,17 @@ function toPayload(form: FormState): Record<string, string | number | null> {
 
 // ---- Main component ------------------------------------------------------
 
+// The coin table inside one collection: the shared filter bar and table (DDR-005)
+// plus this surface's own create/edit/delete. The cross-collection listing
+// (AllCoinsManager) reuses the same filter bar and table, read-only.
 export function CoinsManager({ collectionId, initial }: { collectionId: string; initial: SearchResult }) {
   const t = useT();
   const [coins, setCoins] = useState<CoinView[]>(initial.coins);
   const [total, setTotal] = useState(initial.total);
   const [page, setPage] = useState(initial.page);
   const [pageSize, setPageSize] = useState(initial.pageSize);
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-
-  const [facets, setFacets] = useState<{ metals: string[]; categories: string[] }>({ metals: [], categories: [] });
-
-  const fetchFacets = useCallback(async () => {
-    const res = await fetch(`/api/collections/${collectionId}/coins/facets`);
-    if (res.ok) setFacets((await res.json()) as { metals: string[]; categories: string[] });
-  }, [collectionId]);
-
-  useEffect(() => { void fetchFacets(); }, [fetchFacets]);
+  const [filters, setFilters] = useState<CoinFilterState>(EMPTY_FILTERS);
+  const [facets, setFacets] = useState<CoinFacets>(EMPTY_FACETS);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -163,49 +87,21 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Column order + visibility — default server-safe, hydrate from localStorage after mount
-  const [colState, setColState] = useState<ColState[]>(DEFAULT_COL_STATE);
-  useEffect(() => { setColState(loadColState()); }, []);
-
-  // Drag state for table headers
-  const [headerDragKey, setHeaderDragKey] = useState<ColumnKey | null>(null);
-  const [headerDropKey, setHeaderDropKey] = useState<ColumnKey | null>(null);
-
-  const visibleCols = colState.filter((c) => c.visible);
+  const { colState, toggleCol, reorderCols } = useCoinColumns(COIN_COLUMNS, COIN_COLUMNS_KEY);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  function updateColState(next: ColState[]) {
-    setColState(next);
-    saveColState(next);
-  }
+  const fetchFacets = useCallback(async () => {
+    const res = await fetch(`/api/collections/${collectionId}/coins/facets`);
+    if (res.ok) setFacets((await res.json()) as CoinFacets);
+  }, [collectionId]);
 
-  function toggleCol(key: ColumnKey, checked: boolean) {
-    updateColState(colState.map((c) => (c.key === key ? { ...c, visible: checked } : c)));
-  }
+  useEffect(() => { void fetchFacets(); }, [fetchFacets]);
 
-  function reorderCols(fromKey: ColumnKey, toKey: ColumnKey) {
-    if (fromKey === toKey) return;
-    const next = [...colState];
-    const fromIdx = next.findIndex((c) => c.key === fromKey);
-    const toIdx = next.findIndex((c) => c.key === toKey);
-    if (fromIdx === -1 || toIdx === -1) return;
-    const [item] = next.splice(fromIdx, 1);
-    next.splice(toIdx, 0, item);
-    updateColState(next);
-  }
-
-  const load = useCallback(async (p: number, f: Filters) => {
+  const load = useCallback(async (p: number, f: CoinFilterState) => {
     setLoading(true);
     setError(null);
     try {
-      const sp = new URLSearchParams();
-      if (f.q.trim()) sp.set("q", f.q.trim());
-      if (f.metal.trim()) sp.set("metal", f.metal.trim());
-      if (f.category.trim()) sp.set("category", f.category.trim());
-      if (f.year.trim()) sp.set("year", f.year.trim());
-      if (f.sortBy) sp.set("sortBy", f.sortBy);
-      sp.set("sortDir", f.sortDir);
-      sp.set("page", String(p));
+      const sp = buildSearchParams(f, p);
       const res = await fetch(`/api/collections/${collectionId}/coins?${sp.toString()}`);
       if (!res.ok) { setError(await readError(res)); return; }
       const data = (await res.json()) as SearchResult;
@@ -213,11 +109,12 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
     } catch { setError(NETWORK_ERROR); } finally { setLoading(false); }
   }, [collectionId]);
 
+  // Debounced: any filter change re-queries from page 1.
   const firstRender = useRef(true);
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
-    const t = setTimeout(() => void load(1, filters), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => void load(1, filters), 300);
+    return () => clearTimeout(timer);
   }, [filters, load]);
 
   function resetForm() { setForm(EMPTY_FORM); setEditingId(null); setShowForm(false); }
@@ -226,11 +123,8 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
     setForm(toForm(coin)); setEditingId(coin.id); setShowForm(true); setError(null);
   }
 
-  function handleSort(col: string) {
-    setFilters((f) => ({
-      ...f, sortBy: col,
-      sortDir: f.sortBy === col ? (f.sortDir === "asc" ? "desc" : "asc") : "asc",
-    }));
+  function handleSort(key: ColumnKey) {
+    setFilters((f) => ({ ...f, ...nextSort(f, key) }));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -262,39 +156,10 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
   return (
     <section className="stack">
       {/* Toolbar: filters on the left, actions on the right (wraps on narrow screens) */}
-      <div className="toolbar" style={{ justifyContent: "space-between" }}>
-        <div className="row" style={{ flexWrap: "wrap", gap: "0.5rem", flex: 1, alignItems: "flex-end" }}>
-          <label>
-            {t("coins.search")}
-            <input type="text" value={filters.q} placeholder={t("coins.searchPlaceholder")}
-              onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))} />
-          </label>
-          <label>
-            {t("field.metal")}
-            <select value={filters.metal} onChange={(e) => setFilters((f) => ({ ...f, metal: e.target.value }))}>
-              <option value="">{t("coins.filterAll")}</option>
-              {facets.metals.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </label>
-          <label>
-            {t("field.category")}
-            <select value={filters.category} onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))}>
-              <option value="">{t("coins.filterAll")}</option>
-              {facets.categories.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </label>
-          <label>
-            {t("field.year")}
-            <input type="number" value={filters.year} style={{ width: "6rem" }}
-              onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value }))} />
-          </label>
-          <button type="button" onClick={() => setFilters(EMPTY_FILTERS)}
-            disabled={filters.q === "" && filters.metal === "" && filters.category === "" && filters.year === "" && filters.sortBy === "createdAt" && filters.sortDir === "desc"}>
-            {t("action.clear")}
-          </button>
-        </div>
+      <div className="toolbar" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+        <CoinFilters filters={filters} facets={facets} onChange={setFilters} />
         <div className="row" style={{ gap: "0.5rem", flexShrink: 0 }}>
-          <ColumnPicker colState={colState} onToggle={toggleCol} onReorder={reorderCols} />
+          <ColumnPicker columns={COIN_COLUMNS} colState={colState} onToggle={toggleCol} onReorder={reorderCols} />
           <button type="button" className="btn-primary btn-sm"
             onClick={() => {
               if (showForm && !editingId) { resetForm(); }
@@ -349,7 +214,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
 
       {error && <p className="alert">{error}</p>}
 
-      <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+      <p className="muted" aria-live="polite" style={{ margin: 0, fontSize: "0.85rem" }}>
         {t(total === 1 ? "unit.coinOne" : "unit.coinOther", { count: total })}
         {loading && ` · ${t("status.loading")}`}
       </p>
@@ -359,72 +224,28 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
           {total === 0 ? t("coins.emptyNone") : t("coins.emptyNoMatch")}
         </p>
       ) : (
-        <div className="table-wrap">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th className="td-thumb">
-                <span className="sr-only">{t("a11y.image")}</span>
-              </th>
-              {visibleCols.map((col) => {
-                const def = defFor(col.key);
-                const isDragOver = headerDropKey === col.key && headerDragKey !== col.key;
-                const thShared = {
-                  draggable: true as const,
-                  onDragStart: () => setHeaderDragKey(col.key),
-                  onDragOver: (e: React.DragEvent) => { e.preventDefault(); setHeaderDropKey(col.key); },
-                  onDrop: () => { if (headerDragKey) reorderCols(headerDragKey, col.key); setHeaderDragKey(null); setHeaderDropKey(null); },
-                  onDragEnd: () => { setHeaderDragKey(null); setHeaderDropKey(null); },
-                  className: [col.key === "title" ? "col-title" : "", isDragOver ? "th-drop-target" : ""].filter(Boolean).join(" ") || undefined,
-                  style: { cursor: "grab", userSelect: "none" as const, whiteSpace: "nowrap" as const },
-                };
-                return def.sortable ? (
-                  <th key={col.key} {...thShared} onClick={() => handleSort(col.key)}>
-                    <span className="th-drag-grip">⠿</span>
-                    {t(def.labelKey)}
-                    <span style={{ marginLeft: "0.3rem", opacity: filters.sortBy === col.key ? 1 : 0.3, fontSize: "0.8em" }}>
-                      {filters.sortBy === col.key ? (filters.sortDir === "asc" ? "↑" : "↓") : "⇅"}
-                    </span>
-                  </th>
-                ) : (
-                  <th key={col.key} {...thShared}>
-                    <span className="th-drag-grip">⠿</span>
-                    {t(def.labelKey)}
-                  </th>
-                );
-              })}
-              <th>
-                <span className="sr-only">{t("a11y.actions")}</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {coins.map((coin) => (
-              <tr key={coin.id}>
-                <td className="td-thumb"><CoinThumb coinId={coin.id} /></td>
-                {visibleCols.map((col) => (
-                  <td key={col.key} className={col.key === "title" ? "col-title" : "muted"}>
-                    {renderCell(coin, col.key)}
-                  </td>
-                ))}
-                <td className="td-actions">
-                  <span className="row row-actions" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
-                    <button type="button" className="btn-sm btn-icon" onClick={() => startEdit(coin)} disabled={busy}
-                      aria-label={t("coins.editAria")} title={t("action.edit")}>
-                      <IconPencil />
-                    </button>
-                    <ConfirmButton className="btn-sm btn-danger btn-icon" disabled={busy} title={t("action.delete")}
-                      message={t("coins.deleteConfirm", { title: formatCoinTitle(coin) })}
-                      onConfirm={() => handleDelete(coin)}>
-                      <IconTrash /><span className="sr-only">{t("coins.deleteSr")}</span>
-                    </ConfirmButton>
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
+        <CoinTable
+          coins={coins}
+          columns={COIN_COLUMNS}
+          colState={colState}
+          onReorder={reorderCols}
+          sortBy={filters.sortBy}
+          sortDir={filters.sortDir}
+          onSort={handleSort}
+          renderActions={(coin) => (
+            <span className="row row-actions" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
+              <button type="button" className="btn-sm btn-icon" onClick={() => startEdit(coin)} disabled={busy}
+                aria-label={t("coins.editAria")} title={t("action.edit")}>
+                <IconPencil />
+              </button>
+              <ConfirmButton className="btn-sm btn-danger btn-icon" disabled={busy} title={t("action.delete")}
+                message={t("coins.deleteConfirm", { title: formatCoinTitle(coin) })}
+                onConfirm={() => handleDelete(coin)}>
+                <IconTrash /><span className="sr-only">{t("coins.deleteSr")}</span>
+              </ConfirmButton>
+            </span>
+          )}
+        />
       )}
 
       {totalPages > 1 && (
@@ -437,99 +258,3 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
     </section>
   );
 }
-
-// ---- Column picker -------------------------------------------------------
-
-function ColumnPicker({
-  colState, onToggle, onReorder,
-}: {
-  colState: ColState[];
-  onToggle: (key: ColumnKey, checked: boolean) => void;
-  onReorder: (from: ColumnKey, to: ColumnKey) => void;
-}) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const [dragKey, setDragKey] = useState<ColumnKey | null>(null);
-  const [dropKey, setDropKey] = useState<ColumnKey | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onMouseDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
-  }, [open]);
-
-  const visibleCount = colState.filter((c) => c.visible).length;
-
-  return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button type="button" className="btn-sm" onClick={() => setOpen((v) => !v)}>
-        {t("coins.columns")}{visibleCount < colState.length ? ` (${visibleCount}/${colState.length})` : ""} {open ? "▴" : "▾"}
-      </button>
-      {open && (
-        <div className="col-picker">
-          <p className="col-picker-hint">{t("coins.columnsHint")}</p>
-          {colState.map((col) => {
-            const def = defFor(col.key);
-            const isDropTarget = dropKey === col.key && dragKey !== col.key;
-            return (
-              <div
-                key={col.key}
-                className={`col-picker-item${isDropTarget ? " drag-over" : ""}${dragKey === col.key ? " dragging" : ""}`}
-                draggable
-                onDragStart={() => setDragKey(col.key)}
-                onDragOver={(e) => { e.preventDefault(); setDropKey(col.key); }}
-                onDrop={() => { if (dragKey && dragKey !== col.key) onReorder(dragKey, col.key); setDragKey(null); setDropKey(null); }}
-                onDragEnd={() => { setDragKey(null); setDropKey(null); }}
-              >
-                <span className="col-picker-handle" title={t("coins.dragToReorder")}>⠿</span>
-                <input
-                  type="checkbox"
-                  checked={col.visible}
-                  disabled={def.required}
-                  onChange={(e) => onToggle(col.key, e.target.checked)}
-                  onMouseDown={(e) => e.stopPropagation()}
-                />
-                <span className="col-picker-label">{t(def.labelKey)}</span>
-                {!col.visible && <span className="col-picker-hidden-badge">{t("coins.columnHidden")}</span>}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ---- Sub-components ------------------------------------------------------
-
-const CoinThumb = memo(function CoinThumb({ coinId }: { coinId: string }) {
-  const [imageIds, setImageIds] = useState<string[] | null>(null);
-
-  useEffect(() => {
-    fetch(`/api/coins/${coinId}/images`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((data: { images: { id: string }[] }) =>
-        setImageIds(data.images.slice(0, 2).map((img) => img.id)),
-      )
-      .catch(() => setImageIds([]));
-  }, [coinId]);
-
-  // null = still loading (pulsing skeleton); [] = coin has no image (static box).
-  if (imageIds === null)
-    return <span className="thumb skeleton" aria-hidden />;
-  if (imageIds.length === 0)
-    return <span className="thumb thumb-empty" aria-hidden />;
-
-  return (
-    <span style={{ display: "flex", gap: "0.4rem" }}>
-      {imageIds.map((id) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img key={id} src={`/api/coins/${coinId}/images/${id}?w=320`} alt="" className="thumb" />
-      ))}
-    </span>
-  );
-});
