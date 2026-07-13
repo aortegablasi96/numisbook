@@ -23,7 +23,8 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — active milestone: Hosted Error Monitoring**
+Current maturity: **Live in production — active milestone: Hosted Error Monitoring
+& Accessibility Checks in CI**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -60,12 +61,13 @@ fields) over a widened field set, the same filter bar serves a new cross-collect
 **All coins** view at `/coins`, and validation of it corrected a WCAG AA contrast
 failure in the light theme's gold text token (see `history.md` Phase 17, ADR-015,
 DDR-005, and `docs/testing/rework-filters-testing-report.md`). The active milestone
-is now **Hosted Error Monitoring**.
+is now **Hosted Error Monitoring & Accessibility Checks in CI**.
 
 Primary objective:
 
-**Turn production errors into proactive, aggregated alerting** by wiring a
-hosted monitor onto the existing `ErrorReporter` seam.
+**Find out about defects without a human looking for them** — wire a hosted
+monitor onto the existing `ErrorReporter` seam, and add the rendering gate CI has
+never had (two Rework Filters defects reached `main` through a green pipeline).
 
 Current priorities:
 
@@ -73,25 +75,27 @@ Current priorities:
 - Additional settings — ✅ complete (settings area, i18n, dark mode)
 - Dashboard recent acquisitions — ✅ complete
 - Rework filters — ✅ complete
-- Hosted error monitoring (active)
+- Hosted error monitoring & accessibility checks in CI (active)
 - (then) valuation-based analytics
 
 ---
 
-# Active Milestone — Hosted Error Monitoring
+# Active Milestone — Hosted Error Monitoring & Accessibility Checks in CI
 
 Goal:
 
-Turn production errors from a pull-based log stream into proactive,
-aggregated alerting.
+Close the two gaps between a defect existing and anyone finding out: production
+errors that nobody is alerted to, and UI defects that no gate can see.
+
+## Hosted error monitoring
 
 Today the `ErrorReporter` seam (`src/lib/observability`) only logs; finding a
 production error means grepping the deploy platform's runtime logs by `errorId`,
-with no grouping, retention, or alerts (see `ADR-011`). This milestone wires a
-hosted monitor onto that seam — a change confined to
-`src/lib/observability/index.ts`, leaving all call sites untouched.
+with no grouping, retention, or alerts (see `ADR-011`). This wires a hosted
+monitor onto that seam — a change confined to `src/lib/observability/index.ts`,
+leaving all call sites untouched.
 
-## Features
+### Features
 
 - [ ] Add the Sentry SDK (`@sentry/nextjs`) and provision a project/DSN
 - [ ] Implement a Sentry-backed `ErrorReporter` behind the existing seam
@@ -99,6 +103,33 @@ hosted monitor onto that seam — a change confined to
 - [ ] Configure environment, release tagging, and PII scrubbing
 - [ ] Set up alerting rules / notification channels
 - [ ] Document the setup in an ADR (extends or supersedes ADR-011)
+
+## Accessibility checks in CI
+
+Promoted from the technical backlog. CI gates on lint + type-check + 263 unit
+tests, and **none of them render a page** — `vitest.config.ts` runs
+`environment: "node"`, so there is no DOM. The Rework Filters milestone shipped
+two defects straight through that gate, both of which needed a browser to see:
+
+- a **WCAG AA contrast failure** in the light theme (DDR-005 §7), and
+- a **facet popover whose rows stacked** the checkbox above its value (#144).
+
+Both were caught by hand. This adds the missing gate so the next one is caught by
+CI, in both colour schemes.
+
+### Features
+
+- [ ] Add a headless-browser + `@axe-core` pass over the key pages, in light and
+      dark, run against a production build in CI
+- [ ] Fail the build on any violation; keep the run fast enough to gate every PR
+- [ ] Decide and document the page set (at minimum `/`, `/coins`, a collection,
+      `/portfolio`, `/settings`) and the interactive states worth asserting
+- [ ] Record the decision (extends ADR-010, the CI pipeline)
+
+> Open question for planning: whether this stays an a11y-only axe gate or grows
+> into a general rendering/visual gate. The popover bug was a **layout** defect —
+> axe would not have caught it. Scope it deliberately rather than assuming axe
+> covers both.
 
 ---
 
@@ -205,20 +236,6 @@ Product positioning and user segmentation remain incomplete.
 ---
 
 ## Tooling
-
-### Automated accessibility checks in CI
-
-**Problem**
-
-The Rework Filters milestone's only serious defect — a WCAG AA contrast failure
-in the light theme — was invisible to lint, type-check and 263 unit tests. It
-required rendering the page, which nothing in CI does (there is no DOM test
-environment; `vitest.config.ts` runs `environment: "node"`).
-
-**Fix**
-
-- Evaluate an axe pass over the key pages in CI (headless browser + `@axe-core`),
-  in both colour schemes.
 
 ### Filter facet popovers: type-to-filter
 
