@@ -17,12 +17,18 @@
 
   /* Gold. The bright brand gold (#B8871E) fails AA as text on light, so it is
      reserved for fills, tints, borders, charts and the logo; a deeper gold
-     (#8a5f15, ~5.6:1 on white) carries gold *text* (links, labels, badges). */
+     (#7f5612) carries gold *text* (links, labels, badges).
+
+     The deep gold must clear AA against its *own* tint, not just against white:
+     gold text on --accent-weak sits on --bg for the un-carded badges and active
+     filter chips, compositing to #e6decd. DDR-001's #8a5f15 was 5.6:1 on white
+     but only 4.2:1 there — a fail. #7f5612 is 4.8:1 on that tint, 6.5:1 on white
+     (DDR-005). */
   --gold: #b8871e;
-  --accent: #8a5f15;
+  --accent: #7f5612;
   --accent-weak: rgba(184, 135, 30, 0.12);
 
-  /* Primary action = white text on the deeper gold --accent (#8a5f15, ~5.6:1 AA),
+  /* Primary action = white text on the deeper gold --accent (#7f5612, ~6.5:1 AA),
      keeping the Figma's white-on-gold look; white on the bright #B8871E is ~3.2:1
      and would fail. The bright --primary/--gold stays the fill colour (logo,
      tints, borders, charts). See DDR-001 §4 + addenda. */
