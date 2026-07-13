@@ -1,9 +1,13 @@
 import {
   coinRepository,
   type Coin,
+  type CoinFacets,
+  type CoinFilters,
+  type CoinGrade,
   type CoinPatch,
   type CoinSortBy,
   type CoinSortDir,
+  type CoinWithCollection,
   type RecentAcquisition,
 } from "@/repositories/coin.repository";
 import { collectionRepository } from "@/repositories/collection.repository";
@@ -20,16 +24,22 @@ export const COINS_PAGE_SIZE = 20;
 // How many recent acquisitions the home dashboard surfaces.
 export const RECENT_ACQUISITIONS_LIMIT = 5;
 
-const VALID_SORT_BY = new Set<CoinSortBy>(["category", "metal", "denomination", "year", "createdAt"]);
-
+// The coin search/filter input. Every field is optional so callers that want the
+// unfiltered list (the collection page's initial server render) can pass `{}`.
+// The API boundary produces this shape via `coinSearchParamsSchema` (ADR-015);
+// values arriving here are already validated.
 export type CoinSearch = {
   q?: string;
-  metal?: string;
-  category?: string;
-  year?: number;
+  metals?: string[];
+  categories?: string[];
+  denominations?: string[];
+  mints?: string[];
+  grades?: CoinGrade[];
+  yearFrom?: number;
+  yearTo?: number;
   page?: number;
-  sortBy?: string;
-  sortDir?: string;
+  sortBy?: CoinSortBy;
+  sortDir?: CoinSortDir;
 };
 
 export type CoinSearchResult = {
@@ -38,6 +48,35 @@ export type CoinSearchResult = {
   page: number;
   pageSize: number;
 };
+
+// The cross-collection listing carries each coin's owning collection.
+export type AllCoinsSearchResult = Omit<CoinSearchResult, "coins"> & {
+  coins: CoinWithCollection[];
+};
+
+// Translate the search input into repository filters: drop empty values so an
+// absent filter is `undefined` rather than an empty list, and page → offset.
+function toFilters(search: CoinSearch, page: number): CoinFilters {
+  const present = <T,>(values: T[] | undefined): T[] | undefined =>
+    values?.length ? values : undefined;
+
+  return {
+    q: search.q?.trim() || undefined,
+    metals: present(search.metals),
+    categories: present(search.categories),
+    denominations: present(search.denominations),
+    mints: present(search.mints),
+    grades: present(search.grades),
+    yearFrom: Number.isFinite(search.yearFrom) ? search.yearFrom : undefined,
+    yearTo: Number.isFinite(search.yearTo) ? search.yearTo : undefined,
+    sortBy: search.sortBy,
+    sortDir: search.sortDir,
+    limit: COINS_PAGE_SIZE,
+    offset: (page - 1) * COINS_PAGE_SIZE,
+  };
+}
+
+const resolvePage = (page?: number): number => Math.max(1, Math.floor(page ?? 1));
 
 // Business logic for coins. A coin's tenant is the owner of its collection, so
 // every use case is gated on the acting user owning the relevant collection.
@@ -65,33 +104,42 @@ export async function searchCoins(
   search: CoinSearch,
 ): Promise<CoinSearchResult> {
   await assertOwnsCollection(userId, collectionId);
-  const page = Math.max(1, Math.floor(search.page ?? 1));
-  const pageSize = COINS_PAGE_SIZE;
-  const sortBy = VALID_SORT_BY.has(search.sortBy as CoinSortBy)
-    ? (search.sortBy as CoinSortBy)
-    : undefined;
-  const sortDir: CoinSortDir | undefined =
-    search.sortDir === "asc" || search.sortDir === "desc" ? search.sortDir : undefined;
+  const page = resolvePage(search.page);
+  const { coins, total } = await coinRepository.searchInCollection(
+    collectionId,
+    toFilters(search, page),
+  );
+  return { coins, total, page, pageSize: COINS_PAGE_SIZE };
+}
 
-  const { coins, total } = await coinRepository.searchInCollection(collectionId, {
-    q: search.q?.trim() || undefined,
-    metal: search.metal?.trim() || undefined,
-    category: search.category?.trim() || undefined,
-    year: Number.isFinite(search.year) ? search.year : undefined,
-    sortBy,
-    sortDir,
-    limit: pageSize,
-    offset: (page - 1) * pageSize,
-  });
-  return { coins, total, page, pageSize };
+/**
+ * Search the user's coins across every collection they own (the `/coins` view).
+ * There is no per-collection ownership check to make because the query spans them
+ * all — tenant isolation is enforced by the repository, which scopes by `userId`.
+ */
+export async function searchAllCoins(
+  userId: string,
+  search: CoinSearch,
+): Promise<AllCoinsSearchResult> {
+  const page = resolvePage(search.page);
+  const { coins, total } = await coinRepository.searchForUser(
+    userId,
+    toFilters(search, page),
+  );
+  return { coins, total, page, pageSize: COINS_PAGE_SIZE };
 }
 
 export async function getCoinFacets(
   userId: string,
   collectionId: string,
-): Promise<{ metals: string[]; categories: string[] }> {
+): Promise<CoinFacets> {
   await assertOwnsCollection(userId, collectionId);
   return coinRepository.getDistinctFacets(collectionId);
+}
+
+/** Faceted values across all the user's collections, for the `/coins` filters. */
+export async function getAllCoinFacets(userId: string): Promise<CoinFacets> {
+  return coinRepository.getDistinctFacetsForUser(userId);
 }
 
 // A recent acquisition with its price paid converted to the dashboard's base

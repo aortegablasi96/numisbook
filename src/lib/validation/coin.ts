@@ -82,3 +82,92 @@ export const updateCoinSchema = coinAttributesSchema.innerType().partial().refin
 
 export type CreateCoinInput = z.infer<typeof createCoinSchema>;
 export type UpdateCoinInput = z.infer<typeof updateCoinSchema>;
+
+// ---- Search / filter contract (ADR-015) ------------------------------------
+
+// Sort keys the coin list supports. Kept in sync with the repository's CoinSortBy.
+export const COIN_SORT_BY = [
+  "category",
+  "metal",
+  "denomination",
+  "year",
+  "createdAt",
+] as const;
+
+// A year arriving as a query-string value, so it is coerced from text.
+const yearParam = z.coerce
+  .number()
+  .int("Year must be a whole number")
+  .gte(-3000, "Year is out of range")
+  .lte(new Date().getFullYear() + 1, "Year is out of range");
+
+// A repeated query param (`?metal=Silver&metal=Gold`). Capped so a hand-crafted
+// URL cannot push an unbounded OR-list into the query.
+const facetValues = z.array(z.string().trim().min(1).max(200)).max(50).default([]);
+
+// The one definition of the coin search/filter query contract, shared by the
+// collection-scoped and cross-collection routes so they cannot drift. Values
+// within a field are OR'd; separate fields are AND'd. Output is renamed to the
+// plural domain shape the service and repository speak.
+export const coinSearchParamsSchema = z
+  .object({
+    q: z.string().trim().min(1).max(200).optional(),
+    metal: facetValues,
+    category: facetValues,
+    denomination: facetValues,
+    mint: facetValues,
+    grade: z.array(z.enum(COIN_GRADES, { message: "Invalid grade" })).max(7).default([]),
+    yearFrom: yearParam.optional(),
+    yearTo: yearParam.optional(),
+    page: z.coerce.number().int().positive().max(100_000).default(1),
+    sortBy: z.enum(COIN_SORT_BY, { message: "Invalid sort field" }).optional(),
+    sortDir: z.enum(["asc", "desc"], { message: "Invalid sort direction" }).optional(),
+  })
+  .refine((s) => s.yearFrom == null || s.yearTo == null || s.yearFrom <= s.yearTo, {
+    message: "Start year must not be after end year",
+    path: ["yearTo"],
+  })
+  .transform((s) => ({
+    q: s.q,
+    metals: s.metal,
+    categories: s.category,
+    denominations: s.denomination,
+    mints: s.mint,
+    grades: s.grade,
+    yearFrom: s.yearFrom,
+    yearTo: s.yearTo,
+    page: s.page,
+    sortBy: s.sortBy,
+    sortDir: s.sortDir,
+  }));
+
+export type CoinSearchParams = z.infer<typeof coinSearchParamsSchema>;
+
+/**
+ * Read the coin search contract off a query string. Repeated params become
+ * multi-value filters (`getAll`); blank values are dropped so `?metal=` reads as
+ * "no metal filter" rather than "metal is the empty string". Throws `ZodError`
+ * (→ 400) on anything invalid.
+ */
+export function parseCoinSearchParams(sp: URLSearchParams): CoinSearchParams {
+  const one = (key: string): string | undefined => {
+    const value = sp.get(key);
+    return value !== null && value.trim() !== "" ? value.trim() : undefined;
+  };
+  const many = (key: string): string[] =>
+    sp.getAll(key).map((v) => v.trim()).filter((v) => v !== "");
+
+  return coinSearchParamsSchema.parse({
+    q: one("q"),
+    metal: many("metal"),
+    category: many("category"),
+    denomination: many("denomination"),
+    mint: many("mint"),
+    grade: many("grade"),
+    yearFrom: one("yearFrom"),
+    yearTo: one("yearTo"),
+    page: one("page"),
+    sortBy: one("sortBy"),
+    sortDir: one("sortDir"),
+  });
+}

@@ -3,6 +3,9 @@ import { ZodError } from "zod";
 import {
   listCoins,
   searchCoins,
+  searchAllCoins,
+  getCoinFacets,
+  getAllCoinFacets,
   getCoin,
   addCoin,
   editCoin,
@@ -10,6 +13,7 @@ import {
   listRecentAcquisitions,
   COINS_PAGE_SIZE,
   RECENT_ACQUISITIONS_LIMIT,
+  type CoinSearch,
 } from "./coin.service";
 import { coinRepository, type Coin } from "@/repositories/coin.repository";
 import { collectionRepository } from "@/repositories/collection.repository";
@@ -20,6 +24,9 @@ vi.mock("@/repositories/coin.repository", () => ({
   coinRepository: {
     listByCollection: vi.fn(),
     searchInCollection: vi.fn(),
+    searchForUser: vi.fn(),
+    getDistinctFacets: vi.fn(),
+    getDistinctFacetsForUser: vi.fn(),
     listRecentAcquisitionsForUser: vi.fn(),
     findByIdForUser: vi.fn(),
     create: vi.fn(),
@@ -107,23 +114,30 @@ describe("coin.service", () => {
       expect(coins.searchInCollection).not.toHaveBeenCalled();
     });
 
-    it("forwards trimmed filters and computes pagination offset", async () => {
+    it("forwards multi-value filters and computes the pagination offset", async () => {
       collections.findByIdForUser.mockResolvedValue(ownedCollection);
       coins.searchInCollection.mockResolvedValue({ coins: [fakeCoin], total: 25 });
 
       const result = await searchCoins("user-1", "col-1", {
-        q: "  den ",
-        metal: " silver ",
-        category: "",
-        year: -44,
+        q: "  denarius ",
+        metals: ["Silver", "Gold"],
+        grades: ["VF", "EF"],
+        yearFrom: -100,
+        yearTo: -44,
         page: 2,
       });
 
       expect(coins.searchInCollection).toHaveBeenCalledWith("col-1", {
-        q: "den",
-        metal: "silver",
-        category: undefined, // empty string dropped
-        year: -44,
+        q: "denarius",
+        metals: ["Silver", "Gold"],
+        categories: undefined,
+        denominations: undefined,
+        mints: undefined,
+        grades: ["VF", "EF"],
+        yearFrom: -100,
+        yearTo: -44,
+        sortBy: undefined,
+        sortDir: undefined,
         limit: COINS_PAGE_SIZE,
         offset: COINS_PAGE_SIZE, // page 2 → offset = pageSize
       });
@@ -135,16 +149,105 @@ describe("coin.service", () => {
       });
     });
 
-    it("defaults to page 1 and ignores a non-finite year", async () => {
+    it("drops empty filter lists so an absent filter is undefined, not []", async () => {
       collections.findByIdForUser.mockResolvedValue(ownedCollection);
       coins.searchInCollection.mockResolvedValue({ coins: [], total: 0 });
 
-      await searchCoins("user-1", "col-1", { year: Number.NaN });
+      await searchCoins("user-1", "col-1", { metals: [], categories: [], grades: [] });
 
       expect(coins.searchInCollection).toHaveBeenCalledWith(
         "col-1",
-        expect.objectContaining({ year: undefined, offset: 0, limit: COINS_PAGE_SIZE }),
+        expect.objectContaining({ metals: undefined, categories: undefined, grades: undefined }),
       );
+    });
+
+    it("defaults to page 1 and ignores non-finite year bounds", async () => {
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.searchInCollection.mockResolvedValue({ coins: [], total: 0 });
+
+      await searchCoins("user-1", "col-1", { yearFrom: Number.NaN });
+
+      expect(coins.searchInCollection).toHaveBeenCalledWith(
+        "col-1",
+        expect.objectContaining({
+          yearFrom: undefined,
+          offset: 0,
+          limit: COINS_PAGE_SIZE,
+        }),
+      );
+    });
+  });
+
+  describe("searchAllCoins (cross-collection)", () => {
+    const acrossCollections = { ...fakeCoin, collectionName: "Ancient Rome" };
+
+    it("scopes to the acting user and never takes a collection id from the caller", async () => {
+      coins.searchForUser.mockResolvedValue({ coins: [acrossCollections], total: 1 });
+
+      const result = await searchAllCoins("user-1", { metals: ["Silver"], page: 3 });
+
+      // Tenant isolation lives in the repository: the service passes the session
+      // userId straight through, and there is no collection to check ownership of.
+      expect(coins.searchForUser).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({
+          metals: ["Silver"],
+          offset: COINS_PAGE_SIZE * 2,
+          limit: COINS_PAGE_SIZE,
+        }),
+      );
+      expect(collections.findByIdForUser).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        coins: [acrossCollections],
+        total: 1,
+        page: 3,
+        pageSize: COINS_PAGE_SIZE,
+      });
+    });
+
+    it("applies the identical filter contract as the per-collection search", async () => {
+      coins.searchForUser.mockResolvedValue({ coins: [], total: 0 });
+      coins.searchInCollection.mockResolvedValue({ coins: [], total: 0 });
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+
+      const search: CoinSearch = {
+        q: "athens",
+        metals: ["Silver"],
+        mints: ["Athens"],
+        grades: ["MS"],
+        yearFrom: -400,
+        yearTo: -300,
+      };
+      await searchAllCoins("user-1", { ...search });
+      await searchCoins("user-1", "col-1", { ...search });
+
+      const [, allFilters] = coins.searchForUser.mock.calls[0];
+      const [, oneFilters] = coins.searchInCollection.mock.calls[0];
+      expect(allFilters).toEqual(oneFilters);
+    });
+  });
+
+  describe("facets", () => {
+    const facets = {
+      metals: ["Silver"],
+      categories: ["Romans"],
+      denominations: ["Denarius"],
+      mints: ["Rome"],
+    };
+
+    it("throws NotFound when the user does not own the collection", async () => {
+      collections.findByIdForUser.mockResolvedValue(null);
+      await expect(getCoinFacets("user-1", "col-x")).rejects.toBeInstanceOf(NotFoundError);
+      expect(coins.getDistinctFacets).not.toHaveBeenCalled();
+    });
+
+    it("scopes the cross-collection facets to the acting user", async () => {
+      coins.getDistinctFacetsForUser.mockResolvedValue(facets);
+
+      await expect(getAllCoinFacets("user-1")).resolves.toEqual(facets);
+      // The facets query is a data read: unscoped, it would leak other collectors'
+      // mint/metal values through a filter dropdown (ADR-015).
+      expect(coins.getDistinctFacetsForUser).toHaveBeenCalledWith("user-1");
     });
   });
 

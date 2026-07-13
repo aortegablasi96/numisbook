@@ -1,10 +1,25 @@
-import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, ilike, inArray, isNotNull, or, sql, type SQL } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/db";
-import { coins, coinImages, collections } from "@/db/schema";
+import { coins, coinGradeEnum, coinImages, collections } from "@/db/schema";
 
 export type Coin = typeof coins.$inferSelect;
 export type NewCoin = typeof coins.$inferInsert;
 export type CoinPatch = Partial<Omit<NewCoin, "id" | "collectionId" | "createdAt">>;
+export type CoinGrade = (typeof coinGradeEnum.enumValues)[number];
+
+/** A coin listed outside its collection, carrying the owner collection for display. */
+export type CoinWithCollection = Coin & {
+  collectionName: string;
+};
+
+/** Distinct values available for the faceted filter dropdowns. */
+export type CoinFacets = {
+  metals: string[];
+  categories: string[];
+  denominations: string[];
+  mints: string[];
+};
 
 // A recently acquired coin for the home dashboard's "Recent acquisitions" list:
 // enough to derive the title (coins have no name), the category · denomination ·
@@ -31,9 +46,13 @@ export type CoinSortDir = "asc" | "desc";
 
 export type CoinFilters = {
   q?: string;
-  metal?: string;
-  category?: string;
-  year?: number;
+  metals?: string[];
+  categories?: string[];
+  denominations?: string[];
+  mints?: string[];
+  grades?: CoinGrade[];
+  yearFrom?: number;
+  yearTo?: number;
   sortBy?: CoinSortBy;
   sortDir?: CoinSortDir;
   limit: number;
@@ -49,6 +68,94 @@ function ownedCollectionIds(userId: string) {
     .where(eq(collections.userId, userId));
 }
 
+/**
+ * The filter predicates, built once and composed by every coin search — the
+ * per-collection table and the cross-collection view differ only in the scoping
+ * predicate they prepend, so the two surfaces cannot drift (ADR-015).
+ *
+ * Semantics: values within a field are OR'd, separate fields are AND'd. A NULL
+ * column never satisfies a positive filter (SQL's own semantics — a coin with no
+ * metal is not matched by a metal filter).
+ */
+function buildCoinConditions(filters: CoinFilters): SQL[] {
+  const conditions: SQL[] = [];
+
+  // Free-text search spans every attribute that identifies a coin. Coins have no
+  // name (ADR-006), so this is the closest thing to searching "the coin".
+  if (filters.q) {
+    const like = `%${filters.q}%`;
+    conditions.push(
+      or(
+        ilike(coins.category, like),
+        ilike(coins.issuingAuthority, like),
+        ilike(coins.denomination, like),
+        ilike(coins.mint, like),
+        ilike(coins.catalogueReferences, like),
+      )!,
+    );
+  }
+
+  // Faceted values stay case-insensitive, as the single-value filters were.
+  const anyOf = (column: AnyPgColumn, values: string[] | undefined) => {
+    if (!values?.length) return;
+    conditions.push(or(...values.map((value) => ilike(column, value)))!);
+  };
+  anyOf(coins.metal, filters.metals);
+  anyOf(coins.category, filters.categories);
+  anyOf(coins.denomination, filters.denominations);
+  anyOf(coins.mint, filters.mints);
+
+  // Grade is a Postgres enum, so an exact set membership rather than a text match.
+  if (filters.grades?.length) conditions.push(inArray(coins.grade, filters.grades));
+
+  // Year: overlap between the coin's [year_from, year_to] minting range and the
+  // queried range. A half-populated range collapses to a single year via COALESCE
+  // (the schema stores a known single year as from == to). A coin with neither
+  // bound yields NULL on both sides, so it drops out whenever a year filter is
+  // active — which is the intended "nulls don't match a positive filter" rule.
+  if (filters.yearTo !== undefined)
+    conditions.push(
+      sql`COALESCE(${coins.yearFrom}, ${coins.yearTo}) <= ${filters.yearTo}`,
+    );
+  if (filters.yearFrom !== undefined)
+    conditions.push(
+      sql`COALESCE(${coins.yearTo}, ${coins.yearFrom}) >= ${filters.yearFrom}`,
+    );
+
+  return conditions;
+}
+
+function buildCoinOrderBy(filters: CoinFilters): SQL {
+  const dir = (filters.sortDir ?? "desc") === "asc" ? asc : desc;
+  switch (filters.sortBy) {
+    case "category":     return dir(coins.category);
+    case "metal":        return dir(coins.metal);
+    case "denomination": return dir(coins.denomination);
+    case "year":         return dir(coins.yearFrom);
+    default:             return desc(coins.createdAt);
+  }
+}
+
+/** Distinct non-null values of each faceted column, within an arbitrary scope. */
+async function distinctFacets(scope: SQL): Promise<CoinFacets> {
+  const valuesOf = async (column: AnyPgColumn): Promise<string[]> => {
+    const rows = await db
+      .selectDistinct({ value: column })
+      .from(coins)
+      .where(and(scope, isNotNull(column)))
+      .orderBy(asc(column));
+    return rows.flatMap((row) => (row.value ? [String(row.value)] : []));
+  };
+
+  const [metals, categories, denominations, mints] = await Promise.all([
+    valuesOf(coins.metal),
+    valuesOf(coins.category),
+    valuesOf(coins.denomination),
+    valuesOf(coins.mint),
+  ]);
+  return { metals, categories, denominations, mints };
+}
+
 // Data access for the coins aggregate. Only this layer touches the database.
 // A coin's tenant is its collection's owner; methods that act on a coin by id
 // scope by `userId` via the owning collection.
@@ -62,63 +169,67 @@ export const coinRepository = {
   },
 
   /**
-   * Search/filter coins within a collection, with pagination. Text fields use
-   * case-insensitive partial matching; the free-text query `q` matches the
-   * coin's identifying attributes (category / issuing authority), since coins
-   * have no name. A `year` filter matches coins whose minting range contains it
-   * (open-ended bounds count as unbounded on that side). Returns the page plus
-   * the total count for the same filters.
+   * Search/filter coins within a collection, with pagination. Returns the page
+   * plus the total count for the same filters. See `buildCoinConditions` for the
+   * filter semantics.
    */
   async searchInCollection(
     collectionId: string,
     filters: CoinFilters,
   ): Promise<{ coins: Coin[]; total: number }> {
-    const conditions: SQL[] = [eq(coins.collectionId, collectionId)];
-    if (filters.q)
-      conditions.push(
-        or(
-          ilike(coins.category, `%${filters.q}%`),
-          ilike(coins.issuingAuthority, `%${filters.q}%`),
-        )!,
-      );
-    if (filters.metal) conditions.push(ilike(coins.metal, filters.metal));
-    if (filters.category) conditions.push(ilike(coins.category, filters.category));
-    if (filters.year !== undefined) {
-      const y = filters.year;
-      // Match coins whose [year_from, year_to] range contains y. A missing bound
-      // is unbounded on that side; coins with neither bound never match.
-      conditions.push(
-        and(
-          or(isNotNull(coins.yearFrom), isNotNull(coins.yearTo)),
-          or(isNull(coins.yearFrom), lte(coins.yearFrom, y)),
-          or(isNull(coins.yearTo), gte(coins.yearTo, y)),
-        )!,
-      );
-    }
-    const where = and(...conditions);
-
-    const dir = (filters.sortDir ?? "desc") === "asc" ? asc : desc;
-    const orderCol = (() => {
-      switch (filters.sortBy) {
-        case "category":     return dir(coins.category);
-        case "metal":        return dir(coins.metal);
-        case "denomination": return dir(coins.denomination);
-        case "year":         return dir(coins.yearFrom);
-        default:             return desc(coins.createdAt);
-      }
-    })();
+    const where = and(
+      eq(coins.collectionId, collectionId),
+      ...buildCoinConditions(filters),
+    );
 
     const rows = await db
       .select()
       .from(coins)
       .where(where)
-      .orderBy(orderCol)
+      .orderBy(buildCoinOrderBy(filters))
       .limit(filters.limit)
       .offset(filters.offset);
 
     const [counted] = await db
       .select({ total: sql<number>`count(*)::int` })
       .from(coins)
+      .where(where);
+
+    return { coins: rows, total: counted?.total ?? 0 };
+  },
+
+  /**
+   * Search/filter the user's coins across **every** collection they own — the
+   * cross-collection `/coins` view. Identical filter semantics to
+   * `searchInCollection`; only the scoping predicate differs.
+   *
+   * Tenant isolation: coins carry no `user_id`, so scoping goes through the
+   * owning collection (`collections.user_id`), the same join
+   * `listRecentAcquisitionsForUser` already uses for cross-collection reads. The
+   * join is required regardless, to carry the collection name for display.
+   */
+  async searchForUser(
+    userId: string,
+    filters: CoinFilters,
+  ): Promise<{ coins: CoinWithCollection[]; total: number }> {
+    const where = and(
+      eq(collections.userId, userId),
+      ...buildCoinConditions(filters),
+    );
+
+    const rows = await db
+      .select({ ...getTableColumns(coins), collectionName: collections.name })
+      .from(coins)
+      .innerJoin(collections, eq(coins.collectionId, collections.id))
+      .where(where)
+      .orderBy(buildCoinOrderBy(filters))
+      .limit(filters.limit)
+      .offset(filters.offset);
+
+    const [counted] = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(coins)
+      .innerJoin(collections, eq(coins.collectionId, collections.id))
       .where(where);
 
     return { coins: rows, total: counted?.total ?? 0 };
@@ -205,20 +316,20 @@ export const coinRepository = {
     return row ?? null;
   },
 
-  /** Distinct non-null metal and category values in a collection, for filter dropdowns. */
-  async getDistinctFacets(collectionId: string): Promise<{ metals: string[]; categories: string[] }> {
-    const [metalRows, categoryRows] = await Promise.all([
-      db.selectDistinct({ value: coins.metal }).from(coins)
-        .where(and(eq(coins.collectionId, collectionId), isNotNull(coins.metal)))
-        .orderBy(asc(coins.metal)),
-      db.selectDistinct({ value: coins.category }).from(coins)
-        .where(and(eq(coins.collectionId, collectionId), isNotNull(coins.category)))
-        .orderBy(asc(coins.category)),
-    ]);
-    return {
-      metals: metalRows.flatMap((r) => (r.value ? [r.value] : [])),
-      categories: categoryRows.flatMap((r) => (r.value ? [r.value] : [])),
-    };
+  /** Distinct faceted values within a collection, for the filter dropdowns. */
+  async getDistinctFacets(collectionId: string): Promise<CoinFacets> {
+    return distinctFacets(eq(coins.collectionId, collectionId));
+  },
+
+  /**
+   * Distinct faceted values across every collection the user owns.
+   *
+   * Tenant isolation: scoped through the user's own collection ids. An unscoped
+   * `SELECT DISTINCT mint` would leak *other* collectors' data through a filter
+   * dropdown — a facets query is still a data read (ADR-015).
+   */
+  async getDistinctFacetsForUser(userId: string): Promise<CoinFacets> {
+    return distinctFacets(inArray(coins.collectionId, ownedCollectionIds(userId)));
   },
 
   /** Delete a coin only if it lives in one of the user's collections. */
