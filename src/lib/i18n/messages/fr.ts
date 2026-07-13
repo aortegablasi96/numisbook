@@ -10,6 +10,7 @@ export const fr: Partial<Messages> = {
   "nav.primaryAria": "Principale",
   "nav.home": "Accueil",
   "nav.collections": "Collections",
+  "nav.coins": "Pièces",
   "nav.portfolio": "Portefeuille",
   "nav.assistant": "Assistant",
   "nav.settings": "Paramètres",
@@ -91,6 +92,7 @@ export const fr: Partial<Messages> = {
   "action.edit": "Modifier",
   "action.remove": "Retirer",
   "action.clear": "Effacer",
+  "action.clearAll": "Tout effacer",
   "action.close": "Fermer",
   "action.download": "Télécharger",
   "action.expand": "Agrandir",
@@ -98,6 +100,7 @@ export const fr: Partial<Messages> = {
   "status.loading": "chargement…",
 
   "field.coin": "Pièce",
+  "field.collection": "Collection",
   "field.metal": "Métal",
   "field.denomination": "Dénomination",
   "field.year": "Année",
@@ -141,7 +144,7 @@ export const fr: Partial<Messages> = {
     "Supprimer « {name} » et toutes ses pièces ? Cette action est irréversible.",
 
   "coins.search": "Rechercher",
-  "coins.searchPlaceholder": "catégorie, autorité…",
+  "coins.searchPlaceholder": "catégorie, autorité, atelier…",
   "coins.filterAll": "Toutes",
   "coins.columns": "Colonnes",
   "coins.columnsHint": "Glissez ⠿ pour réorganiser · cochez pour afficher",
@@ -157,6 +160,9 @@ export const fr: Partial<Messages> = {
   "coins.emptyNone":
     "Aucune pièce pour l’instant. Utilisez le bouton ci-dessus pour en ajouter une.",
   "coins.emptyNoMatch": "Aucune pièce ne correspond aux filtres actuels.",
+  "coins.allTitle": "Toutes les pièces",
+  "coins.allEmpty": "Aucune pièce pour l'instant. Ajoutez-en une depuis une collection.",
+  "coins.filterRemove": "Retirer le filtre {filter}",
   "coins.editAria": "Modifier la pièce",
   "coins.deleteSr": "Supprimer la pièce",
   "coins.deleteConfirm":

@@ -92,6 +92,10 @@ constraint (ADR-008 §3), so:
   series, the area-chart fill.
 * `--accent #8a5f15` (a deeper gold, ≈5.6:1 on white) carries **gold text** —
   links, badges, `.mono-label`s shown in gold, active chip text.
+  > **Amended by DDR-005 §7:** the light-mode value is now `#7f5612`. `#8a5f15`
+  > was measured on `--surface` (white) only; on `--accent-weak` composited over
+  > the stone `--bg` it is 4.2:1 and **fails AA**. The rule below is unchanged —
+  > only the value moves, so the deep gold actually meets the bar it claims.
 * primary actions use the bright gold fill with **ink text** (`--primary-text
   #1C1917`, ≈5.5:1) rather than the Figma's white-on-gold (≈3.2:1, fails). This
   applies uniformly to `.btn-primary`, the assistant send button, and the user

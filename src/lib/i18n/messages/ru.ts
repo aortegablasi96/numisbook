@@ -10,6 +10,7 @@ export const ru: Partial<Messages> = {
   "nav.primaryAria": "Основная навигация",
   "nav.home": "Главная",
   "nav.collections": "Коллекции",
+  "nav.coins": "Монеты",
   "nav.portfolio": "Портфель",
   "nav.assistant": "Ассистент",
   "nav.settings": "Настройки",
@@ -90,6 +91,7 @@ export const ru: Partial<Messages> = {
   "action.edit": "Изменить",
   "action.remove": "Удалить",
   "action.clear": "Очистить",
+  "action.clearAll": "Очистить всё",
   "action.close": "Закрыть",
   "action.download": "Скачать",
   "action.expand": "Увеличить",
@@ -97,6 +99,7 @@ export const ru: Partial<Messages> = {
   "status.loading": "загрузка…",
 
   "field.coin": "Монета",
+  "field.collection": "Коллекция",
   "field.metal": "Металл",
   "field.denomination": "Номинал",
   "field.year": "Год",
@@ -139,7 +142,7 @@ export const ru: Partial<Messages> = {
     "Удалить «{name}» и все её монеты? Это действие необратимо.",
 
   "coins.search": "Поиск",
-  "coins.searchPlaceholder": "категория, эмитент…",
+  "coins.searchPlaceholder": "категория, эмитент, монетный двор…",
   "coins.filterAll": "Все",
   "coins.columns": "Столбцы",
   "coins.columnsHint": "Перетащите ⠿ для сортировки · отметьте для показа",
@@ -154,6 +157,9 @@ export const ru: Partial<Messages> = {
   "coins.yearToBc": "Год по (− до н. э.)",
   "coins.emptyNone": "Пока нет монет. Нажмите кнопку выше, чтобы добавить её.",
   "coins.emptyNoMatch": "Нет монет, соответствующих текущим фильтрам.",
+  "coins.allTitle": "Все монеты",
+  "coins.allEmpty": "Пока нет монет. Добавьте монету внутри коллекции.",
+  "coins.filterRemove": "Убрать фильтр {filter}",
   "coins.editAria": "Изменить монету",
   "coins.deleteSr": "Удалить монету",
   "coins.deleteConfirm":

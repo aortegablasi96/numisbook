@@ -1,0 +1,1 @@
+CREATE INDEX "coins_collection_id_created_at_idx" ON "coins" USING btree ("collection_id","created_at" DESC NULLS LAST);

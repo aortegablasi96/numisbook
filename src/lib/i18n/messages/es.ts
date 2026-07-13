@@ -10,6 +10,7 @@ export const es: Partial<Messages> = {
   "nav.primaryAria": "Principal",
   "nav.home": "Inicio",
   "nav.collections": "Colecciones",
+  "nav.coins": "Monedas",
   "nav.portfolio": "Cartera",
   "nav.assistant": "Asistente",
   "nav.settings": "Ajustes",
@@ -89,6 +90,7 @@ export const es: Partial<Messages> = {
   "action.edit": "Editar",
   "action.remove": "Quitar",
   "action.clear": "Limpiar",
+  "action.clearAll": "Limpiar todo",
   "action.close": "Cerrar",
   "action.download": "Descargar",
   "action.expand": "Ampliar",
@@ -96,6 +98,7 @@ export const es: Partial<Messages> = {
   "status.loading": "cargando…",
 
   "field.coin": "Moneda",
+  "field.collection": "Colección",
   "field.metal": "Metal",
   "field.denomination": "Denominación",
   "field.year": "Año",
@@ -138,7 +141,7 @@ export const es: Partial<Messages> = {
     "¿Eliminar \"{name}\" y todas sus monedas? Esto no se puede deshacer.",
 
   "coins.search": "Buscar",
-  "coins.searchPlaceholder": "categoría, autoridad…",
+  "coins.searchPlaceholder": "categoría, autoridad, ceca…",
   "coins.filterAll": "Todas",
   "coins.columns": "Columnas",
   "coins.columnsHint": "Arrastra ⠿ para reordenar · marca para mostrar",
@@ -153,6 +156,9 @@ export const es: Partial<Messages> = {
   "coins.yearToBc": "Año hasta (− a. C.)",
   "coins.emptyNone": "Aún no hay monedas. Usa el botón de arriba para añadir una.",
   "coins.emptyNoMatch": "Ninguna moneda coincide con los filtros actuales.",
+  "coins.allTitle": "Todas las monedas",
+  "coins.allEmpty": "Aún no hay monedas. Añade una desde una colección.",
+  "coins.filterRemove": "Quitar el filtro {filter}",
   "coins.editAria": "Editar moneda",
   "coins.deleteSr": "Eliminar moneda",
   "coins.deleteConfirm":

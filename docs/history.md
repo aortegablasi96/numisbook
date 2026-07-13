@@ -729,6 +729,102 @@ decision. Completes the Additional Settings milestone.
 
 ---
 
+# Phase 16 — Dashboard Recent Acquisitions
+
+Status: Complete
+
+The home dashboard showed portfolio tiles and collection shortcuts, and then
+stopped — a large empty region below them. This phase fills it with the answer to
+the question a collector actually opens the app with: *what did I just buy?*
+
+## Achievements
+
+- **Recent acquisitions across all collections** — a tenant-scoped
+  `coin.service.listRecentAcquisitions` read model ordered by `auction_date` (the
+  auction a coin came from — the closest thing to an acquisition date; there is no
+  dedicated column) with a **`created_at` fallback**, since `auction_date` is
+  nullable.
+- **Dashboard section** — each row carries the coin's thumbnail, its derived title
+  (`formatCoinTitle`), a `category · denomination · metal` chip line, the price
+  paid, and the acquisition date; a "View all →" link and an empty state for
+  collectors with no coins yet.
+- **Prices in the base currency** — each price paid is converted through the FX
+  converter into the user's base currency, falling back to the coin's own currency
+  when no rate applies, so the list is summable by eye.
+- **Density pass** — larger rows, with fewer shown on short viewports.
+- i18n strings for all 7 locales; light/dark styling from the existing tokens.
+
+No new decisions were required: the phase composes existing services and the
+design system. The home page stays a Server Component with no client manager.
+
+---
+
+# Phase 17 — Rework Filters
+
+Status: Complete
+
+Filtering was not merely thin — it was **structurally confined**. It existed on
+exactly one surface (the coin table *inside* a single collection), offered three
+single-select controls, and had a clear-all button that did nothing. There was no
+cross-collection coin listing at all, which meant the most valuable place to
+filter — the whole inventory — did not exist. This phase rebuilt the contract and
+gave it a second home. See **ADR-015** and **DDR-005**.
+
+## Filter contract
+
+- **Widened field set** — grade, denomination, mint and a signed **year range**
+  (negative = BC, matching the coin form's convention) join metal and category.
+  Free-text `q` now also matches denomination, mint and catalogue references.
+- **Multi-value semantics** — filters are repeated query params
+  (`?metal=Silver&metal=Gold`): **OR within a field, AND across fields**.
+- **Defined once** — the query contract lives in `coinSearchParamsSchema` and the
+  SQL conditions in `buildCoinConditions`; both coin surfaces compose them, so the
+  two cannot drift. Adding a filter is a change in those two places, not per-route.
+
+## Cross-collection coins
+
+- **`GET /api/coins` + `GET /api/coins/facets`** — the user's coins across every
+  collection. Coins have no `user_id`, so both scope indirectly through
+  `collections.user_id`. **The facets query is scoped identically**: an unscoped
+  `SELECT DISTINCT` would have leaked another tenant's mints and denominations
+  through a filter dropdown — the milestone's highest-severity risk, and the one
+  verified most carefully.
+- **`/coins`** — a read-only **All coins** view, a top-level nav sibling of
+  Collections (coins are created *inside* a collection, so there is no sensible
+  answer to "which collection?" from a cross-collection view). The dashboard's
+  "View all →" repoints to it.
+- **Composite index** `coins (collection_id, created_at DESC)` for the default
+  listing (migration `0007`).
+
+## Filter bar
+
+- One `CoinFilters` component serves both surfaces: **multi-select facet popovers**
+  (metal, category, denomination, mint), **grade toggle chips** rendered in scale
+  order, two signed year inputs with a live `300 BC – 100 AD` hint, an
+  **active-filter chip row** with per-value removal, and a clear-all that finally
+  works (DDR-005).
+
+## Accessibility correction
+
+- Validation found a real **WCAG AA contrast failure**, and it was a *token
+  contract* bug rather than a component bug: `--accent` had only ever been measured
+  on white, but the filter bar is the first UI to place gold text on the gold tint
+  **outside a card**, where `--accent-weak` composites over the stone `--bg` and the
+  pairing falls to 4.2:1. Light-mode `--accent` was deepened to **`#7f5612`**
+  (4.8:1 on the tint, 6.5:1 on white); dark mode already passed. Recorded as
+  **DDR-005 §7**, amending DDR-001.
+- The defect was invisible to lint, type-check and 263 unit tests — it required
+  rendering the page. An axe check in CI is on the technical backlog as a result.
+
+## Deferred (ADR-015)
+
+`pg_trgm` / indexed substring search (the `ILIKE` only ever scans one tenant's
+rows — revisit with a measurement, not pre-emptively), price-paid range filtering
+(needs FX semantics; belongs with valuation analytics), URL-synced shareable
+filter state, and filters on the portfolio/collections views.
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -747,6 +843,7 @@ See:
 - `docs/decisions/ADR-012-production-deployment.md`
 - `docs/decisions/ADR-013-account-settings-and-deletion.md`
 - `docs/decisions/ADR-014-internationalization.md`
+- `docs/decisions/ADR-015-coin-filter-rework.md`
 
 # Design Decisions
 
@@ -759,6 +856,12 @@ See:
   on `html` (renders the whole app at 75% density; builds on DDR-001)
 - `docs/design-decisions/DDR-003-dark-mode.md` — warm dark theme + per-user
   Light/Dark/System preference (Phase 15; supersedes DDR-001's light-only point)
+- `docs/design-decisions/DDR-004-theme-toggle.md` — binary sun/moon theme toggle
+  in Settings, replacing the three-option `<select>` (amends DDR-003 §3)
+- `docs/design-decisions/DDR-005-filter-bar-pattern.md` — filter bar pattern
+  (facet popovers, grade chips, active-filter chip row) and Coins as a top-level
+  nav destination (Phase 17). §7 **amends DDR-001**: light-mode `--accent`
+  deepened to `#7f5612`, which failed AA as text on its own tint off-card
 
 ---
 

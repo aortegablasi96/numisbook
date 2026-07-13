@@ -268,7 +268,7 @@ async function SignedInHome({
 }
 
 // The most recently acquired coins across all of the user's collections, shown
-// below the feature cards (see docs/main-dashboard-example.png). Each row links
+// below the feature cards. Each row links
 // to the coin and shows a thumbnail, the derived title, a
 // category · denomination · metal line, the price paid (converted to the user's
 // base currency, matching the "total paid" stat; the coin's own currency is a
@@ -291,7 +291,7 @@ async function RecentAcquisitions({
       <div className="recent-head">
         <h2>{t(locale, "home.recent.title")}</h2>
         {coins.length > 0 && (
-          <Link href="/collections" className="recent-viewall">
+          <Link href="/coins" className="recent-viewall">
             {t(locale, "home.recent.viewAll")}
             <span aria-hidden="true"> →</span>
           </Link>

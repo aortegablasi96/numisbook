@@ -19,6 +19,7 @@ export const en = {
   "nav.primaryAria": "Primary",
   "nav.home": "Home",
   "nav.collections": "Collections",
+  "nav.coins": "Coins",
   "nav.portfolio": "Portfolio",
   "nav.assistant": "Assistant",
   "nav.settings": "Settings",
@@ -41,6 +42,7 @@ export const en = {
   "action.edit": "Edit",
   "action.remove": "Remove",
   "action.clear": "Clear",
+  "action.clearAll": "Clear all",
   "action.close": "Close",
   "action.download": "Download",
   "action.expand": "Expand",
@@ -50,6 +52,7 @@ export const en = {
   // Shared field labels (coin attributes — reused across list columns, filters,
   // the add/edit forms, and the coin detail tiles)
   "field.coin": "Coin",
+  "field.collection": "Collection",
   "field.metal": "Metal",
   "field.denomination": "Denomination",
   "field.year": "Year",
@@ -97,7 +100,7 @@ export const en = {
 
   // Coins manager (list, filters, columns, add/edit form)
   "coins.search": "Search",
-  "coins.searchPlaceholder": "category, authority…",
+  "coins.searchPlaceholder": "category, authority, mint…",
   "coins.filterAll": "All",
   "coins.columns": "Columns",
   "coins.columnsHint": "Drag ⠿ to reorder · check to show",
@@ -112,6 +115,9 @@ export const en = {
   "coins.yearToBc": "Year to (− BC)",
   "coins.emptyNone": "No coins yet. Use the button above to add one.",
   "coins.emptyNoMatch": "No coins match the current filters.",
+  "coins.allTitle": "All coins",
+  "coins.allEmpty": "No coins yet. Add one from inside a collection.",
+  "coins.filterRemove": "Remove filter {filter}",
   "coins.editAria": "Edit coin",
   "coins.deleteSr": "Delete coin",
   "coins.deleteConfirm":

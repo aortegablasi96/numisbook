@@ -75,5 +75,14 @@ export const coins = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("coins_collection_id_idx").on(table.collectionId)],
+  (table) => [
+    index("coins_collection_id_idx").on(table.collectionId),
+    // Serves the default "newest first" listing on both coin surfaces (the
+    // per-collection table and the cross-collection /coins view) in index order,
+    // with no sort step. See ADR-015 / the Rework Filters Database Review.
+    index("coins_collection_id_created_at_idx").on(
+      table.collectionId,
+      table.createdAt.desc(),
+    ),
+  ],
 );

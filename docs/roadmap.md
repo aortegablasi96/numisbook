@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — active milestone: Rework Filters**
+Current maturity: **Live in production — active milestone: Hosted Error Monitoring**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -52,91 +52,38 @@ Settings** milestone has shipped (see `history.md` Phases 12–15): a dedicated
 base-currency preference (Phase 12, ADR-013); **internationalization** across the
 full interface (Phases 13–14, ADR-014); and **dark mode** — a warm night theme
 with a per-user Light / Dark / System preference (Phase 15, DDR-003). The
-**Dashboard Recent Acquisitions** milestone has now shipped: the home dashboard
-surfaces the user's most recently acquired coins across all collections below the
-overview cards — each row with a thumbnail, derived title, category · denomination ·
-metal chips, the price paid, and the acquisition date (`auction_date` with a
-`created_at` fallback), plus a "View all →" link and an empty state. The active
-milestone is now **Rework Filters**.
+**Dashboard Recent Acquisitions** milestone has shipped — the home dashboard now
+surfaces the user's most recently acquired coins across all collections, priced in
+their base currency (see `history.md` Phase 16). And the **Rework Filters**
+milestone has shipped: coin filtering is multi-value (OR within a field, AND across
+fields) over a widened field set, the same filter bar serves a new cross-collection
+**All coins** view at `/coins`, and validation of it corrected a WCAG AA contrast
+failure in the light theme's gold text token (see `history.md` Phase 17, ADR-015,
+DDR-005, and `docs/testing/rework-filters-testing-report.md`). The active milestone
+is now **Hosted Error Monitoring**.
 
 Primary objective:
 
-**Revisit and adjust all filtering across NumisBook** so the available filters
-are consistent, complete, and useful.
+**Turn production errors into proactive, aggregated alerting** by wiring a
+hosted monitor onto the existing `ErrorReporter` seam.
 
 Current priorities:
 
 - Production readiness — ✅ complete (live in production)
 - Additional settings — ✅ complete (settings area, i18n, dark mode)
 - Dashboard recent acquisitions — ✅ complete
-- Rework filters (active)
-- (then) hosted error monitoring
+- Rework filters — ✅ complete
+- Hosted error monitoring (active)
 - (then) valuation-based analytics
 
 ---
 
-# Shipped Milestone — Dashboard Recent Acquisitions
-
-> ✅ Shipped. Retained here for reference until reconstructed into `history.md`.
-
-Goal:
-
-Fill the empty space on the home dashboard with a **Recent acquisitions** list —
-the most recently acquired coins across **all** of the user's collections, shown
-below the existing overview cards (see the mock in
-`docs/main-dashboard-example.png`).
-
-Each row shows the coin's thumbnail, its derived title (`formatCoinTitle`), a
-`category · denomination · metal` chip line, the price paid (in the coin's
-currency), and the acquisition date, ordered most-recent first. A "View all →"
-link leads to the full coin listing.
-
-Acquisition date maps to the existing `coins.auction_date` column (the auction a
-coin was obtained from — no dedicated acquisition-date field exists). It is
-**nullable**, so ordering must fall back to `created_at` when it is absent, and
-rows should render gracefully when no date is known.
-
-## Features
-
-- [x] Repository/service query for the user's most recent acquisitions across
-      all collections (tenant-scoped; ordered by `auction_date` with a
-      `created_at` fallback)
-- [x] Home dashboard "Recent acquisitions" section below the overview cards
-- [x] Per-row: thumbnail, derived title, category · denomination · metal chips,
-      price paid, acquisition date
-- [x] "View all →" link to the coin listing
-- [x] Empty state when the user has no coins yet
-- [x] i18n strings + light/dark styling consistent with the design system
-
----
-
-# Active Milestone — Rework Filters
-
-Goal:
-
-Revisit and adjust all filtering across NumisBook so the available filters are
-consistent, complete, and useful — building on today's coin search/filter set
-(`q`, `metal`, `category`, `year`, sort by category/metal/denomination/year/
-createdAt; facets endpoint — see `CLAUDE.md` "Coin search and filtering").
-
-## Features
-
-- [ ] Audit existing filters and identify gaps/inconsistencies
-- [ ] Review and adjust the coin filter set (e.g. denomination, country/issuing
-      authority, year range, condition/grade)
-- [ ] Consistent filter UX across collections, coins, and portfolio views
-- [ ] Combinable/multi-select filters where it makes sense
-- [ ] Clear-all and active-filter indicators
-
----
-
-# Future Milestone — Hosted Error Monitoring
+# Active Milestone — Hosted Error Monitoring
 
 Goal:
 
 Turn production errors from a pull-based log stream into proactive,
-aggregated alerting — to be picked up **post-deployment**, once a hosting
-platform and a monitor account/DSN exist.
+aggregated alerting.
 
 Today the `ErrorReporter` seam (`src/lib/observability`) only logs; finding a
 production error means grepping the deploy platform's runtime logs by `errorId`,
@@ -258,6 +205,31 @@ Product positioning and user segmentation remain incomplete.
 ---
 
 ## Tooling
+
+### Automated accessibility checks in CI
+
+**Problem**
+
+The Rework Filters milestone's only serious defect — a WCAG AA contrast failure
+in the light theme — was invisible to lint, type-check and 263 unit tests. It
+required rendering the page, which nothing in CI does (there is no DOM test
+environment; `vitest.config.ts` runs `environment: "node"`).
+
+**Fix**
+
+- Evaluate an axe pass over the key pages in CI (headless browser + `@axe-core`),
+  in both colour schemes.
+
+### Filter facet popovers: type-to-filter
+
+**Problem**
+
+Facet lists are unbounded on `/coins` — fine at 6 mints, unpleasant at 60
+(DDR-005 risk).
+
+**Fix**
+
+- Add a type-to-filter box inside the facet popover.
 
 ### Migrate off deprecated next lint
 
