@@ -305,9 +305,9 @@ semantics stay behind the desktop headers, which are what they were written for.
 encode/parse pair (`sortOptionValue` / `parseSortOption`) lives in `coin-filters.ts`
 with the other pure filter helpers, and is unit-tested there.
 
-The cost is 2n options instead of n. At the current field set (the visible sortable
-columns, plus `createdAt`) that is a handful of entries in a native picker, which is
-cheaper than a second control the user has to interpret.
+The select offers **every sortable column, not only the visible ones** (corrected
+below). The cost is 2n options instead of n — ten entries in a native picker at the
+current field set, which is cheaper than a second control the user has to interpret.
 
 Rejected: **dropping direction entirely.** It is one of the two things a sort *is*,
 and a phone user would have been left with whatever direction each field defaults to,
@@ -331,3 +331,34 @@ Implemented in CSS with a sibling combinator on the same `data-open` bit that dr
 the bar (`.filters[data-open="false"] ~ .filter-active .filter-clear`), so one flag
 still governs the whole collapsed state and the component needs no second piece of
 view logic.
+
+## Addendum — what you can sort by is not what you can see (2026-07-14)
+
+> Corrects the first §1 above, which built the phone sort select from the *visible*
+> sortable columns.
+
+Sorting was tied to column visibility, so a phone user could not sort by `Year` or
+`Category` at all: both are hidden by default, and the only way to reveal a column is
+the column picker, which §3 makes desktop-only. The two constraints closed on each
+other.
+
+The coupling was inherited, not chosen. The select was written as the stand-in for
+the hidden column headers, so it mirrored them — and on desktop sortability really
+*is* tied to visibility, because you sort a column by clicking its header, which has
+to exist to be clicked. A `<select>` carries no such requirement. **What the list can
+be sorted by is a property of the query (`COIN_SORT_BY`), not of what is on screen**,
+and the phone select now offers every sortable column regardless of visibility.
+
+Sorting by an attribute the card does not display is legible here: the option names
+it (`Year (oldest first)`), and the year is part of the derived title
+(`formatCoinTitle`) anyway, so a year-sorted list still reads as ordered.
+
+The alternative — **bringing the column picker to the phone** — was rejected. On a
+phone `ColState` does not choose columns, it chooses how much metadata rides under
+each card title; a picker there is really a card-density control, and ten fields
+ticked on turns the card list back into the wall of attributes the card form exists
+to avoid (§3). It would also have been the wrong fix: the sort gap is not caused by
+the picker's absence, and closing it does not require a picker. If per-card content
+ever needs user control, it should be designed as a card-content control — a short
+checklist, no drag-reorder (order is meaningless in the card form) — not as the
+desktop picker moved sideways.

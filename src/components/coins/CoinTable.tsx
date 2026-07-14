@@ -228,7 +228,12 @@ export function CoinTable<T extends CoinView>({
 
   const visibleCols = colState.filter((c) => c.visible);
   const reorderCols = onReorder;
-  const sortableCols = visibleCols.filter((c) => defFor(columns, c.key).sortable);
+  // Every sortable column, not just the visible ones. What you can sort by is a
+  // property of the query (COIN_SORT_BY), not of what is on screen — the desktop
+  // headers tie the two together only because you sort them by clicking them, and a
+  // select has no such constraint. Tying them here would make Year and Category
+  // unreachable on a phone, where the column picker that reveals them is hidden.
+  const sortableCols = columns.filter((d) => d.sortable);
 
   return (
     <>
@@ -251,7 +256,7 @@ export function CoinTable<T extends CoinView>({
             {sortableCols.flatMap((col) =>
               (["asc", "desc"] as const).map((dir) => (
                 <option key={`${col.key}:${dir}`} value={sortOptionValue(col.key, dir)}>
-                  {sortOptionLabel(t, defFor(columns, col.key), dir)}
+                  {sortOptionLabel(t, col, dir)}
                 </option>
               )),
             )}
