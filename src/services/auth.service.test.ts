@@ -17,6 +17,7 @@ const fakeUser: User = {
   baseCurrency: null,
   locale: null,
   theme: null,
+  isDemo: false,
   createdAt: new Date(),
 };
 

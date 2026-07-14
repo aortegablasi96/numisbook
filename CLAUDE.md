@@ -143,6 +143,7 @@ A new feature is built as a vertical slice:
 AppError(message, status)       — base; carries an HTTP status
   ValidationError(message)      — 400; domain invariant violations
   NotFoundError(message)        — 404; missing or invisible resource
+  ForbiddenError(message)       — 403; authenticated but not allowed (demo writes)
 ```
 
 Services throw these; `errorResponse()` in `_lib.ts` maps them to JSON
@@ -199,6 +200,19 @@ Auth.js v5 (`next-auth@5`) with the Drizzle adapter and **database** sessions
 * OAuth failures route to a branded page (`pages.error` →
   `src/app/auth/error/page.tsx`; maps `?error=` via `src/lib/auth-errors.ts`).
   It runs during auth failures, so it must not call `auth()` or hit the DB.
+
+## Public demo account
+
+A visitor can enter a seeded, **read-only** demo tenant without Google (ADR-016,
+DDR-007). The demo user is an ordinary tenant (`users.is_demo`) — its id comes
+from the session and every query is scoped by it — so tenant isolation is
+unchanged. Its session is minted directly (a `sessions` row + the Auth.js cookie,
+which `src/auth.ts` now names explicitly) because Auth.js cannot issue one without
+a provider.
+
+**Every mutating API route and Server Action must call `assertWritable(user)`**
+(`src/lib/demo.ts`, re-exported from `api/_lib.ts`); `src/app/api/write-guard.test.ts`
+fails the build if a mutating route omits it. Seed with `npm run db:seed-demo`.
 
 ## Collection Assistant
 
@@ -738,6 +752,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `ADR-013-account-settings-and-deletion` — Account settings & self-service account deletion (`/settings`; app-owned profile mutations; DB cascade + object-storage purge)
 * `ADR-014-internationalization` — Internationalization (custom no-dependency i18n; cookie + per-user `locale` preference, no URL routing; 7 locales; `zh` via system CJK fallback)
 * `ADR-015-coin-filter-rework` — Coin filter rework (multi-value filter contract — OR within a field, AND across fields; top-level `/api/coins` cross-collection resource, tenant-scoped via the user's collection ids; `pg_trgm` deferred)
+* `ADR-016-public-demo-account` — Public demo account (a second, non-Google way to obtain a session — an adapter-minted DB session; a shared read-only demo tenant enforced by `assertWritable` + a build-failing guard test; read-only assistant tool set; service-driven seed). **Departs from ADR-003.**
 
 (`template.md` is the scaffold for new ADRs.)
 
@@ -749,6 +764,7 @@ Accepted **design** decisions are stored in `docs/design-decisions/`:
 * `DDR-004-theme-toggle` — replace the Settings theme `<select>` with a binary sun/moon toggle; drop the user-selectable "System" option (amends DDR-003 §3; the `system` fallback still governs never-chosen accounts)
 * `DDR-005-filter-bar-pattern` — filter bar pattern (multi-select facet popover, grade toggle chips, active-filter chip row + clear-all) and Coins as a top-level nav destination (`/coins`, read-only). §7 **amends DDR-001**: light-mode `--accent` deepened to `#7f5612` (gold text failed AA on its own tint off-card)
 * `DDR-006-responsive-layout` — responsive layout: a three-stop breakpoint scale (phone/tablet/desktop + wide), viewport-aware density, and the per-surface mobile forms (coin-list cards, touch filter bar). **Amends DDR-002**: `zoom: 0.75` is desktop-only
+* `DDR-007-demo-mode-ui` — demo mode UI: "Try the demo" as the secondary CTA, a persistent non-dismissible banner, and mutation affordances **removed rather than disabled** (`DemoProvider` / `useIsDemo`, mirroring `LocaleProvider`)
 
 (`docs/design-decisions/template.md` is the scaffold for new DDRs.)
 

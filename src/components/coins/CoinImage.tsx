@@ -5,6 +5,7 @@ import { ALLOWED_IMAGE_TYPES } from "@/lib/images";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { useT } from "@/components/i18n/LocaleProvider";
+import { useIsDemo } from "@/components/demo/DemoProvider";
 
 function IconExpand() {
   return (
@@ -24,6 +25,7 @@ function IconUpload() {
 
 export function CoinImage({ coinId }: { coinId: string }) {
   const t = useT();
+  const isDemo = useIsDemo();
   const [imageIds, setImageIds] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -194,37 +196,41 @@ export function CoinImage({ coinId }: { coinId: string }) {
         </p>
       )}
 
-      <div className="row">
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ALLOWED_IMAGE_TYPES.join(",")}
-          onChange={handleUpload}
-          disabled={busy}
-          aria-label={t("coinImage.fileAria")}
-          style={{ display: "none" }}
-        />
-        <button
-          type="button"
-          className="btn-upload-image"
-          onClick={() => inputRef.current?.click()}
-          disabled={busy}
-        >
-          <IconUpload />
-          {t("coinImage.addPhoto")}
-        </button>
-        {hasImages && (
-          <ConfirmButton
-            className="btn-sm btn-danger"
+      {/* The demo shows the photographs (the carousel is much of the appeal) but
+          offers no way to add to or remove from the shared set. */}
+      {!isDemo && (
+        <div className="row">
+          <input
+            ref={inputRef}
+            type="file"
+            accept={ALLOWED_IMAGE_TYPES.join(",")}
+            onChange={handleUpload}
             disabled={busy}
-            message={t("coinImage.removeConfirm")}
-            confirmLabel={t("action.remove")}
-            onConfirm={handleRemove}
+            aria-label={t("coinImage.fileAria")}
+            style={{ display: "none" }}
+          />
+          <button
+            type="button"
+            className="btn-upload-image"
+            onClick={() => inputRef.current?.click()}
+            disabled={busy}
           >
-            {t("action.remove")}
-          </ConfirmButton>
-        )}
-      </div>
+            <IconUpload />
+            {t("coinImage.addPhoto")}
+          </button>
+          {hasImages && (
+            <ConfirmButton
+              className="btn-sm btn-danger"
+              disabled={busy}
+              message={t("coinImage.removeConfirm")}
+              confirmLabel={t("action.remove")}
+              onConfirm={handleRemove}
+            >
+              {t("action.remove")}
+            </ConfirmButton>
+          )}
+        </div>
+      )}
 
       {error && <p className="alert">{error}</p>}
     </section>

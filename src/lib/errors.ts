@@ -24,3 +24,14 @@ export class NotFoundError extends AppError {
     super(message, 404);
   }
 }
+
+/**
+ * The caller is authenticated but not allowed to perform the action (403).
+ * Distinct from 401: the demo tenant *is* signed in, it simply cannot write
+ * (ADR-016).
+ */
+export class ForbiddenError extends AppError {
+  constructor(message = "Forbidden") {
+    super(message, 403);
+  }
+}

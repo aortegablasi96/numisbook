@@ -321,6 +321,20 @@ export const en = {
   "error.body":
     "Your collection is safe — we’re having trouble reaching our servers right now. Please try again in a moment.",
   "error.reference": "Reference",
+
+  // Public demo account (ADR-016, DDR-007).
+  "demo.badge":
+    "Demo",
+  "demo.banner":
+    "You're exploring a demo collection — changes are disabled.",
+  "demo.banner.cta":
+    "Sign in to build your own",
+  "demo.tryIt":
+    "Try the demo",
+  "demo.tryIt.hint":
+    "No sign-up needed. Explore a real collection first.",
+  "demo.settings.note":
+    "This is the read-only demo account. Language and theme still follow your browser, but profile changes and account deletion are disabled. Sign in with Google to build a collection of your own.",
 } as const;
 
 export type MessageKey = keyof typeof en;

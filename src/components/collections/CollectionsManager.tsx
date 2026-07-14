@@ -7,6 +7,7 @@ import { IconPencil, IconTrash, IconPlus, IconCheck, IconX } from "@/components/
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { formatMoney } from "@/lib/currencies";
 import { useT } from "@/components/i18n/LocaleProvider";
+import { useIsDemo } from "@/components/demo/DemoProvider";
 
 export type CollectionView = {
   id: string;
@@ -25,6 +26,9 @@ export function CollectionsManager({
   baseCurrency: string | null;
 }) {
   const t = useT();
+  // The read-only demo tenant renders no create/rename/delete affordances
+  // (DDR-007). Cosmetic only — the API refuses the writes regardless (ADR-016).
+  const isDemo = useIsDemo();
   const [collections, setCollections] = useState<CollectionView[]>(initialCollections);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
@@ -136,13 +140,15 @@ export function CollectionsManager({
             style={{ maxWidth: "220px" }}
           />
         )}
-        <button
-          type="button"
-          className="btn-primary btn-sm btn-icon"
-          onClick={() => { setShowAddForm(true); setNewName(""); setError(null); }}
-        >
-          <IconPlus size={13} /> {t("collections.new")}
-        </button>
+        {!isDemo && (
+          <button
+            type="button"
+            className="btn-primary btn-sm btn-icon"
+            onClick={() => { setShowAddForm(true); setNewName(""); setError(null); }}
+          >
+            <IconPlus size={13} /> {t("collections.new")}
+          </button>
+        )}
       </div>
 
       {showAddForm && (
@@ -236,25 +242,27 @@ export function CollectionsManager({
                         </span>
                       </span>
                     </Link>
-                    <div className="row row-actions collection-card-actions" style={{ gap: "0.4rem" }}>
-                      <button
-                        type="button"
-                        className="btn-sm btn-icon"
-                        onClick={() => startRename(collection)}
-                        disabled={busy}
-                        aria-label={t("collections.renameAria", { name: collection.name })}
-                      >
-                        <IconPencil /> {t("action.rename")}
-                      </button>
-                      <ConfirmButton
-                        className="btn-sm btn-danger btn-icon"
-                        disabled={busy}
-                        message={t("collections.deleteConfirm", { name: collection.name })}
-                        onConfirm={() => handleDelete(collection.id)}
-                      >
-                        <IconTrash /> {t("action.delete")}
-                      </ConfirmButton>
-                    </div>
+                    {!isDemo && (
+                      <div className="row row-actions collection-card-actions" style={{ gap: "0.4rem" }}>
+                        <button
+                          type="button"
+                          className="btn-sm btn-icon"
+                          onClick={() => startRename(collection)}
+                          disabled={busy}
+                          aria-label={t("collections.renameAria", { name: collection.name })}
+                        >
+                          <IconPencil /> {t("action.rename")}
+                        </button>
+                        <ConfirmButton
+                          className="btn-sm btn-danger btn-icon"
+                          disabled={busy}
+                          message={t("collections.deleteConfirm", { name: collection.name })}
+                          onConfirm={() => handleDelete(collection.id)}
+                        >
+                          <IconTrash /> {t("action.delete")}
+                        </ConfirmButton>
+                      </div>
+                    )}
                   </>
                 )}
               </li>

@@ -6,6 +6,7 @@ import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { IconTrash } from "@/components/ui/icons";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { useT } from "@/components/i18n/LocaleProvider";
+import { useIsDemo } from "@/components/demo/DemoProvider";
 
 type Invoice = { id: string; filename: string | null; sizeBytes: number; createdAt: string };
 
@@ -37,6 +38,7 @@ function formatBytes(bytes: number): string {
 // and delete. Mirrors CoinImage's client-side flow against /api/coins/[id]/invoices.
 export function CoinInvoices({ coinId }: { coinId: string }) {
   const t = useT();
+  const isDemo = useIsDemo();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -118,19 +120,23 @@ export function CoinInvoices({ coinId }: { coinId: string }) {
                     {formatBytes(invoice.sizeBytes)} · {invoice.createdAt.slice(0, 10)}
                   </span>
                 </span>
+                {/* A demo visitor can still open and download the receipt — only
+                    removing it is withheld. */}
                 <span className="row invoice-actions" style={{ gap: "0.4rem" }}>
                   <a href={`${href}?download=1`} download={name} className="btn-sm btn-icon">
                     {t("action.download")}
                   </a>
-                  <ConfirmButton
-                    className="btn-sm btn-danger btn-icon"
-                    disabled={busy}
-                    message={t("invoices.removeConfirm", { name })}
-                    confirmLabel={t("action.remove")}
-                    onConfirm={() => handleRemove(invoice.id)}
-                  >
-                    <IconTrash />
-                  </ConfirmButton>
+                  {!isDemo && (
+                    <ConfirmButton
+                      className="btn-sm btn-danger btn-icon"
+                      disabled={busy}
+                      message={t("invoices.removeConfirm", { name })}
+                      confirmLabel={t("action.remove")}
+                      onConfirm={() => handleRemove(invoice.id)}
+                    >
+                      <IconTrash />
+                    </ConfirmButton>
+                  )}
                 </span>
               </li>
             );
@@ -138,26 +144,28 @@ export function CoinInvoices({ coinId }: { coinId: string }) {
         </ul>
       )}
 
-      <div className="row">
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ALLOWED_INVOICE_TYPES.join(",")}
-          onChange={handleUpload}
-          disabled={busy}
-          aria-label={t("invoices.fileAria")}
-          style={{ display: "none" }}
-        />
-        <button
-          type="button"
-          className="btn-upload-image"
-          onClick={() => inputRef.current?.click()}
-          disabled={busy}
-        >
-          <IconUpload />
-          {busy ? t("invoices.uploading") : t("invoices.add")}
-        </button>
-      </div>
+      {!isDemo && (
+        <div className="row">
+          <input
+            ref={inputRef}
+            type="file"
+            accept={ALLOWED_INVOICE_TYPES.join(",")}
+            onChange={handleUpload}
+            disabled={busy}
+            aria-label={t("invoices.fileAria")}
+            style={{ display: "none" }}
+          />
+          <button
+            type="button"
+            className="btn-upload-image"
+            onClick={() => inputRef.current?.click()}
+            disabled={busy}
+          >
+            <IconUpload />
+            {busy ? t("invoices.uploading") : t("invoices.add")}
+          </button>
+        </div>
+      )}
 
       {error && <p className="alert">{error}</p>}
     </section>

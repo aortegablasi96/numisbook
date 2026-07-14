@@ -284,4 +284,18 @@ export const zh: Partial<Messages> = {
   "chart.seg.tax": "税费",
   "chart.seg.shipping": "运费",
   "chart.seg.unsplit": "仅最终价",
+
+  // Public demo account (ADR-016, DDR-007).
+  "demo.badge":
+    "演示",
+  "demo.banner":
+    "您正在浏览演示收藏 — 修改功能已停用。",
+  "demo.banner.cta":
+    "登录以创建自己的收藏",
+  "demo.tryIt":
+    "试用演示",
+  "demo.tryIt.hint":
+    "无需注册。先浏览一个真实的收藏。",
+  "demo.settings.note":
+    "这是只读的演示账户。语言和主题仍会跟随您的浏览器，但个人资料修改和账户删除已停用。请使用 Google 登录以创建自己的收藏。",
 };

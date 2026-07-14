@@ -9,6 +9,11 @@ import type { User } from "@/repositories/user.repository";
 // Shared boundary helpers for API route handlers. Routes stay thin: resolve the
 // caller, validate input, call a service, and shape the response/errors.
 
+// Re-exported so a mutating route needs only this module: resolve the caller,
+// then refuse them if they are the read-only demo tenant (ADR-016). The guard
+// itself lives in @/lib/demo because Server Actions enforce it too.
+export { assertWritable } from "@/lib/demo";
+
 /** Resolve the signed-in domain user, or null when unauthenticated. */
 export async function currentUser(): Promise<User | null> {
   const session = await auth();

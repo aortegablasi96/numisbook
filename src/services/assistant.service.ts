@@ -31,6 +31,23 @@ Guidelines:
 - You only ever see and act on the current user's own data.
 - When the user asks to add a coin and has attached a photo, let them know the photo will be saved automatically.`;
 
+// The demo tenant is shared and read-only (ADR-016), so the model is given only
+// the read tools — the write handlers are never even constructed. Telling it so
+// keeps it from promising an edit it has no way to perform.
+const READ_ONLY_SYSTEM_PROMPT = `${SYSTEM_PROMPT}
+
+IMPORTANT — this is the public read-only demo account:
+- You can only read. You have no tools to create, edit or delete anything, and no valuation can be recorded.
+- If the user asks for a change, explain that the demo collection is read-only and invite them to sign in with Google to build their own collection. Do not claim to have made the change.`;
+
+/** Tools a demo visitor may use: reads only. Everything else mutates shared data. */
+const READ_ONLY_TOOLS = [
+  "list_collections",
+  "list_coins",
+  "list_valuations",
+  "get_portfolio_summary",
+] as const;
+
 // The security boundary: each handler closes over `userId` and forwards it to a
 // domain service, which enforces ownership. `actions` accumulates a human-readable
 // log of mutations for display in the UI.
@@ -331,20 +348,70 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   },
 ];
 
+type ToolHandlers = Record<
+  string,
+  (input: Record<string, unknown>) => Promise<unknown> | unknown
+>;
+
+/**
+ * What the model is allowed to see and do this turn.
+ *
+ * Read-only mode (the demo tenant — ADR-016) is enforced in two places at once:
+ * the tool *set* loses the mutating tools, so the model is never offered one; and
+ * the *handler map* loses them too, so a hallucinated or injected call for a
+ * write tool finds nothing to execute. Either alone would do; both mean the demo
+ * cannot be edited even if the model misbehaves.
+ *
+ * Pure and exported so it can be tested without standing up an OpenAI client.
+ */
+export function selectToolset(
+  userId: string,
+  actions: string[],
+  imageDataUrl: string | null | undefined,
+  readOnly: boolean,
+): {
+  tools: OpenAI.Chat.Completions.ChatCompletionTool[];
+  handlers: ToolHandlers;
+  systemPrompt: string;
+} {
+  const handlers = buildHandlers(userId, actions, imageDataUrl) as unknown as ToolHandlers;
+  if (!readOnly) {
+    return { tools: TOOLS, handlers, systemPrompt: SYSTEM_PROMPT };
+  }
+
+  const allowed = (name: string) =>
+    (READ_ONLY_TOOLS as readonly string[]).includes(name);
+
+  return {
+    // ChatCompletionTool is a union (function | custom), so narrow before reading
+    // the name. Every tool we define is a function tool.
+    tools: TOOLS.filter(
+      (tool) => tool.type === "function" && allowed(tool.function.name),
+    ),
+    handlers: Object.fromEntries(
+      Object.entries(handlers).filter(([name]) => allowed(name)),
+    ),
+    systemPrompt: READ_ONLY_SYSTEM_PROMPT,
+  };
+}
+
 export async function chat(
   userId: string,
   messages: ChatMessage[],
   imageDataUrl?: string | null,
+  options: { readOnly?: boolean } = {},
 ): Promise<ChatResult> {
   const client = new OpenAI();
   const actions: string[] = [];
-  const handlers = buildHandlers(userId, actions, imageDataUrl) as unknown as Record<
-    string,
-    (input: Record<string, unknown>) => Promise<unknown> | unknown
-  >;
+  const { tools, handlers, systemPrompt } = selectToolset(
+    userId,
+    actions,
+    imageDataUrl,
+    options.readOnly ?? false,
+  );
 
   const convo: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: systemPrompt },
     ...messages.map((m) => ({ role: m.role, content: m.content })),
   ];
 
@@ -352,7 +419,7 @@ export async function chat(
     const completion = await client.chat.completions.create({
       model: MODEL,
       messages: convo,
-      tools: TOOLS,
+      tools,
     });
 
     const message = completion.choices[0]?.message;

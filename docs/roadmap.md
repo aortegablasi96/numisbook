@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — active milestone: Public Demo Account**
+Current maturity: **Live in production — active milestone: Hosted Error Monitoring & Accessibility Checks in CI**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -67,24 +67,22 @@ touch (see `history.md` Phase 18, DDR-006, and
 `docs/testing/mobile-responsive-ui-testing-report.md`); four refinements from using
 it since then — a filter bar that starts collapsed, one sort control, every sortable
 field reachable, and cards that name their collection — are recorded as DDR-006
-addenda (`history.md` Phase 18, "Refinements after the ship"). The active milestone
-is now **Public Demo Account**.
+addenda (`history.md` Phase 18, "Refinements after the ship"). And the **Public
+Demo Account** milestone has shipped: a visitor can now enter a seeded, read-only
+demo tenant from the signed-out home page without a Google account, and see a real
+collection — 13 coins with museum photography, invoices, filters, portfolio
+analytics and the assistant — before deciding to sign up (see `history.md` Phase 19,
+ADR-016, DDR-007, and `docs/testing/public-demo-account-testing-report.md`). The
+active milestone is now **Hosted Error Monitoring & Accessibility Checks in CI**.
 
 Primary objective:
 
-**Make the product reachable by the people who have not signed up yet.** The
-mobile half of this is done — a visitor arriving from a phone can now read the app.
-What remains is that they cannot see a single coin without connecting a Google
-account and creating a collection from an empty state: the product still cannot
-demonstrate itself to the person deciding whether to use it.
-
-**Hosted Error Monitoring & Accessibility Checks in CI** is deferred behind the
-demo. It remains the right next investment in defect detection, and the a11y gate
-should now be built against the breakpoints DDR-006 settled. The mobile milestone
-sharpened the case for it: two of the three defects it fixed — a 146px overflow on
-the coin detail and a serious axe violation on the chart plots — were **pre-existing
-bugs that lint, type-check and 263 unit tests could not see**, because none of them
-renders a page.
+**Close the gap between a defect existing and anyone finding out.** The case keeps
+strengthening: the demo milestone shipped one defect straight through lint,
+type-check and 297 unit tests (a control rendered for a demo session that the
+server would have refused), and it was caught only by driving the page in a
+browser. Two of the three defects the mobile milestone fixed were the same shape.
+CI still renders no page.
 
 Current priorities:
 
@@ -93,61 +91,22 @@ Current priorities:
 - Dashboard recent acquisitions — ✅ complete
 - Rework filters — ✅ complete
 - Mobile-responsive UI — ✅ complete
-- Public demo account (active)
-- (then) hosted error monitoring & accessibility checks in CI
+- Public demo account — ✅ complete
+- Hosted error monitoring & accessibility checks in CI (active)
 - (then) valuation-based analytics
 
 ---
 
-# Active Milestone — Public Demo Account
-
-Goal:
-
-Let a visitor see a real, populated collection **before** signing up. Today the
-only way in is Google OAuth, and what waits on the other side is an empty state —
-the product cannot demonstrate itself to the person deciding whether to use it.
-
-## Approach
-
-A **"Try the demo" entry point on the marketing page signs the visitor into a
-seeded, read-only demo tenant without Google**. The demo account is preconfigured
-with collections, coins, images, invoices, and valuation history, so every
-surface — the coin list and filters, a coin's detail view, `/portfolio`, the
-assistant — has something real to show.
-
-The tenant-isolation invariant (`CLAUDE.md`) is the constraint that governs the
-design: the demo user must be an ordinary tenant whose `userId` still comes from
-the session, never from client input. The open questions for planning are how a
-session is established without an OAuth provider, how writes are prevented (or
-sandboxed and reset) so one visitor cannot spoil the demo for the next, and
-whether the assistant — which has write and delete tools — is exposed at all.
-
-## Features
-
-- [ ] Decide the demo session mechanism (a session without an OAuth provider) and
-      the write policy: read-only, or per-visitor sandbox with reset
-- [ ] Seed script / fixture for the demo tenant — collections, coins, images,
-      invoices, valuations — reproducible and re-runnable
-- [ ] "Try the demo" entry point on the signed-out home page
-- [ ] Make the demo state visible in the UI (a banner or badge) with a clear path
-      to real sign-up
-- [ ] Ensure the demo tenant cannot read or write another tenant's data, and that
-      demo credentials grant nothing beyond it
-- [ ] Record the decision as an ADR (it adds a second, non-Google way to obtain a
-      session — a departure from ADR-003)
-
----
-
-# Future Milestone — Hosted Error Monitoring & Accessibility Checks in CI
+# Active Milestone — Hosted Error Monitoring & Accessibility Checks in CI
 
 Goal:
 
 Close the two gaps between a defect existing and anyone finding out: production
 errors that nobody is alerted to, and UI defects that no gate can see.
 
-> Deferred behind the Mobile-Responsive UI and Public Demo Account milestones. The
-> a11y gate below should be written once, against the breakpoints the mobile
-> milestone settles — building it first would mean rewriting it after.
+> Previously deferred behind the Mobile-Responsive UI and Public Demo Account
+> milestones; both have now shipped, so the a11y gate can be written once against
+> the breakpoints DDR-006 settled and the demo surfaces DDR-007 added.
 
 ## Hosted error monitoring
 
@@ -168,15 +127,19 @@ leaving all call sites untouched.
 
 ## Accessibility checks in CI
 
-Promoted from the technical backlog. CI gates on lint + type-check + 265 unit
+Promoted from the technical backlog. CI gates on lint + type-check + 297 unit
 tests, and **none of them render a page** — `vitest.config.ts` runs
-`environment: "node"`, so there is no DOM. The Rework Filters milestone shipped
-two defects straight through that gate, both of which needed a browser to see:
+`environment: "node"`, so there is no DOM. Three milestones running have now
+shipped defects straight through that gate, each needing a browser to see:
 
-- a **WCAG AA contrast failure** in the light theme (DDR-005 §7), and
-- a **facet popover whose rows stacked** the checkbox above its value (#144).
+- a **WCAG AA contrast failure** in the light theme (DDR-005 §7),
+- a **facet popover whose rows stacked** the checkbox above its value (#144),
+- a **146px overflow** on the coin detail and an axe violation on the chart plots
+  (mobile milestone), and
+- a **base-currency control offered to the read-only demo** that the server would
+  have refused (demo milestone).
 
-Both were caught by hand. This adds the missing gate so the next one is caught by
+All were caught by hand. This adds the missing gate so the next one is caught by
 CI, in both colour schemes.
 
 ### Features

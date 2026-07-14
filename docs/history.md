@@ -956,6 +956,61 @@ See:
   (Phase 18): a three-stop breakpoint scale, viewport-aware density, and the
   per-surface mobile forms (coin-list cards, touch filter bar). **Amends DDR-002**:
   `zoom: 0.75` applies to desktop only
+- `docs/design-decisions/DDR-007-demo-mode-ui.md` — demo mode UI (Phase 19):
+  "Try the demo" as the secondary CTA, a persistent non-dismissible banner, and
+  mutation affordances **removed rather than disabled**
+
+---
+
+# Phase 19 — Public Demo Account
+
+Goal: let a visitor see a real, populated collection **before** signing up. Until
+now the only way in was Google OAuth, and what waited on the other side was an
+empty state — the product could not demonstrate itself to the person deciding
+whether to use it.
+
+Epic #165 (stories #166–#171). Decisions: `ADR-016`, `DDR-007`. Testing report:
+`docs/testing/public-demo-account-testing-report.md`.
+
+## What shipped
+
+- **A demo session without an OAuth provider.** Auth.js cannot mint one (a
+  Credentials provider would force the JWT strategy and mean re-architecting
+  session handling app-wide), but a database session is only a `sessions` row plus
+  a cookie — so the demo creates exactly that. `src/auth.ts` now names the session
+  cookie explicitly so the demo sign-in and `auth()` share one constant instead of
+  a guessed Auth.js internal. **This invalidated existing sessions once on deploy.**
+- **The demo user is an ordinary tenant** (`users.is_demo`, with a partial unique
+  index making it a DB-enforced singleton). Its id comes from the session and every
+  query is scoped by it, so tenant isolation is untouched.
+- **Read-only, enforced server-side.** A new `ForbiddenError` (403 — the demo
+  visitor *is* signed in, they just cannot write), `assertWritable(user)` in every
+  mutating route and Server Action, and — the load-bearing part —
+  `src/app/api/write-guard.test.ts`, which **fails the build** if a route exports a
+  mutating handler without the guard.
+- **Cookie-backed preferences survive.** Language and theme still work for a demo
+  visitor because both fall back to their own cookie; the Settings actions write
+  the cookie and skip the shared row, so one visitor cannot flip the theme for
+  every other. Base currency, which has no cookie fallback, is refused.
+- **A read-only assistant.** Demo callers get only the read tools, and the write
+  handlers are not built at all — a hallucinated `delete_collection` has nothing to
+  execute. A per-conversation cap bounds anonymous OpenAI spend.
+- **A service-driven seed** (`npm run db:seed-demo`): 3 collections, 13 coins, 17
+  images, 4 invoices, 31 valuations, spanning gold/silver, BC and AD years, and
+  three price currencies against an EUR base so the FX conversion visibly works.
+  Re-runnable, purging via the ADR-013 deletion path so no storage blobs orphan.
+  Coin photographs are real public-domain / CC0 museum images (the Met, Smithsonian
+  NNC, Yale, Harvard), with provenance in `scripts/demo-assets/LICENSES.md`.
+- **The demo UI** (DDR-007): "Try the demo" beneath the Google button, rendered only
+  when a demo tenant exists; a persistent, non-dismissible banner; and every
+  mutation affordance removed rather than greyed out.
+
+## Notes
+
+Verification found one defect no gate could see: the base-currency select was still
+rendered on `/portfolio` for a demo session (the server refused the write, so it was
+never unsafe — but it was offered). Caught by driving the page, which sharpened the
+case for the accessibility/rendering gate that became the next milestone.
 
 ---
 

@@ -4,6 +4,8 @@ import { resolveCurrentUser } from "@/services/auth.service";
 import { listCollections } from "@/services/collection.service";
 import { getPortfolioSummary } from "@/services/analytics.service";
 import { listRecentAcquisitions } from "@/services/coin.service";
+import { isDemoAvailable } from "@/services/demo.service";
+import { startDemo } from "@/app/demo-actions";
 import { formatMoney } from "@/lib/currencies";
 import { formatCoinTitle } from "@/lib/coin-format";
 import { t, type Locale, type MessageKey } from "@/lib/i18n";
@@ -141,21 +143,47 @@ export default async function Home() {
           locale={locale}
         />
       ) : (
-        <div className="card stack" style={{ textAlign: "center" }}>
-          <p>{t(locale, "home.signInPrompt")}</p>
-          <form
-            action={async () => {
-              "use server";
-              await signIn("google", { redirectTo: "/" });
-            }}
-          >
-            <button type="submit" className="btn-primary">
-              {t(locale, "nav.signInWithGoogle")}
-            </button>
-          </form>
-        </div>
+        <SignedOutHome locale={locale} />
       )}
     </main>
+  );
+}
+
+// The front door for a stranger. Google sign-in stays the primary action — it is
+// the conversion we want — but a visitor who is not ready to hand over an
+// identity can walk into the seeded demo instead (ADR-016, DDR-007).
+//
+// The demo button renders only when a demo tenant actually exists, so a fresh
+// checkout that has never run `npm run db:seed-demo` does not advertise a door
+// that opens onto an error.
+async function SignedOutHome({ locale }: { locale: Locale }) {
+  const demoAvailable = await isDemoAvailable();
+
+  return (
+    <div className="card stack" style={{ textAlign: "center" }}>
+      <p>{t(locale, "home.signInPrompt")}</p>
+      <form
+        action={async () => {
+          "use server";
+          await signIn("google", { redirectTo: "/" });
+        }}
+      >
+        <button type="submit" className="btn-primary">
+          {t(locale, "nav.signInWithGoogle")}
+        </button>
+      </form>
+
+      {demoAvailable && (
+        <div className="demo-entry">
+          <form action={startDemo}>
+            <button type="submit" className="btn-demo">
+              {t(locale, "demo.tryIt")}
+            </button>
+          </form>
+          <p className="muted demo-entry-hint">{t(locale, "demo.tryIt.hint")}</p>
+        </div>
+      )}
+    </div>
   );
 }
 

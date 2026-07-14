@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { addCoinInvoice, listCoinInvoices } from "@/services/coinInvoice.service";
 import { ValidationError } from "@/lib/errors";
-import { currentUser, errorResponse, unauthorized } from "../../../_lib";
+import {
+  assertWritable,
+  currentUser,
+  errorResponse,
+  unauthorized,
+} from "../../../_lib";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -28,6 +33,7 @@ export async function POST(request: Request, { params }: Params) {
   try {
     const user = await currentUser();
     if (!user) return unauthorized();
+    assertWritable(user);
     const { id } = await params;
     const form = await request.formData();
     const file = form.get("file");

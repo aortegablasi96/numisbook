@@ -24,7 +24,7 @@ const user = {
   image: null,
   baseCurrency: null,
   locale: null,
-  theme: null,
+  theme: null, isDemo: false,
   createdAt: new Date(),
 };
 

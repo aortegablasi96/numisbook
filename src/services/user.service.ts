@@ -62,3 +62,19 @@ export async function setTheme(
   await userRepository.updateTheme(userId, theme);
   return theme;
 }
+
+// Validate a preference *without* storing it. The demo tenant is shared by every
+// visitor at once, so persisting one visitor's language or theme would change
+// what the others see. Both preferences are cookie-backed and the demo user's
+// columns stay NULL, so the caller can set the cookie alone and each visitor
+// keeps a private preference (ADR-016).
+
+/** Validate a locale preference for a caller that must not persist it. */
+export function parseLocalePreference(input: string | null): string | null {
+  return localeSchema.parse(input);
+}
+
+/** Validate a theme preference for a caller that must not persist it. */
+export function parseThemePreference(input: string | null): string | null {
+  return themeSchema.parse(input);
+}

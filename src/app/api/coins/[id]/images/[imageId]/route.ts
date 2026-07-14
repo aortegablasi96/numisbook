@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { getCoinImage, removeCoinImage } from "@/services/coinImage.service";
-import { currentUser, errorResponse, unauthorized } from "../../../../_lib";
+import {
+  assertWritable,
+  currentUser,
+  errorResponse,
+  unauthorized,
+} from "../../../../_lib";
 
 type Params = { params: Promise<{ id: string; imageId: string }> };
 
@@ -44,6 +49,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   try {
     const user = await currentUser();
     if (!user) return unauthorized();
+    assertWritable(user);
     const { id, imageId } = await params;
     await removeCoinImage(user.id, id, imageId);
     return new NextResponse(null, { status: 204 });

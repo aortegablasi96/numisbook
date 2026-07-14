@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { addCoin, searchCoins } from "@/services/coin.service";
 import { parseCoinSearchParams } from "@/lib/validation/coin";
-import { currentUser, errorResponse, unauthorized } from "../../../_lib";
+import {
+  assertWritable,
+  currentUser,
+  errorResponse,
+  unauthorized,
+} from "../../../_lib";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -22,6 +27,7 @@ export async function POST(request: Request, { params }: Params) {
   try {
     const user = await currentUser();
     if (!user) return unauthorized();
+    assertWritable(user);
     const { id } = await params;
     const coin = await addCoin(user.id, id, await request.json());
     return NextResponse.json({ coin }, { status: 201 });

@@ -2,7 +2,14 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
-import { setBaseCurrency, setLocale, setTheme } from "@/services/user.service";
+import {
+  parseLocalePreference,
+  parseThemePreference,
+  setBaseCurrency,
+  setLocale,
+  setTheme,
+} from "@/services/user.service";
+import { assertWritable } from "@/lib/demo";
 import { COMMON_CURRENCIES } from "@/lib/currencies";
 import {
   LOCALES,
@@ -30,18 +37,29 @@ function PreferencesSection({
   localePref,
   resolvedTheme,
   baseCurrency,
+  isDemo,
 }: {
   activeLocale: Locale;
   localePref: string | null;
   resolvedTheme: ResolvedTheme;
   baseCurrency: string | null;
+  isDemo: boolean;
 }) {
+  // Language and theme stay usable in the demo (ADR-016). Both preferences are
+  // cookie-backed, and the demo user's `locale`/`theme` columns are deliberately
+  // NULL, so resolution falls through to the visitor's own cookie. Writing the
+  // cookie but skipping the row therefore gives each demo visitor a private
+  // preference — where writing the row would change the theme for every other
+  // stranger browsing the shared tenant at the same time.
   async function updateLocale(formData: FormData) {
     "use server";
     const session = await auth();
     const user = await resolveCurrentUser(session);
     if (!user) return;
-    const resolved = await setLocale(user.id, String(formData.get("locale") ?? ""));
+    const requested = String(formData.get("locale") ?? "");
+    const resolved = user.isDemo
+      ? parseLocalePreference(requested)
+      : await setLocale(user.id, requested);
     // Keep the cookie in sync so SSR / signed-out visits agree with the
     // preference (ADR-014). Clearing the preference clears the cookie.
     const store = await cookies();
@@ -63,7 +81,9 @@ function PreferencesSection({
     const session = await auth();
     const user = await resolveCurrentUser(session);
     if (!user) return;
-    const resolved = await setTheme(user.id, theme);
+    const resolved = user.isDemo
+      ? parseThemePreference(theme)
+      : await setTheme(user.id, theme);
     // Sync the THEME cookie so SSR / signed-out visits match the stored
     // preference (DDR-003). The toggle only submits light/dark (DDR-004).
     const store = await cookies();
@@ -80,11 +100,15 @@ function PreferencesSection({
     revalidatePath("/", "layout");
   }
 
+  // Unlike language and theme, the base currency has no cookie to fall back on —
+  // it is read straight off the user row — so the demo tenant cannot offer it
+  // per-visitor. Refuse it (the form is not rendered for a demo session).
   async function updateBaseCurrency(formData: FormData) {
     "use server";
     const session = await auth();
     const user = await resolveCurrentUser(session);
     if (!user) return;
+    assertWritable(user);
     await setBaseCurrency(user.id, String(formData.get("baseCurrency") ?? ""));
     revalidatePath("/settings");
   }
@@ -123,27 +147,29 @@ function PreferencesSection({
         </p>
       </div>
 
-      <form action={updateBaseCurrency} className="field">
-        <label htmlFor="baseCurrency" className="mono-label">
-          {t(activeLocale, "settings.baseCurrency.label")}
-        </label>
-        <div className="row">
-          <select id="baseCurrency" name="baseCurrency" defaultValue={baseCurrency ?? ""}>
-            <option value="">{t(activeLocale, "settings.baseCurrency.auto")}</option>
-            {COMMON_CURRENCIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <button type="submit" className="btn-sm">
-            {t(activeLocale, "action.apply")}
-          </button>
-        </div>
-        <p className="muted" style={{ margin: 0 }}>
-          {t(activeLocale, "settings.baseCurrency.help")}
-        </p>
-      </form>
+      {!isDemo && (
+        <form action={updateBaseCurrency} className="field">
+          <label htmlFor="baseCurrency" className="mono-label">
+            {t(activeLocale, "settings.baseCurrency.label")}
+          </label>
+          <div className="row">
+            <select id="baseCurrency" name="baseCurrency" defaultValue={baseCurrency ?? ""}>
+              <option value="">{t(activeLocale, "settings.baseCurrency.auto")}</option>
+              {COMMON_CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className="btn-sm">
+              {t(activeLocale, "action.apply")}
+            </button>
+          </div>
+          <p className="muted" style={{ margin: 0 }}>
+            {t(activeLocale, "settings.baseCurrency.help")}
+          </p>
+        </form>
+      )}
     </section>
   );
 }
@@ -175,17 +201,29 @@ export default async function SettingsPage() {
     );
   }
 
+  // The demo tenant is shared, so its profile, base currency and (emphatically)
+  // its deletion are withheld — one visitor must not be able to rename or delete
+  // the collection every other visitor is looking at (ADR-016, DDR-007).
+  // Language and theme survive: they are cookie-backed, so each visitor keeps a
+  // private preference without the shared row ever being written.
   return (
     <main className="stack settings-page">
       <h1 style={{ margin: 0 }}>{t(locale, "settings.title")}</h1>
-      <ProfileForm initialName={user.name ?? ""} email={user.email} />
+      {user.isDemo ? (
+        <section className="card stack">
+          <p style={{ margin: 0 }}>{t(locale, "demo.settings.note")}</p>
+        </section>
+      ) : (
+        <ProfileForm initialName={user.name ?? ""} email={user.email} />
+      )}
       <PreferencesSection
         activeLocale={locale}
         localePref={user.locale}
         resolvedTheme={resolvedTheme}
         baseCurrency={user.baseCurrency}
+        isDemo={user.isDemo}
       />
-      <DeleteAccountSection />
+      {!user.isDemo && <DeleteAccountSection />}
     </main>
   );
 }
