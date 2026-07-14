@@ -146,6 +146,7 @@ export const de: Partial<Messages> = {
   "coins.search": "Suchen",
   "coins.searchPlaceholder": "Kategorie, Behörde, Münzstätte…",
   "coins.filterAll": "Alle",
+  "coins.filters": "Filter",
   "coins.columns": "Spalten",
   "coins.columnsHint": "⠿ ziehen zum Neuordnen · anhaken zum Anzeigen",
   "coins.columnHidden": "ausgeblendet",

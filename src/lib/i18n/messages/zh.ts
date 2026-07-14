@@ -135,6 +135,7 @@ export const zh: Partial<Messages> = {
   "coins.search": "搜索",
   "coins.searchPlaceholder": "类别、发行方、铸币厂…",
   "coins.filterAll": "全部",
+  "coins.filters": "筛选",
   "coins.columns": "列",
   "coins.columnsHint": "拖动 ⠿ 可重新排序 · 勾选可显示",
   "coins.columnHidden": "已隐藏",

@@ -102,6 +102,7 @@ export const en = {
   "coins.search": "Search",
   "coins.searchPlaceholder": "category, authority, mint…",
   "coins.filterAll": "All",
+  "coins.filters": "Filters",
   "coins.columns": "Columns",
   "coins.columnsHint": "Drag ⠿ to reorder · check to show",
   "coins.columnHidden": "hidden",

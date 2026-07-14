@@ -231,3 +231,46 @@ Accessibility:
 * `docs/decisions/ADR-008-ui-embellishment.md` — the accessibility baseline
 * `docs/roadmap.md` — Mobile-Responsive UI milestone
 * `CLAUDE.md` — UI / Design system + accessibility conventions
+
+## Addendum — the filter bar collapses by default on a phone (2026-07-14)
+
+> Amends §3, "Filter bar (DDR-005) on touch". The touch **form** of the bar is
+> unchanged; what changes is that it is no longer open by default at the phone stop.
+
+§3 gave the bar a touch form — full-width search, full-width facet popovers,
+wrapping grade chips — but left it, like on desktop, permanently expanded. In
+use that is the wrong default. Stacked at 100% density with 44px controls, the
+bar is a full phone screen tall on its own: search, four facet triggers, a
+seven-chip grade scale, and two year bounds. The coin list — the reason the page
+exists — starts below the fold, so the phone user pays the full cost of a control
+surface they use occasionally on every visit, including the ones where they only
+want to look at their coins.
+
+At the **phone** stop the bar is therefore collapsed behind a toggle:
+
+* A full-width **`Filters`** trigger sits where the bar was, showing the number of
+  active filters (`Filters · 3`) so a collapsed bar can never hide the fact that
+  the list is filtered. It is `aria-expanded` + `aria-controls` on the bar.
+* The **active-filter chip row and clear-all stay outside the collapsible region**
+  and remain visible whether the bar is open or shut. §3's reasoning holds and is
+  in fact why this works: on a phone the chips are the user's view of what is
+  applied, and they are also the fastest way to *remove* a filter, so a collapsed
+  bar loses no reachability.
+* Default state is collapsed. Filter state is not persisted across mounts
+  (`EMPTY_FILTERS` on load), so a freshly-mounted bar is always empty — there is
+  no case where the page opens shut on filters the user cannot see.
+
+Above the phone stop nothing changes: the bar is always open, and the toggle is
+not rendered at all.
+
+The collapse is CSS-driven, not viewport-detecting: the component always renders
+the toggle and the bar, marks the bar `data-open={open}`, and `globals.css` hides
+the trigger outside the phone stop and honours `data-open` only within it. So the
+desktop bar cannot be collapsed by a stale bit of client state, and there is no
+breakpoint check in JS to drift from the one in CSS — the same discipline §3 used
+to justify restyling the coin table's DOM instead of rendering a second card
+component.
+
+Rejected: **auto-expanding when filters are active.** The count on the trigger
+already carries that information, and a bar that decides for itself whether to
+occupy the screen is harder to predict than one that stays where the user left it.

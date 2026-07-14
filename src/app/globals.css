@@ -2619,6 +2619,14 @@ dialog.modal.modal-chart {
   align-self: center;
 }
 
+/* The trigger that collapses the bar on a phone (DDR-006 addendum). It exists in
+   the DOM at every width — the phone rule below is what turns it on — so the bar's
+   open/closed state is decided by one breakpoint, in CSS, and never by a viewport
+   check in the component. */
+.filter-toggle {
+  display: none;
+}
+
 /* Grade: a fixed, ordered scale, so its values toggle inline rather than hiding
    in a popover (DDR-005). A bare fieldset — no border/padding of its own. */
 .filter-chips {
@@ -2863,8 +2871,24 @@ dialog.modal.modal-chart {
     min-height: 300px;
   }
 
-  /* Filter bar (DDR-005) on touch. The search box takes the full width; the year
-     bounds split the next line between them. */
+  /* Filter bar (DDR-005) on touch. It starts collapsed behind its trigger: fully
+     stacked at 44px controls it is a screen tall, and the coin list is what the
+     page is for (DDR-006 addendum). The active-filter chips are a sibling of the
+     bar, not a child, so they stay visible while it is shut — on a phone they are
+     the user's view of what is applied, and the way to undo it. */
+  .filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 44px;
+  }
+  .filters[data-open="false"] {
+    display: none;
+  }
+
+  /* Open: the search box takes the full width; the year bounds split the next
+     line between them. */
   .filters {
     gap: 0.6rem;
     /* 44px — the touch-target minimum (WCAG 2.5.5). The 2.25rem default is a
