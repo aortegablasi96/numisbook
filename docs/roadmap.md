@@ -23,8 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — active milestone: Hosted Error Monitoring
-& Accessibility Checks in CI**
+Current maturity: **Live in production — active milestone: Mobile-Responsive UI**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -61,13 +60,21 @@ fields) over a widened field set, the same filter bar serves a new cross-collect
 **All coins** view at `/coins`, and validation of it corrected a WCAG AA contrast
 failure in the light theme's gold text token (see `history.md` Phase 17, ADR-015,
 DDR-005, and `docs/testing/rework-filters-testing-report.md`). The active milestone
-is now **Hosted Error Monitoring & Accessibility Checks in CI**.
+is now **Mobile-Responsive UI**, followed by **Public Demo Account**.
 
 Primary objective:
 
-**Find out about defects without a human looking for them** — wire a hosted
-monitor onto the existing `ErrorReporter` seam, and add the rendering gate CI has
-never had (two Rework Filters defects reached `main` through a green pipeline).
+**Make the product usable and reachable by the people who have not signed up
+yet** — the app is only genuinely usable on a desktop-width screen, and a visitor
+who lands on it cannot see a single coin without connecting a Google account and
+creating a collection from an empty state. Fix both, in that order: a demo is
+worth little if the visitor arriving from a phone cannot read it.
+
+**Hosted Error Monitoring & Accessibility Checks in CI** is deferred behind these
+two. It remains the right next investment in defect detection, and the a11y gate
+it defines should be built to run against the responsive breakpoints this
+milestone introduces — sequencing it after the mobile work avoids writing the
+gate twice.
 
 Current priorities:
 
@@ -75,17 +82,109 @@ Current priorities:
 - Additional settings — ✅ complete (settings area, i18n, dark mode)
 - Dashboard recent acquisitions — ✅ complete
 - Rework filters — ✅ complete
-- Hosted error monitoring & accessibility checks in CI (active)
+- Mobile-responsive UI (active)
+- (then) public demo account
+- (then) hosted error monitoring & accessibility checks in CI
 - (then) valuation-based analytics
 
 ---
 
-# Active Milestone — Hosted Error Monitoring & Accessibility Checks in CI
+# Active Milestone — Mobile-Responsive UI
+
+Goal:
+
+Make NumisBook usable on a phone. Today the app is built for a desktop viewport
+and degrades badly below it; a collector cannot reasonably browse their coins
+from the device they are most likely holding in a coin shop or at an auction.
+
+## The problem
+
+Responsiveness was never designed — it accreted. `globals.css` carries ad-hoc
+breakpoints at 400, 480, 540, 640, 768, 860, 900 and 1160px, each added to
+rescue one component, with no shared scale and no agreed mobile layout. On top of
+that sit two structural obstacles:
+
+- **The global `zoom: 0.75` (DDR-002)** renders the whole app at 75% density.
+  That is what wide monitors wanted; on a 390px-wide phone it shrinks already-small
+  text and controls further. The density decision has to be made viewport-aware,
+  which amends DDR-002.
+- **The coin list is a wide data table.** `.table-wrap` lets it scroll sideways
+  in-region, which prevents a broken page but is not a usable way to read a
+  collection on a phone. The card grids, the filter bar's popovers, the portfolio
+  charts, the header nav, and the floating assistant widget each need a decided
+  small-screen form, not a scaled-down large one.
+
+## Features
+
+- [ ] Agree a breakpoint scale and a mobile layout for each surface; replace the
+      ad-hoc media queries with it
+- [ ] Make the display density viewport-aware (amend DDR-002 — `zoom: 0.75` should
+      not apply on phones)
+- [ ] Give the coin list a small-screen form (cards/stacked rows rather than a
+      sideways-scrolling table)
+- [ ] Make the filter bar work on touch: facet popovers, grade chips, and the
+      active-filter chip row (DDR-005) at phone width
+- [ ] Responsive shell — header nav, breadcrumbs, and the floating assistant
+      widget
+- [ ] Responsive portfolio charts and card grids
+- [ ] Verify on real viewport sizes in both colour schemes; touch targets and
+      focus order hold up (the a11y conventions in `CLAUDE.md` still apply)
+- [ ] Record the responsive approach as a DDR (amends DDR-002; extends DDR-001)
+
+> Note: "Native mobile applications" stay **out of scope** — this milestone is
+> responsive web only.
+
+---
+
+# Future Milestone — Public Demo Account
+
+Goal:
+
+Let a visitor see a real, populated collection **before** signing up. Today the
+only way in is Google OAuth, and what waits on the other side is an empty state —
+the product cannot demonstrate itself to the person deciding whether to use it.
+
+## Approach
+
+A **"Try the demo" entry point on the marketing page signs the visitor into a
+seeded, read-only demo tenant without Google**. The demo account is preconfigured
+with collections, coins, images, invoices, and valuation history, so every
+surface — the coin list and filters, a coin's detail view, `/portfolio`, the
+assistant — has something real to show.
+
+The tenant-isolation invariant (`CLAUDE.md`) is the constraint that governs the
+design: the demo user must be an ordinary tenant whose `userId` still comes from
+the session, never from client input. The open questions for planning are how a
+session is established without an OAuth provider, how writes are prevented (or
+sandboxed and reset) so one visitor cannot spoil the demo for the next, and
+whether the assistant — which has write and delete tools — is exposed at all.
+
+## Features
+
+- [ ] Decide the demo session mechanism (a session without an OAuth provider) and
+      the write policy: read-only, or per-visitor sandbox with reset
+- [ ] Seed script / fixture for the demo tenant — collections, coins, images,
+      invoices, valuations — reproducible and re-runnable
+- [ ] "Try the demo" entry point on the signed-out home page
+- [ ] Make the demo state visible in the UI (a banner or badge) with a clear path
+      to real sign-up
+- [ ] Ensure the demo tenant cannot read or write another tenant's data, and that
+      demo credentials grant nothing beyond it
+- [ ] Record the decision as an ADR (it adds a second, non-Google way to obtain a
+      session — a departure from ADR-003)
+
+---
+
+# Future Milestone — Hosted Error Monitoring & Accessibility Checks in CI
 
 Goal:
 
 Close the two gaps between a defect existing and anyone finding out: production
 errors that nobody is alerted to, and UI defects that no gate can see.
+
+> Deferred behind the Mobile-Responsive UI and Public Demo Account milestones. The
+> a11y gate below should be written once, against the breakpoints the mobile
+> milestone settles — building it first would mean rewriting it after.
 
 ## Hosted error monitoring
 
@@ -123,7 +222,8 @@ CI, in both colour schemes.
       dark, run against a production build in CI
 - [ ] Fail the build on any violation; keep the run fast enough to gate every PR
 - [ ] Decide and document the page set (at minimum `/`, `/coins`, a collection,
-      `/portfolio`, `/settings`) and the interactive states worth asserting
+      `/portfolio`, `/settings`), the viewports (desktop **and** the mobile
+      breakpoints), and the interactive states worth asserting
 - [ ] Record the decision (extends ADR-010, the CI pipeline)
 
 > Open question for planning: whether this stays an a11y-only axe gate or grows
