@@ -1169,6 +1169,13 @@ button:disabled {
   display: contents;
 }
 
+/* The mirror of .hide-phone: a table cell that only the phone card form shows.
+   It is a column the table deliberately does not have (the owning collection,
+   inside a collection), so it stays hidden until the row becomes a card. */
+.data-table .card-only {
+  display: none;
+}
+
 /* ---- Coin list: phone card form (DDR-006) -------------------------------- */
 
 /* phone — the coin table is relaid out as a list of cards. A wide data table is
@@ -1228,6 +1235,12 @@ button:disabled {
      its columns aligned. */
   .data-table td[data-empty] {
     display: none;
+  }
+  /* …and picks up the attribute the table has no column for. It is a `.muted`
+     cell like the rest, so it inherits their order and middot separator; it leads
+     the attribute line because it leads them in the row (see CoinTable). */
+  .data-table td.card-only {
+    display: block;
   }
 
   /* Card order is fixed here rather than following the user's column order, which

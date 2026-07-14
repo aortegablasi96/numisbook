@@ -72,7 +72,15 @@ function toPayload(form: FormState): Record<string, string | number | null> {
 // The coin table inside one collection: the shared filter bar and table (DDR-005)
 // plus this surface's own create/edit/delete. The cross-collection listing
 // (AllCoinsManager) reuses the same filter bar and table, read-only.
-export function CoinsManager({ collectionId, initial }: { collectionId: string; initial: SearchResult }) {
+export function CoinsManager({
+  collectionId,
+  collectionName,
+  initial,
+}: {
+  collectionId: string;
+  collectionName: string;
+  initial: SearchResult;
+}) {
   const t = useT();
   const [coins, setCoins] = useState<CoinView[]>(initial.coins);
   const [total, setTotal] = useState(initial.total);
@@ -245,6 +253,11 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
           sortDir={filters.sortDir}
           onSort={handleSort}
           onSortSelect={handleSortSelect}
+          // A phone card carries the collection the coin is in, as the /coins cards
+          // do — the table has no such column, since inside a collection it would
+          // repeat one value down every row (DDR-006). Plain text, not a link: it
+          // names the page you are already on.
+          cardLead={{ labelKey: "field.collection", render: () => collectionName }}
           renderActions={(coin) => (
             <span className="row row-actions" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
               <button type="button" className="btn-sm btn-icon" onClick={() => startEdit(coin)} disabled={busy}

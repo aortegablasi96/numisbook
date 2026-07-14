@@ -62,7 +62,7 @@ export default async function CollectionDetailPage({
         </span>
       </nav>
       <h1>{collection.name}</h1>
-      <CoinsManager collectionId={id} initial={initial} />
+      <CoinsManager collectionId={id} collectionName={collection.name} initial={initial} />
     </main>
   );
 }
