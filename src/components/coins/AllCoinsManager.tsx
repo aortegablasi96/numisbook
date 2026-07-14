@@ -10,6 +10,7 @@ import {
   useCoinColumns,
   ALL_COIN_COLUMNS,
   ALL_COIN_COLUMNS_KEY,
+  type CoinSortKey,
   type CoinView,
   type ColumnKey,
   type SearchResult,
@@ -71,7 +72,7 @@ export function AllCoinsManager({ initial }: { initial: SearchResult }) {
     return () => clearTimeout(timer);
   }, [filters, load]);
 
-  function handleSort(key: ColumnKey) {
+  function handleSort(key: CoinSortKey) {
     setFilters((f) => ({ ...f, ...nextSort(f, key) }));
   }
 
@@ -79,7 +80,8 @@ export function AllCoinsManager({ initial }: { initial: SearchResult }) {
     <section className="stack">
       <div className="toolbar" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <CoinFilters filters={filters} facets={facets} onChange={setFilters} />
-        <div className="row" style={{ gap: "0.5rem", flexShrink: 0 }}>
+        {/* Desktop/tablet only — see CoinsManager (DDR-006). */}
+        <div className="hide-phone">
           <ColumnPicker columns={ALL_COIN_COLUMNS} colState={colState} onToggle={toggleCol} onReorder={reorderCols} />
         </div>
       </div>

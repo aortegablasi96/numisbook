@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — active milestone: Mobile-Responsive UI**
+Current maturity: **Live in production — active milestone: Public Demo Account**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -59,22 +59,29 @@ milestone has shipped: coin filtering is multi-value (OR within a field, AND acr
 fields) over a widened field set, the same filter bar serves a new cross-collection
 **All coins** view at `/coins`, and validation of it corrected a WCAG AA contrast
 failure in the light theme's gold text token (see `history.md` Phase 17, ADR-015,
-DDR-005, and `docs/testing/rework-filters-testing-report.md`). The active milestone
-is now **Mobile-Responsive UI**, followed by **Public Demo Account**.
+DDR-005, and `docs/testing/rework-filters-testing-report.md`). And the
+**Mobile-Responsive UI** milestone has shipped: NumisBook is usable on a phone —
+one three-stop breakpoint scale replaces eight ad-hoc ones, the 75% display density
+is now desktop-only, the coin list reads as cards, and the filter bar works on
+touch (see `history.md` Phase 18, DDR-006, and
+`docs/testing/mobile-responsive-ui-testing-report.md`). The active milestone is now
+**Public Demo Account**.
 
 Primary objective:
 
-**Make the product usable and reachable by the people who have not signed up
-yet** — the app is only genuinely usable on a desktop-width screen, and a visitor
-who lands on it cannot see a single coin without connecting a Google account and
-creating a collection from an empty state. Fix both, in that order: a demo is
-worth little if the visitor arriving from a phone cannot read it.
+**Make the product reachable by the people who have not signed up yet.** The
+mobile half of this is done — a visitor arriving from a phone can now read the app.
+What remains is that they cannot see a single coin without connecting a Google
+account and creating a collection from an empty state: the product still cannot
+demonstrate itself to the person deciding whether to use it.
 
-**Hosted Error Monitoring & Accessibility Checks in CI** is deferred behind these
-two. It remains the right next investment in defect detection, and the a11y gate
-it defines should be built to run against the responsive breakpoints this
-milestone introduces — sequencing it after the mobile work avoids writing the
-gate twice.
+**Hosted Error Monitoring & Accessibility Checks in CI** is deferred behind the
+demo. It remains the right next investment in defect detection, and the a11y gate
+should now be built against the breakpoints DDR-006 settled. The mobile milestone
+sharpened the case for it: two of the three defects it fixed — a 146px overflow on
+the coin detail and a serious axe violation on the chart plots — were **pre-existing
+bugs that lint, type-check and 263 unit tests could not see**, because none of them
+renders a page.
 
 Current priorities:
 
@@ -82,61 +89,14 @@ Current priorities:
 - Additional settings — ✅ complete (settings area, i18n, dark mode)
 - Dashboard recent acquisitions — ✅ complete
 - Rework filters — ✅ complete
-- Mobile-responsive UI (active)
-- (then) public demo account
+- Mobile-responsive UI — ✅ complete
+- Public demo account (active)
 - (then) hosted error monitoring & accessibility checks in CI
 - (then) valuation-based analytics
 
 ---
 
-# Active Milestone — Mobile-Responsive UI
-
-Goal:
-
-Make NumisBook usable on a phone. Today the app is built for a desktop viewport
-and degrades badly below it; a collector cannot reasonably browse their coins
-from the device they are most likely holding in a coin shop or at an auction.
-
-## The problem
-
-Responsiveness was never designed — it accreted. `globals.css` carries ad-hoc
-breakpoints at 400, 480, 540, 640, 768, 860, 900 and 1160px, each added to
-rescue one component, with no shared scale and no agreed mobile layout. On top of
-that sit two structural obstacles:
-
-- **The global `zoom: 0.75` (DDR-002)** renders the whole app at 75% density.
-  That is what wide monitors wanted; on a 390px-wide phone it shrinks already-small
-  text and controls further. The density decision has to be made viewport-aware,
-  which amends DDR-002.
-- **The coin list is a wide data table.** `.table-wrap` lets it scroll sideways
-  in-region, which prevents a broken page but is not a usable way to read a
-  collection on a phone. The card grids, the filter bar's popovers, the portfolio
-  charts, the header nav, and the floating assistant widget each need a decided
-  small-screen form, not a scaled-down large one.
-
-## Features
-
-- [ ] Agree a breakpoint scale and a mobile layout for each surface; replace the
-      ad-hoc media queries with it
-- [ ] Make the display density viewport-aware (amend DDR-002 — `zoom: 0.75` should
-      not apply on phones)
-- [ ] Give the coin list a small-screen form (cards/stacked rows rather than a
-      sideways-scrolling table)
-- [ ] Make the filter bar work on touch: facet popovers, grade chips, and the
-      active-filter chip row (DDR-005) at phone width
-- [ ] Responsive shell — header nav, breadcrumbs, and the floating assistant
-      widget
-- [ ] Responsive portfolio charts and card grids
-- [ ] Verify on real viewport sizes in both colour schemes; touch targets and
-      focus order hold up (the a11y conventions in `CLAUDE.md` still apply)
-- [ ] Record the responsive approach as a DDR (amends DDR-002; extends DDR-001)
-
-> Note: "Native mobile applications" stay **out of scope** — this milestone is
-> responsive web only.
-
----
-
-# Future Milestone — Public Demo Account
+# Active Milestone — Public Demo Account
 
 Goal:
 

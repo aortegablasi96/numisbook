@@ -16,10 +16,12 @@ const RANGE_KEYS: MessageKey[] = [
 ];
 import {
   AXIS_W,
+  AXIS_W_PHONE,
   PAD,
   clamp,
   plotWidth,
   useChartHeight,
+  useIsPhone,
   useMeasuredWidth,
 } from "./chart-layout";
 
@@ -145,6 +147,7 @@ function ChartSvg({
   const t = useT();
   const [scrollRef, viewport] = useMeasuredWidth<HTMLDivElement>();
   const chartH = useChartHeight(inModal);
+  const axisW = useIsPhone() ? AXIS_W_PHONE : AXIS_W;
   const plotRef = useRef<HTMLDivElement>(null);
   // Index of the point under the cursor (hover scrubbing) + the tooltip anchor.
   const [hover, setHover] = useState<{ idx: number; left: number; top: number } | null>(null);
@@ -221,11 +224,11 @@ function ChartSvg({
   return (
     <div className="chart-plot" ref={plotRef}>
       {/* Frozen y-axis: cost labels stay visible while the plot scrolls. */}
-      <svg className="chart-yaxis" width={AXIS_W} height={chartH} aria-hidden="true">
+      <svg className="chart-yaxis" width={axisW} height={chartH} aria-hidden="true">
         {gridTicks.map((t) => (
           <text
             key={t}
-            x={AXIS_W - 6}
+            x={axisW - 6}
             y={y(t) + 3}
             textAnchor="end"
             className="chart-axis"
@@ -235,7 +238,11 @@ function ChartSvg({
         ))}
       </svg>
 
-      <div className="chart-scroll" ref={scrollRef}>
+      {/* tabIndex: the plot scrolls horizontally, so it must be reachable by
+          keyboard to be scrollable by keyboard (WCAG 2.1.1; axe
+          scrollable-region-focusable). The <svg role="img"> inside carries the
+          description, so the region needs no label of its own. */}
+      <div className="chart-scroll" ref={scrollRef} tabIndex={0}>
         <svg
           width={plotW}
           height={chartH}

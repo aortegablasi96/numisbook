@@ -825,6 +825,61 @@ filter state, and filters on the portfolio/collections views.
 
 ---
 
+# Phase 18 — Mobile-Responsive UI
+
+Status: Complete
+
+The app was built for a desktop viewport and degraded badly below it. Responsiveness
+had never been designed — it accreted: `globals.css` carried eight ad-hoc
+`max-width` breakpoints (400, 480, 540, 640, 768, 860, 900, 1160) plus a 1280/1600
+pair, each added to rescue one component. See **DDR-006**.
+
+## The root cause
+
+The fix was not a missing breakpoint. Measuring a 390px phone under the root
+`zoom: 0.75` (DDR-002) showed the layout width was **520px** and `@media
+(max-width: 400px)` still *matched*: **media queries evaluate against the real
+viewport, while every box lays out in a nominal space 1.333× larger.** A rule
+written as `max-width: 640px` fired when the layout had 853 nominal px of room. No
+breakpoint in the file had ever meant what its author intended — which is precisely
+why each new one was hand-tuned against one component and generalised to nothing.
+
+Nominal 16px body text also painted at 12px, and 44px touch targets at 33px.
+
+## What shipped
+
+- **Viewport-aware density** — `zoom: 0.75` now applies to **desktop only**
+  (≥ 1025px); phones and tablets render at 100%. Below the boundary the two
+  coordinate spaces coincide, so the breakpoints finally mean what they say.
+  Amends DDR-002; desktop rendering is unchanged.
+- **A three-stop breakpoint scale** — phone (≤ 640), tablet (≤ 1024), desktop, plus
+  a single wide (≥ 1440) enhancement tier — replacing all ten ad-hoc values.
+- **The coin list as cards on a phone** — the *same* table DOM restyled, so the
+  user's `ColState` still decides which attributes show (the two forms cannot
+  drift), thumbnails are fetched once, and there is no client breakpoint check to
+  desync from the server render. Valueless cells vanish on a card and keep their
+  em-dash in the table. A sort `<select>` replaces the hidden sortable headers.
+- **A touch filter bar** — facet popovers expand the bar in place instead of
+  floating (no collision detection needed at phone width), 44px rows.
+- **Responsive shell and charts** — horizontally scrolling nav strip, stacked
+  analytics grid, single-column card grids, and a cost-breakdown chart showing
+  **3 coins** across on a phone (5 on desktop) with slot-derived thumbnails.
+
+## Two latent bugs the density change exposed
+
+- **The coin-detail rail overflowed a phone by 146px.** `.coin-side`'s base
+  `flex: 0 0 520px` was declared *after* its own responsive override at equal
+  specificity — the override had always been dead code. Invisible on desktop, where
+  the zoomed layout was wide enough to hide a 520px rail.
+- **The chart plots were not keyboard-scrollable** (axe `scrollable-region-focusable`,
+  serious) — a pre-existing WCAG 2.1.1 failure on desktop too.
+
+Both were found by rendering the page, not by the gates. Validated with **30 axe
+scans** (5 pages × 2 colour schemes × 3 viewports): zero violations. See
+`docs/testing/mobile-responsive-ui-testing-report.md`.
+
+---
+
 # Major Architectural Decisions
 
 See:
@@ -853,7 +908,8 @@ See:
   re-skin (Phase 8; visual-only; originally an ADR, relocated to the Design
   Decisions). Its **light-only** stance is superseded by DDR-003.
 - `docs/design-decisions/DDR-002-global-display-density.md` — global `zoom: 0.75`
-  on `html` (renders the whole app at 75% density; builds on DDR-001)
+  on `html` (renders the whole app at 75% density; builds on DDR-001). Its scope is
+  **amended by DDR-006**: the scale is now desktop-only.
 - `docs/design-decisions/DDR-003-dark-mode.md` — warm dark theme + per-user
   Light/Dark/System preference (Phase 15; supersedes DDR-001's light-only point)
 - `docs/design-decisions/DDR-004-theme-toggle.md` — binary sun/moon theme toggle
@@ -862,6 +918,10 @@ See:
   (facet popovers, grade chips, active-filter chip row) and Coins as a top-level
   nav destination (Phase 17). §7 **amends DDR-001**: light-mode `--accent`
   deepened to `#7f5612`, which failed AA as text on its own tint off-card
+- `docs/design-decisions/DDR-006-responsive-layout.md` — responsive layout
+  (Phase 18): a three-stop breakpoint scale, viewport-aware density, and the
+  per-surface mobile forms (coin-list cards, touch filter bar). **Amends DDR-002**:
+  `zoom: 0.75` applies to desktop only
 
 ---
 

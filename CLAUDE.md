@@ -323,9 +323,20 @@ theme is a per-user preference (`users.theme`, Light/Dark/System) applied as
 `<html data-theme>` in the root layout (`src/lib/theme`); "system" renders no
 attribute and CSS follows the OS — no theme script, no flash.
 
-The whole app is rendered at **75% density** via `zoom: 0.75` on `html` — a global
-display scale on top of the design system, so all token/px values stay nominal
-(see DDR-002).
+The app is rendered at **75% density** via `zoom: 0.75` on `html` — a display scale
+on top of the design system, so all token/px values stay nominal (DDR-002). It
+applies to **desktop only**; at and below the tablet stop the app renders at 100%
+(DDR-006). `chart-layout.ts` reads that same scale at runtime (`currentZoom`), so
+the CSS and it must change together.
+
+**Responsive layout** (DDR-006) uses a three-stop scale — **phone** `≤ 640px`,
+**tablet** `≤ 1024px`, **desktop** (default), plus **wide** `≥ 1440px` for
+enhancements. These are the only widths any media query may use; the scale is
+documented in a header comment in `globals.css`. Do not add a fourth. Below
+`desktop` the zoom is 1, so media queries and layout boxes share one coordinate
+space — above it the layout is 1.333× the media-query width. On a phone the coin
+table is restyled into cards (same DOM, so `ColState` still drives the columns) and
+the facet popovers expand in place rather than floating.
 
 Do not introduce a CSS-in-JS library or a component framework (e.g. Tailwind,
 shadcn, MUI) — extend `globals.css` instead.
@@ -737,6 +748,7 @@ Accepted **design** decisions are stored in `docs/design-decisions/`:
 * `DDR-003-dark-mode` — warm dark theme + per-user Light/Dark/System `theme` preference (supersedes DDR-001's light-only decision; adds the `--on-gold` token). Its Settings control is **amended by DDR-004**.
 * `DDR-004-theme-toggle` — replace the Settings theme `<select>` with a binary sun/moon toggle; drop the user-selectable "System" option (amends DDR-003 §3; the `system` fallback still governs never-chosen accounts)
 * `DDR-005-filter-bar-pattern` — filter bar pattern (multi-select facet popover, grade toggle chips, active-filter chip row + clear-all) and Coins as a top-level nav destination (`/coins`, read-only). §7 **amends DDR-001**: light-mode `--accent` deepened to `#7f5612` (gold text failed AA on its own tint off-card)
+* `DDR-006-responsive-layout` — responsive layout: a three-stop breakpoint scale (phone/tablet/desktop + wide), viewport-aware density, and the per-surface mobile forms (coin-list cards, touch filter bar). **Amends DDR-002**: `zoom: 0.75` is desktop-only
 
 (`docs/design-decisions/template.md` is the scaffold for new DDRs.)
 
