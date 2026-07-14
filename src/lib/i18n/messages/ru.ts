@@ -144,6 +144,7 @@ export const ru: Partial<Messages> = {
   "coins.search": "Поиск",
   "coins.searchPlaceholder": "категория, эмитент, монетный двор…",
   "coins.filterAll": "Все",
+  "coins.filters": "Фильтры",
   "coins.columns": "Столбцы",
   "coins.columnsHint": "Перетащите ⠿ для сортировки · отметьте для показа",
   "coins.columnHidden": "скрыт",

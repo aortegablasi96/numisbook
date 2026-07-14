@@ -146,6 +146,7 @@ export const fr: Partial<Messages> = {
   "coins.search": "Rechercher",
   "coins.searchPlaceholder": "catégorie, autorité, atelier…",
   "coins.filterAll": "Toutes",
+  "coins.filters": "Filtres",
   "coins.columns": "Colonnes",
   "coins.columnsHint": "Glissez ⠿ pour réorganiser · cochez pour afficher",
   "coins.columnHidden": "masquée",

@@ -43,6 +43,12 @@ const FACET_FIELDS: readonly FacetField[] = [
  * Faceted fields are multi-select popovers; grade is a fixed 7-value ordered
  * scale, so it renders as inline toggle chips instead. Active filters appear as
  * removable chips in a second row that is absent when nothing is filtered.
+ *
+ * On a phone the bar itself starts collapsed behind the `Filters` trigger
+ * (DDR-006 addendum) — expanded it is a screen tall, and the coin list is what
+ * the page is for. The collapse is CSS-driven: the trigger and `data-open` are
+ * always rendered, and `globals.css` honours them only at the phone stop, so no
+ * client-side breakpoint check can drift from the one in the stylesheet.
  */
 export function CoinFilters({
   filters,
@@ -55,6 +61,7 @@ export function CoinFilters({
 }) {
   const t = useT();
   const active = activeFilters(filters);
+  const [open, setOpen] = useState(false);
 
   const set = (patch: Partial<CoinFilterState>) => onChange({ ...filters, ...patch });
 
@@ -83,7 +90,25 @@ export function CoinFilters({
 
   return (
     <div className="stack" style={{ gap: "0.5rem", flex: 1 }}>
-      <div className="filters">
+      {/* phone only (hidden by CSS elsewhere). The count keeps a collapsed bar from
+          hiding the fact that the list is filtered. */}
+      <button
+        type="button"
+        className="btn-sm filter-toggle"
+        aria-expanded={open}
+        aria-controls="coin-filters"
+        onClick={() => setOpen((v) => !v)}
+      >
+        {/* The chevron is its own element so the button's space-between has two
+            items to split — as one text run with the label it would not align right. */}
+        <span>
+          {t("coins.filters")}
+          {active.length > 0 && ` · ${active.length}`}
+        </span>
+        <span aria-hidden="true">{open ? "▴" : "▾"}</span>
+      </button>
+
+      <div id="coin-filters" className="filters" data-open={open}>
         <label>
           {t("coins.search")}
           <input

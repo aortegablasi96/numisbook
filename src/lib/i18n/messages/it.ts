@@ -144,6 +144,7 @@ export const it: Partial<Messages> = {
   "coins.search": "Cerca",
   "coins.searchPlaceholder": "categoria, autorità, zecca…",
   "coins.filterAll": "Tutte",
+  "coins.filters": "Filtri",
   "coins.columns": "Colonne",
   "coins.columnsHint": "Trascina ⠿ per riordinare · seleziona per mostrare",
   "coins.columnHidden": "nascosta",
