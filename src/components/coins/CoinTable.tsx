@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, memo } from "react";
 import { formatYearRange, formatCoinTitle } from "@/lib/coin-format";
 import { useT } from "@/components/i18n/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n";
+import { parseSortOption, sortOptionValue } from "./coin-filters";
 
 export type CoinView = {
   id: string;
@@ -42,6 +43,12 @@ export type ColumnDef = {
   sortable: boolean;
   required: boolean;
   defaultVisible: boolean;
+  /**
+   * How the phone sort control names this column's two directions: text sorts read
+   * "A–Z / Z–A", chronological ones "oldest / newest first". Only meaningful when
+   * `sortable`; text is the default.
+   */
+  sortKind?: "text" | "chrono";
 };
 export type ColState = { key: ColumnKey; visible: boolean };
 
@@ -58,7 +65,7 @@ const BASE_COLUMNS: ColumnDef[] = [
   { key: "title",            labelKey: "field.coin",             sortable: false, required: true,  defaultVisible: true  },
   { key: "metal",            labelKey: "field.metal",            sortable: true,  required: false, defaultVisible: true  },
   { key: "denomination",     labelKey: "field.denomination",     sortable: true,  required: false, defaultVisible: true  },
-  { key: "year",             labelKey: "field.year",             sortable: true,  required: false, defaultVisible: false },
+  { key: "year",             labelKey: "field.year",             sortable: true,  required: false, defaultVisible: false, sortKind: "chrono" },
   { key: "category",         labelKey: "field.category",         sortable: true,  required: false, defaultVisible: false },
   { key: "issuingAuthority", labelKey: "field.issuingAuthority", sortable: false, required: false, defaultVisible: false },
   { key: "grade",            labelKey: "field.grade",            sortable: false, required: false, defaultVisible: false },
@@ -85,6 +92,19 @@ export const ALL_COIN_COLUMNS_KEY = "numisbook:all-coin-columns-v1";
 
 function defFor(columns: ColumnDef[], key: ColumnKey): ColumnDef {
   return columns.find((d) => d.key === key)!;
+}
+
+/** One option of the phone sort select: the column, named by the direction it sorts in. */
+function sortOptionLabel(
+  t: ReturnType<typeof useT>,
+  def: ColumnDef,
+  dir: "asc" | "desc",
+): string {
+  const chrono = def.sortKind === "chrono";
+  const key: MessageKey = chrono
+    ? dir === "asc" ? "coins.sortOldFirst" : "coins.sortNewFirst"
+    : dir === "asc" ? "coins.sortAz" : "coins.sortZa";
+  return t(key, { field: t(def.labelKey) });
 }
 
 function defaultColState(columns: ColumnDef[]): ColState[] {
@@ -189,6 +209,7 @@ export function CoinTable<T extends CoinView>({
   sortBy,
   sortDir,
   onSort,
+  onSortSelect,
   renderActions,
 }: {
   coins: T[];
@@ -198,6 +219,7 @@ export function CoinTable<T extends CoinView>({
   sortBy: string;
   sortDir: "asc" | "desc";
   onSort: (key: CoinSortKey) => void;
+  onSortSelect: (sort: { sortBy: string; sortDir: "asc" | "desc" }) => void;
   renderActions?: (coin: T) => React.ReactNode;
 }) {
   const t = useT();
@@ -212,38 +234,29 @@ export function CoinTable<T extends CoinView>({
     <>
       {/* Phone: the header row is hidden by the card form, taking the sortable
           column headers (and with them, sorting) with it. This select is the
-          replacement, and is shown only at the phone stop (DDR-006). */}
+          replacement, and is shown only at the phone stop (DDR-006). It carries the
+          direction too — each field appears once per direction — because with no
+          headers to click there is nowhere else to reverse the list from. */}
       <div className="table-sort">
         <label className="row" style={{ gap: "0.4rem" }}>
           <span className="mono-label">{t("coins.sortBy")}</span>
           <select
-            value={sortBy}
-            onChange={(e) => {
-              const key = e.target.value as CoinSortKey;
-              // nextSort flips the direction when the column is unchanged, so only
-              // call it when the column actually changes — picking the column you
-              // are already on should not silently reverse the list.
-              if (key !== sortBy) onSort(key);
-            }}
+            value={sortOptionValue(sortBy, sortDir)}
+            onChange={(e) => onSortSelect(parseSortOption(e.target.value))}
           >
-            {/* The default sort, and the only one with no column to click. */}
-            <option value="createdAt">{t("coins.sortRecent")}</option>
-            {sortableCols.map((col) => (
-              <option key={col.key} value={col.key}>
-                {t(defFor(columns, col.key).labelKey)}
-              </option>
-            ))}
+            {/* "createdAt" is the default sort and the only one with no column of
+                its own, so it is named rather than described by direction. */}
+            <option value={sortOptionValue("createdAt", "desc")}>{t("coins.sortRecent")}</option>
+            <option value={sortOptionValue("createdAt", "asc")}>{t("coins.sortOldest")}</option>
+            {sortableCols.flatMap((col) =>
+              (["asc", "desc"] as const).map((dir) => (
+                <option key={`${col.key}:${dir}`} value={sortOptionValue(col.key, dir)}>
+                  {sortOptionLabel(t, defFor(columns, col.key), dir)}
+                </option>
+              )),
+            )}
           </select>
         </label>
-        <button
-          type="button"
-          className="btn-sm"
-          onClick={() => onSort(sortBy as CoinSortKey)}
-          aria-label={t("coins.sortToggle")}
-          title={t("coins.sortToggle")}
-        >
-          {sortDir === "asc" ? "↑" : "↓"}
-        </button>
       </div>
       <div className="table-wrap">
         <table className="data-table">

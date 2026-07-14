@@ -128,6 +128,12 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
     setFilters((f) => ({ ...f, ...nextSort(f, key) }));
   }
 
+  // The phone select carries field + direction, so it replaces the sort outright
+  // rather than flipping it (DDR-006 addendum).
+  function handleSortSelect(sort: Pick<CoinFilterState, "sortBy" | "sortDir">) {
+    setFilters((f) => ({ ...f, ...sort }));
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault(); setError(null); setBusy(true);
     try {
@@ -238,6 +244,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
           sortBy={filters.sortBy}
           sortDir={filters.sortDir}
           onSort={handleSort}
+          onSortSelect={handleSortSelect}
           renderActions={(coin) => (
             <span className="row row-actions" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
               <button type="button" className="btn-sm btn-icon" onClick={() => startEdit(coin)} disabled={busy}

@@ -76,6 +76,12 @@ export function AllCoinsManager({ initial }: { initial: SearchResult }) {
     setFilters((f) => ({ ...f, ...nextSort(f, key) }));
   }
 
+  // The phone select carries field + direction, so it replaces the sort outright
+  // rather than flipping it (DDR-006 addendum).
+  function handleSortSelect(sort: Pick<CoinFilterState, "sortBy" | "sortDir">) {
+    setFilters((f) => ({ ...f, ...sort }));
+  }
+
   return (
     <section className="stack">
       <div className="toolbar" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -106,6 +112,7 @@ export function AllCoinsManager({ initial }: { initial: SearchResult }) {
           sortBy={filters.sortBy}
           sortDir={filters.sortDir}
           onSort={handleSort}
+          onSortSelect={handleSortSelect}
         />
       )}
 
