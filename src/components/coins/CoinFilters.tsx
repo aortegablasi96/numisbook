@@ -181,7 +181,14 @@ export function CoinFilters({
               </span>
             </button>
           ))}
-          <button type="button" className="btn-sm" onClick={() => onChange(EMPTY_FILTERS)}>
+          {/* On a phone this follows the bar: it is a filter control, so it belongs
+              with the controls, not with the chips that report what is applied. The
+              chips stay — each still removes its own value while the bar is shut. */}
+          <button
+            type="button"
+            className="btn-sm filter-clear"
+            onClick={() => onChange(EMPTY_FILTERS)}
+          >
             {t("action.clearAll")}
           </button>
         </div>

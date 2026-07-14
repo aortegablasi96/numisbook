@@ -156,3 +156,24 @@ export function nextSort(
       filters.sortBy === column ? (filters.sortDir === "asc" ? "desc" : "asc") : "asc",
   };
 }
+
+/**
+ * Field *and* direction in one `<option>` value, for the phone sort control: with
+ * the sortable column headers hidden by the card form there is nothing left to
+ * click to reverse the list, so the select carries both (DDR-006 addendum). On
+ * desktop the headers still toggle direction via `nextSort`.
+ */
+export function sortOptionValue(sortBy: string, sortDir: "asc" | "desc"): string {
+  return `${sortBy}:${sortDir}`;
+}
+
+/** Read back a `sortOptionValue`. An unparseable value falls back to the default sort. */
+export function parseSortOption(value: string): Pick<CoinFilterState, "sortBy" | "sortDir"> {
+  const sep = value.lastIndexOf(":");
+  const sortBy = sep === -1 ? "" : value.slice(0, sep);
+  const dir = sep === -1 ? "" : value.slice(sep + 1);
+  if (!sortBy || (dir !== "asc" && dir !== "desc")) {
+    return { sortBy: EMPTY_FILTERS.sortBy, sortDir: EMPTY_FILTERS.sortDir };
+  }
+  return { sortBy, sortDir: dir };
+}

@@ -2851,11 +2851,6 @@ dialog.modal.modal-chart {
   .table-sort select {
     min-height: 44px;
   }
-  .table-sort .btn-sm {
-    min-height: 44px;
-    min-width: 44px;
-    justify-content: center;
-  }
 
   main {
     padding: var(--space-6) 0 var(--space-10);
@@ -2884,6 +2879,14 @@ dialog.modal.modal-chart {
     min-height: 44px;
   }
   .filters[data-open="false"] {
+    display: none;
+  }
+  /* "Clear all" is a control, not a report, so it comes and goes with the bar it
+     belongs to. The chips it sits beside stay: they are how the user sees what is
+     applied while the bar is shut, and each one still removes its own value.
+     A sibling combinator, so the bar's open state drives both — the general form
+     (`~`) because the chip row follows the bar in the DOM. */
+  .filters[data-open="false"] ~ .filter-active .filter-clear {
     display: none;
   }
 

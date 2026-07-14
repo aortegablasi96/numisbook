@@ -5,7 +5,9 @@ import {
   buildSearchParams,
   isDefaultState,
   nextSort,
+  parseSortOption,
   removeFilter,
+  sortOptionValue,
   toggleValue,
   type CoinFilterState,
 } from "./coin-filters";
@@ -111,5 +113,26 @@ describe("nextSort", () => {
       sortBy: "metal",
       sortDir: "desc",
     });
+  });
+});
+
+describe("sortOptionValue / parseSortOption", () => {
+  it("round-trips a column and a direction", () => {
+    expect(parseSortOption(sortOptionValue("metal", "asc"))).toEqual({
+      sortBy: "metal",
+      sortDir: "asc",
+    });
+    expect(parseSortOption(sortOptionValue("createdAt", "desc"))).toEqual({
+      sortBy: "createdAt",
+      sortDir: "desc",
+    });
+  });
+
+  it("falls back to the default sort on an unparseable value", () => {
+    const fallback = { sortBy: EMPTY_FILTERS.sortBy, sortDir: EMPTY_FILTERS.sortDir };
+    expect(parseSortOption("")).toEqual(fallback);
+    expect(parseSortOption("metal")).toEqual(fallback);
+    expect(parseSortOption("metal:sideways")).toEqual(fallback);
+    expect(parseSortOption(":asc")).toEqual(fallback);
   });
 });

@@ -274,3 +274,60 @@ component.
 Rejected: **auto-expanding when filters are active.** The count on the trigger
 already carries that information, and a bar that decides for itself whether to
 occupy the screen is harder to predict than one that stays where the user left it.
+
+## Addendum — one sort control, and "clear all" follows the bar (2026-07-14)
+
+> Amends §3 ("Sorting stays, as a `<select>`") and the addendum above (which left
+> "clear all" beside the chips at all times).
+
+Two corrections to the phone list header, both from the same principle: **every
+control on that header should belong to something the user can see.**
+
+### 1. Sort direction folds into the select
+
+§3 replaced the hidden column headers with a `<select>`, and kept a separate `↑`/`↓`
+button beside it for direction — a straight port of the desktop gesture (click the
+header you are already sorting by, and it flips). On its own, next to a filter bar
+that now collapses, that button reads as a stray arrow: an icon-only control whose
+meaning is carried entirely by a `title`, sitting where the eye expects it to belong
+to the bar above it.
+
+Direction moves into the select. Each sortable column appears **once per direction**,
+named rather than symbolised: `Metal (A–Z)` / `Metal (Z–A)` for text columns,
+`Year (oldest first)` / `Year (newest first)` for chronological ones, and the default
+`Recently added` / `Oldest first` for `createdAt`. `ColumnDef.sortKind` decides which
+pair of labels a column takes, so the naming is a property of the column, not a
+`switch` in the view.
+
+An `<option>` therefore carries **field and direction together** (`metal:desc`), and
+choosing one *replaces* the sort rather than flipping it — `nextSort`'s toggle
+semantics stay behind the desktop headers, which are what they were written for. The
+encode/parse pair (`sortOptionValue` / `parseSortOption`) lives in `coin-filters.ts`
+with the other pure filter helpers, and is unit-tested there.
+
+The cost is 2n options instead of n. At the current field set (the visible sortable
+columns, plus `createdAt`) that is a handful of entries in a native picker, which is
+cheaper than a second control the user has to interpret.
+
+Rejected: **dropping direction entirely.** It is one of the two things a sort *is*,
+and a phone user would have been left with whatever direction each field defaults to,
+with no way to reverse a list the desktop can reverse freely.
+
+### 2. "Clear all" is a control, so it lives with the controls
+
+The addendum above kept the whole active-filter row — chips *and* "clear all" —
+outside the collapsible region. That split the row's two halves against their
+natures. The **chips are a report**: they say what is narrowing the list, and a
+collapsed bar must not be able to hide that. **"Clear all" is a control**: it is the
+bar's reset, and when the bar is shut it is a button with no visible surface to act
+on.
+
+So at the phone stop "clear all" appears and hides **with the bar**, while the chips
+stay put in both states. Nothing is stranded: each chip still removes its own value
+while the bar is collapsed, so a filter can always be undone without opening
+anything.
+
+Implemented in CSS with a sibling combinator on the same `data-open` bit that drives
+the bar (`.filters[data-open="false"] ~ .filter-active .filter-clear`), so one flag
+still governs the whole collapsed state and the component needs no second piece of
+view logic.
