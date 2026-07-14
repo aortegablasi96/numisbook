@@ -362,3 +362,41 @@ the picker's absence, and closing it does not require a picker. If per-card cont
 ever needs user control, it should be designed as a card-content control — a short
 checklist, no drag-reorder (order is meaningless in the card form) — not as the
 desktop picker moved sideways.
+
+## Addendum — a card describes the coin, a column describes the list (2026-07-14)
+
+> Extends §3: the phone card form no longer takes its attribute line strictly from
+> the surface's visible columns.
+
+The same coin described itself differently depending on how you reached it. On
+`/coins` a card read *Collection · Metal · Denomination*; inside a collection it read
+*Metal · Denomination*, because `COIN_COLUMNS` has no `collection` column — in a
+table scoped to one collection, a column repeating one identical value down every row
+is noise, and it still is.
+
+But a card is not a table row. A table row is read **across a list**, where the
+constant column carries no information; a card is read **on its own**, and its
+attribute line is the coin's whole description. Dropping the collection there is not
+removing a redundancy, it is leaving the description surface-dependent — the sort of
+inconsistency §3's "one element tree" rule exists to prevent, arrived at from the
+other direction.
+
+So the card form may now carry an attribute the table has no column for. `CoinTable`
+takes an optional `cardLead` — a cell rendered in every row, hidden at every stop but
+the phone one (`.card-only`), where it becomes the card's first attribute. The
+per-collection list passes the owning collection through it.
+
+Consequences worth stating:
+
+* It sits next to the thumbnail in the row, not appended after the columns, because
+  the middot separator is a DOM-sibling rule: a cell's place on the card has to be
+  its place in the row, or the dots land in the wrong gaps.
+* It is **not** in `ColState` and **not** in the column picker. It is not a column the
+  user is choosing to hide — the table simply has no such column to show.
+* It renders as plain text, where `/coins` renders a link. The name of the page you
+  are already on is not a destination.
+
+Rejected: **adding a real `collection` column to `COIN_COLUMNS`** (visible by default
+so it would reach the card). It fixes the card by damaging the table — every desktop
+row gains a column of the same repeated word — and it hands the user a picker entry
+that means "hide the collection from my cards", which is not a column preference.

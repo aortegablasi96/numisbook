@@ -210,6 +210,7 @@ export function CoinTable<T extends CoinView>({
   sortDir,
   onSort,
   onSortSelect,
+  cardLead,
   renderActions,
 }: {
   coins: T[];
@@ -220,6 +221,14 @@ export function CoinTable<T extends CoinView>({
   sortDir: "asc" | "desc";
   onSort: (key: CoinSortKey) => void;
   onSortSelect: (sort: { sortBy: string; sortDir: "asc" | "desc" }) => void;
+  /**
+   * An attribute the *card* shows and the table does not: it renders as the first
+   * attribute of the card and is hidden at every other stop (`.card-only`). The
+   * per-collection list uses it for the owning collection — a table column
+   * repeating one value on every row is noise, but a card's attribute line is the
+   * coin's whole description and must read the same on both surfaces (DDR-006).
+   */
+  cardLead?: { labelKey: MessageKey; render: (coin: T) => React.ReactNode };
   renderActions?: (coin: T) => React.ReactNode;
 }) {
   const t = useT();
@@ -270,6 +279,10 @@ export function CoinTable<T extends CoinView>({
               <th className="td-thumb">
                 <span className="sr-only">{t("a11y.image")}</span>
               </th>
+              {/* Sits next to the thumbnail so the cell below it is the card's first
+                  attribute: the middot separator is a DOM-sibling rule, so a cell's
+                  place on the card has to be its place in the row. */}
+              {cardLead && <th className="card-only">{t(cardLead.labelKey)}</th>}
               {visibleCols.map((col) => {
                 const def = defFor(columns, col.key);
                 const isDragOver = headerDropKey === col.key && headerDragKey !== col.key;
@@ -308,6 +321,7 @@ export function CoinTable<T extends CoinView>({
             {coins.map((coin) => (
               <tr key={coin.id}>
                 <td className="td-thumb"><CoinThumb coinId={coin.id} /></td>
+                {cardLead && <td className="muted card-only">{cardLead.render(coin)}</td>}
                 {visibleCols.map((col) => {
                   const value = cellValue(coin, col.key);
                   return (
