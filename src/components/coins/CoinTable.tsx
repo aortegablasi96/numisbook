@@ -45,6 +45,13 @@ export type ColumnDef = {
 };
 export type ColState = { key: ColumnKey; visible: boolean };
 
+/**
+ * What the list can be sorted by (the API's COIN_SORT_BY). It is the sortable
+ * columns *plus* `createdAt` — the default, "recently added" — which sorts the
+ * list but has no column of its own, so only the phone sort control can offer it.
+ */
+export type CoinSortKey = ColumnKey | "createdAt";
+
 // Sortable keys are the ones the API accepts (COIN_SORT_BY): sorting happens in
 // the database, so a column is only sortable if the query can order by it.
 const BASE_COLUMNS: ColumnDef[] = [
@@ -108,23 +115,29 @@ function saveColState(storageKey: string, state: ColState[]) {
   try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch { /* ignore */ }
 }
 
-function renderCell(coin: CoinView, key: ColumnKey): React.ReactNode {
+/**
+ * A cell's content, or `null` when the coin has no value for it. The table renders
+ * null as an em-dash placeholder (a table needs its columns to line up); the phone
+ * card form drops the cell entirely (a card with "Mint —" on it is just noise), so
+ * emptiness has to be distinguishable rather than pre-formatted away.
+ */
+function cellValue(coin: CoinView, key: ColumnKey): React.ReactNode | null {
   switch (key) {
     case "title":
       return <Link href={`/coins/${coin.id}`}><strong>{formatCoinTitle(coin)}</strong></Link>;
     case "collection":
       return coin.collectionId ? (
         <Link href={`/collections/${coin.collectionId}`}>{coin.collectionName}</Link>
-      ) : "—";
-    case "metal":            return coin.metal ?? "—";
-    case "denomination":     return coin.denomination ?? "—";
-    case "year":             return formatYearRange(coin.yearFrom, coin.yearTo) ?? "—";
-    case "category":         return coin.category ?? "—";
-    case "issuingAuthority": return coin.issuingAuthority ?? "—";
-    case "grade":            return coin.grade ?? "—";
-    case "mint":             return coin.mint ?? "—";
-    case "weight":           return coin.weight ? `${coin.weight} g` : "—";
-    case "diameter":         return coin.diameter ? `${coin.diameter} mm` : "—";
+      ) : null;
+    case "metal":            return coin.metal;
+    case "denomination":     return coin.denomination;
+    case "year":             return formatYearRange(coin.yearFrom, coin.yearTo);
+    case "category":         return coin.category;
+    case "issuingAuthority": return coin.issuingAuthority;
+    case "grade":            return coin.grade;
+    case "mint":             return coin.mint;
+    case "weight":           return coin.weight ? `${coin.weight} g` : null;
+    case "diameter":         return coin.diameter ? `${coin.diameter} mm` : null;
   }
 }
 
@@ -184,7 +197,7 @@ export function CoinTable<T extends CoinView>({
   onReorder: (from: ColumnKey, to: ColumnKey) => void;
   sortBy: string;
   sortDir: "asc" | "desc";
-  onSort: (key: ColumnKey) => void;
+  onSort: (key: CoinSortKey) => void;
   renderActions?: (coin: T) => React.ReactNode;
 }) {
   const t = useT();
@@ -193,8 +206,45 @@ export function CoinTable<T extends CoinView>({
 
   const visibleCols = colState.filter((c) => c.visible);
   const reorderCols = onReorder;
+  const sortableCols = visibleCols.filter((c) => defFor(columns, c.key).sortable);
 
   return (
+    <>
+      {/* Phone: the header row is hidden by the card form, taking the sortable
+          column headers (and with them, sorting) with it. This select is the
+          replacement, and is shown only at the phone stop (DDR-006). */}
+      <div className="table-sort">
+        <label className="row" style={{ gap: "0.4rem" }}>
+          <span className="mono-label">{t("coins.sortBy")}</span>
+          <select
+            value={sortBy}
+            onChange={(e) => {
+              const key = e.target.value as CoinSortKey;
+              // nextSort flips the direction when the column is unchanged, so only
+              // call it when the column actually changes — picking the column you
+              // are already on should not silently reverse the list.
+              if (key !== sortBy) onSort(key);
+            }}
+          >
+            {/* The default sort, and the only one with no column to click. */}
+            <option value="createdAt">{t("coins.sortRecent")}</option>
+            {sortableCols.map((col) => (
+              <option key={col.key} value={col.key}>
+                {t(defFor(columns, col.key).labelKey)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="btn-sm"
+          onClick={() => onSort(sortBy as CoinSortKey)}
+          aria-label={t("coins.sortToggle")}
+          title={t("coins.sortToggle")}
+        >
+          {sortDir === "asc" ? "↑" : "↓"}
+        </button>
+      </div>
       <div className="table-wrap">
         <table className="data-table">
           <thead>
@@ -240,17 +290,27 @@ export function CoinTable<T extends CoinView>({
             {coins.map((coin) => (
               <tr key={coin.id}>
                 <td className="td-thumb"><CoinThumb coinId={coin.id} /></td>
-                {visibleCols.map((col) => (
-                  <td key={col.key} className={col.key === "title" ? "col-title" : "muted"}>
-                    {renderCell(coin, col.key)}
-                  </td>
-                ))}
+                {visibleCols.map((col) => {
+                  const value = cellValue(coin, col.key);
+                  return (
+                    <td
+                      key={col.key}
+                      className={col.key === "title" ? "col-title" : "muted"}
+                      // Drives the phone card form, which hides valueless cells
+                      // rather than carrying a column of em-dashes (DDR-006).
+                      data-empty={value === null || undefined}
+                    >
+                      {value ?? "—"}
+                    </td>
+                  );
+                })}
                 {renderActions && <td className="td-actions">{renderActions(coin)}</td>}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+    </>
   );
 }
 

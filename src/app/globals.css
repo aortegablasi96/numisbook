@@ -194,14 +194,47 @@
   box-sizing: border-box;
 }
 
+/* ---- Responsive scale (DDR-006) ----------------------------------------- */
+
+/* Every media query in this file uses one of three stops. Do not introduce a
+   fourth value — the point of the scale is that a breakpoint means the same
+   thing everywhere (before DDR-006 this file carried eight ad-hoc widths).
+   The values cannot live in custom properties: `@media (max-width: var(--x))`
+   is invalid CSS, and `@custom-media` would need a PostCSS dependency, which
+   DDR-001's dependency-free stance rules out. So: convention, cited by name.
+
+     phone     @media (max-width: 640px)    single column; density 1
+     tablet    @media (max-width: 1024px)   rails stack, grids narrow; density 1
+     desktop   (no query — the default)     full layout; density 0.75
+     wide      @media (min-width: 1440px)   optional enhancements only
+
+   Note the coordinate space these are read in. Media queries evaluate against
+   the *real* viewport, but below `desktop` the root zoom (see html, next) is 1,
+   so the layout is in the same units and a breakpoint means what it says. Above
+   `desktop` the layout is 1/0.75 = 1.333x larger than the media-query width. */
+
 html {
   -webkit-text-size-adjust: 100%;
-  /* Global display density: render the whole app at 75% of nominal size, the
-     scale the design reads best at on wide monitors (it was being viewed at 75%
-     browser zoom). `zoom` (not `transform: scale`) reflows normally and keeps
+  /* Global display density: render the app at 75% of nominal size, the scale the
+     design reads best at on wide monitors (it was being viewed at 75% browser
+     zoom). `zoom` (not `transform: scale`) reflows normally and keeps
      sticky/fixed elements correct, and the user's own browser zoom still stacks
-     on top, so text remains resizable (WCAG 1.4.4). See DDR-002. */
+     on top, so text remains resizable (WCAG 1.4.4). See DDR-002.
+
+     Desktop only (DDR-006). On a phone this shrank body text to ~12px and touch
+     targets below the 44px minimum, and it split media queries (real viewport px)
+     from layout boxes (nominal px, 1.333x larger) into two coordinate spaces that
+     disagreed — which is why the old ad-hoc breakpoints never meant what they
+     said. `chart-layout.ts` reads this same scale at runtime (currentZoom); the
+     two must change together. */
   zoom: 0.75;
+}
+
+/* tablet — phones and tablets render at full size. */
+@media (max-width: 1024px) {
+  html {
+    zoom: 1;
+  }
 }
 
 body {
@@ -298,9 +331,16 @@ a:hover {
   padding-inline: clamp(2rem, 2.6vw, 5.5rem);
 }
 
-@media (max-width: 768px) {
+/* tablet */
+@media (max-width: 1024px) {
   .container {
-    padding-inline: 1.25rem;
+    padding-inline: 1.5rem;
+  }
+}
+/* phone */
+@media (max-width: 640px) {
+  .container {
+    padding-inline: 1rem;
   }
 }
 
@@ -1115,6 +1155,130 @@ button:disabled {
   display: block;
 }
 
+/* Sort control for the phone card form, which hides the sortable column headers.
+   Desktop sorts by clicking a header, so it is absent there. */
+.table-sort {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Hidden at the phone stop: pointer-only affordances (the column picker's
+   drag-to-reorder) with no touch equivalent (DDR-006). */
+.hide-phone {
+  display: contents;
+}
+
+/* ---- Coin list: phone card form (DDR-006) -------------------------------- */
+
+/* phone — the coin table is relaid out as a list of cards. A wide data table is
+   not a readable way to browse a collection on a phone, and .table-wrap's sideways
+   scroll only keeps the page from breaking.
+
+   This restyles the *same* table DOM rather than rendering a second card
+   component: one element tree means the user's ColState still decides which
+   attributes appear (the two forms cannot drift), the coin thumbnails are fetched
+   once rather than by two mounted lists, and there is no client-side breakpoint
+   check to desynchronise from the server render. */
+@media (max-width: 640px) {
+  .table-sort {
+    display: flex;
+  }
+  .hide-phone {
+    display: none;
+  }
+
+  .table-wrap {
+    overflow-x: visible; /* nothing left to scroll sideways */
+    contain: none;
+  }
+  .data-table {
+    display: block;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+  }
+  .data-table thead {
+    display: none; /* column headers have no meaning on a card */
+  }
+  .data-table tbody {
+    display: grid;
+    gap: 0.75rem;
+  }
+  /* The `+ tr` selector repeats the base rule's specificity so its border-top
+     (the table's row divider) is fully replaced by the card's own border. */
+  .data-table tbody tr,
+  .data-table tbody tr + tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 0.4rem;
+    row-gap: 0.3rem;
+    padding: 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow);
+  }
+  .data-table td {
+    display: block;
+    padding: 0;
+  }
+  /* A card drops a valueless attribute; only a table needs the em-dash to keep
+     its columns aligned. */
+  .data-table td[data-empty] {
+    display: none;
+  }
+
+  /* Card order is fixed here rather than following the user's column order, which
+     is a *table* preference and reads as noise on a card: image, title, then the
+     attributes, with the actions trailing. */
+  .data-table td.td-thumb {
+    order: 1;
+    width: auto;
+    flex: 0 0 auto;
+  }
+  .data-table td.col-title {
+    order: 2;
+    flex: 1 1 55%;
+    max-width: none;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: 1.05rem;
+  }
+  .data-table td.muted {
+    order: 3;
+    flex: 0 0 auto;
+    font-size: 0.9rem;
+  }
+  .data-table td.td-actions {
+    order: 4;
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+  /* Middot between consecutive attributes ("Silver · $1 · New Orleans"). The
+     general-sibling combinator gives the separator to every attribute that has a
+     *rendered* attribute before it — so the first one on the card never leads with
+     a stray dot, and hidden (valueless) cells cannot introduce one. */
+  .data-table td.muted:not([data-empty]) ~ td.muted:not([data-empty])::before {
+    content: "·";
+    margin-right: 0.4rem;
+    color: color-mix(in srgb, var(--muted) 55%, transparent);
+  }
+
+  /* The table's 160px thumbnail is nearly half a phone card. Shrink it to a
+     leading avatar, and show the obverse only — the reverse is a tap away on the
+     coin detail. */
+  .data-table td.td-thumb .thumb {
+    width: 64px;
+    height: 64px;
+  }
+  .data-table td.td-thumb span > img + img {
+    display: none;
+  }
+}
+
 /* ---- Collection cards --------------------------------------------------- */
 
 /* Replaces the per-collection comparison table (UX & Feature Refinement): a
@@ -1492,7 +1656,8 @@ button:disabled {
 .analytics-grid > * {
   min-width: 0; /* let the SVGs shrink with the column instead of overflowing */
 }
-@media (max-width: 860px) {
+/* tablet — the two-up chart grid stacks. */
+@media (max-width: 1024px) {
   .analytics-grid {
     grid-template-columns: 1fr;
   }
@@ -1635,21 +1800,6 @@ button:disabled {
   line-height: 1.6;
 }
 
-/* Stack the two columns below 1160px: a fixed 520px rail would squeeze the left
-   column too thin on small laptops, so collapse to one column there. The stacked
-   rail is capped at 520px (full width only on phones) so it doesn't balloon on
-   tablets. */
-@media (max-width: 1160px) {
-  .coin-overview {
-    flex-direction: column;
-  }
-  .coin-side {
-    flex-basis: auto;
-    width: 100%;
-    max-width: 520px;
-  }
-}
-
 /* Right rail: the coin photo on top, the invoices (PDF receipts) card below. The
    rail owns the fixed 520px width; its children fill it. (Figma right column is
    borderless; widened to 520px so the photo reads with presence beside the
@@ -1660,6 +1810,26 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+/* tablet — the rail drops below the attributes instead of sitting beside them: a
+   fixed 520px rail squeezes the left column too thin below this width. The stacked
+   rail is capped at 520px (full width only on phones) so it doesn't balloon.
+
+   This override must follow the base `.coin-side` rule above, not precede it: at
+   equal specificity the later declaration wins, so while it sat earlier in the
+   file the rail kept its hard 520px width and the override was dead. Nothing
+   showed on desktop, where the zoomed layout was wide enough to hide a 520px rail
+   — but at full density it overflowed a 390px phone by 146px (DDR-006). */
+@media (max-width: 1024px) {
+  .coin-overview {
+    flex-direction: column;
+  }
+  .coin-side {
+    flex: 0 1 auto;
+    width: 100%;
+    max-width: 520px;
+  }
 }
 
 /* Image card: a borderless column — a square photo on top, controls below. */
@@ -1772,19 +1942,16 @@ button:disabled {
   margin: 0;
 }
 /* Narrow viewports: step down so tiles never crush. */
-@media (max-width: 900px) {
+/* tablet */
+@media (max-width: 1024px) {
   .attr-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+/* phone */
 @media (max-width: 640px) {
   .attr-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 400px) {
-  .attr-grid {
-    grid-template-columns: 1fr;
   }
 }
 .attr-tile {
@@ -1844,7 +2011,8 @@ button:disabled {
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem 1rem;
 }
-@media (max-width: 480px) {
+/* phone */
+@media (max-width: 640px) {
   .coin-edit-grid { grid-template-columns: 1fr; }
 }
 .coin-edit-label {
@@ -2065,20 +2233,8 @@ button:disabled {
   animation: chat-panel-in var(--dur-slow) var(--ease);
 }
 
-/* Large desktop (≥ 1280 px) */
-@media (min-width: 1280px) {
-  .chat-widget {
-    bottom: 2rem;
-    right: 2rem;
-  }
-  .chat-panel {
-    width: 420px;
-    max-height: clamp(500px, 68vh, 680px);
-  }
-}
-
-/* Extra-large desktop (≥ 1600 px) */
-@media (min-width: 1600px) {
+/* wide — one enhancement tier (was an ad-hoc 1280 + 1600 pair). */
+@media (min-width: 1440px) {
   .chat-widget {
     bottom: 2.5rem;
     right: 2.5rem;
@@ -2089,8 +2245,8 @@ button:disabled {
   }
 }
 
-/* Mobile (≤ 540 px) — bottom-sheet */
-@media (max-width: 540px) {
+/* phone — bottom-sheet */
+@media (max-width: 640px) {
   .chat-panel {
     position: fixed;
     bottom: 0;
@@ -2392,15 +2548,24 @@ dialog.modal::backdrop {
 }
 
 /* Expand-chart dialog: nearly fills the viewport so the enlarged chart has the
-   most room, with a close button pinned top-right above it. The dialog sits
-   inside the global `zoom: 0.75` (DDR-002), which also scales vw/vh units — so
-   plain 96vw/96vh would only reach ~72% of the real screen. Dividing by the zoom
-   lets the expanded chart genuinely fill ~96% of the actual viewport. */
+   most room, with a close button pinned top-right above it. On desktop the dialog
+   sits inside the root `zoom: 0.75` (DDR-002), which scales vw/vh units too — so
+   plain 96vw/96vh would only reach ~72% of the real screen, and the width is
+   divided by the zoom to compensate. Below `desktop` the zoom is 1 (DDR-006), so
+   no correction applies and 96vw/96vh mean what they say. */
 dialog.modal.modal-chart {
-  max-width: calc(96vw / 0.75);
-  width: calc(96vw / 0.75);
-  max-height: calc(96vh / 0.75); /* guard; chart height is sized to fit without scrolling */
+  max-width: 96vw;
+  width: 96vw;
+  max-height: 96vh; /* guard; chart height is sized to fit without scrolling */
   padding: var(--space-5);
+}
+/* desktop — undo the root zoom's scaling of vw/vh. */
+@media (min-width: 1025px) {
+  dialog.modal.modal-chart {
+    max-width: calc(96vw / 0.75);
+    width: calc(96vw / 0.75);
+    max-height: calc(96vh / 0.75);
+  }
 }
 .chart-modal-close {
   display: flex;
@@ -2488,11 +2653,38 @@ dialog.modal.modal-chart {
   max-height: 16rem;
   overflow-y: auto;
 }
-@media (max-width: 480px) {
-  .facet-picker {
-    left: 0;
-    right: 0;
+/* Anchor for the facet popover (a class, not an inline style, so the phone rule
+   below can override it). */
+.facet-wrap {
+  position: relative;
+}
+/* phone — the facet popover stops floating and becomes a full-width panel that
+   expands the bar in place. Anchored-and-floating needs collision detection to
+   stay on screen at this width; expanding in place needs none, gives rows wide
+   enough to tap, and never covers the results underneath (DDR-006).
+
+   `.filters .facet-picker` rather than `.facet-picker`: the popover borrows the
+   column picker's surface, and `.col-picker { position: absolute }` is declared
+   later in this file — at equal specificity it would win on order and the panel
+   would keep floating. */
+@media (max-width: 640px) {
+  .facet-wrap {
+    width: 100%;
+  }
+  .facet-wrap > .btn-sm {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .filters .facet-picker {
+    position: static;
+    width: 100%;
     min-width: 0;
+    max-height: 50vh;
+    margin-top: 0.35rem;
+  }
+  /* Facet rows are the main tap target inside the panel. */
+  .filters .facet-picker .col-picker-item {
+    min-height: 44px;
   }
 }
 .pager {
@@ -2596,6 +2788,112 @@ dialog.modal.modal-chart {
 .data-table th.th-drop-target {
   background: var(--surface-2);
   box-shadow: inset 3px 0 0 var(--accent, #b8963e);
+}
+
+/* ---- Responsive shell & touch (DDR-006) ---------------------------------- */
+
+/* Placed last so these overrides win on order rather than on specificity — the
+   rules they adjust are spread across the file, and matching each one's weight
+   would mean inflating selectors here. Everything below is confined to a
+   breakpoint from the scale at the top of this file. */
+
+/* phone */
+@media (max-width: 640px) {
+  /* Shell: brand on the first line, primary nav scrolling horizontally on the
+     second. Wrapping the nav instead would push the content below a header three
+     rows deep; a hamburger would hide the app's four destinations behind a tap
+     for no gain at this count. */
+  .site-header .bar {
+    min-height: 0;
+    padding-block: 0.75rem;
+    gap: 0.5rem;
+  }
+  .nav {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.15rem;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+  .nav a,
+  .nav-signout,
+  .nav form {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  /* 44px tap targets across the nav strip. */
+  .nav a,
+  .nav-signout {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 0.6rem;
+    font-size: 0.95rem;
+  }
+  .brand {
+    font-size: 1.15rem;
+    min-height: 44px;
+  }
+
+  /* The sort control replaces the (hidden) sortable column headers, so it is a
+     primary control here and gets a primary control's tap target. */
+  .table-sort select {
+    min-height: 44px;
+  }
+  .table-sort .btn-sm {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+  }
+
+  main {
+    padding: var(--space-6) 0 var(--space-10);
+  }
+
+  /* Single column: the card's 360px floor exceeds the phone's content width, so
+     without this the grid track overflows the gutter. */
+  .collection-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  .collection-card {
+    min-height: 300px;
+  }
+
+  /* Filter bar (DDR-005) on touch. The search box takes the full width; the year
+     bounds split the next line between them. */
+  .filters {
+    gap: 0.6rem;
+    /* 44px — the touch-target minimum (WCAG 2.5.5). The 2.25rem default is a
+       pointer size and lands at 36px. */
+    --filter-control-h: 2.75rem;
+  }
+  .filters > label {
+    width: 100%;
+  }
+  .filters input[type="text"] {
+    width: 100%;
+  }
+  .filters input[type="number"] {
+    width: 100%;
+  }
+  .filters > label:has(input[type="number"]) {
+    width: calc(50% - 0.3rem);
+  }
+
+  /* Icon-only row actions are the smallest hit targets in the app. */
+  .btn-icon {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .pager {
+    justify-content: center;
+  }
 }
 
 /* Respect users who prefer reduced motion: drop the chat panel/dot animations

@@ -8,9 +8,13 @@ import { useT } from "@/components/i18n/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n";
 import {
   AXIS_W,
+  AXIS_W_PHONE,
   PAD,
+  VISIBLE_COINS_DESKTOP,
+  VISIBLE_COINS_PHONE,
   clamp,
   useChartHeight,
+  useIsPhone,
   useMeasuredWidth,
 } from "./chart-layout";
 
@@ -52,12 +56,12 @@ const RANGE_KEYS: MessageKey[] = [
 // partitioned coin, so the breakdown reads consistently.
 const COST_KEYS = ["hammer", "premium", "tax", "shipping"] as const;
 
-const AVATAR = 104; // thumbnail diameter, in px
-// Coins to fit across the (inline) chart's visible width. Each coin gets a fixed
-// pixel slot (viewport / VISIBLE_COINS); the rest scroll horizontally. The
-// expanded chart reuses that same per-coin width, so its wider viewport fits
-// proportionally more coins (≈ VISIBLE_COINS × modalWidth / inlineWidth).
-const VISIBLE_COINS = 5;
+const AVATAR = 104; // thumbnail diameter, in px (its cap — see `avatar` below)
+// Coins to fit across the (inline) chart's visible width: 5 on desktop, 3 on a
+// phone (DDR-006). Each coin gets a fixed pixel slot (viewport / visibleCoins);
+// the rest scroll horizontally. The expanded chart reuses that same per-coin width,
+// so its wider viewport fits proportionally more coins
+// (≈ visibleCoins × modalWidth / inlineWidth).
 
 const stackTotal = (e: AcquisitionEvent): number =>
   e.hammer + e.premium + e.shipping + e.tax + e.unsplit;
@@ -86,6 +90,9 @@ export function CostBreakdownChart({
   const clipUid = useId().replace(/:/g, "");
   const [scrollRef, viewport] = useMeasuredWidth<HTMLDivElement>();
   const chartH = useChartHeight(inModal);
+  const isPhone = useIsPhone();
+  const axisW = isPhone ? AXIS_W_PHONE : AXIS_W;
+  const visibleCoins = isPhone ? VISIBLE_COINS_PHONE : VISIBLE_COINS_DESKTOP;
 
   const ordered = useMemo(
     () =>
@@ -110,17 +117,21 @@ export function CostBreakdownChart({
   })).filter((t) => t.value > 0);
   const grandTotal = totals.reduce((sum, t) => sum + t.value, 0);
 
-  // Per-coin width: in the inline chart, size it so VISIBLE_COINS fit the
-  // measured width (but never narrower than that when there are fewer coins, so
-  // a short history fills the plot). The expanded copy is handed this same unit
-  // (slotUnit) so coins keep their size and the wider dialog shows more of them.
+  // Per-coin width: in the inline chart, size it so visibleCoins fit the measured
+  // width (but never narrower than that when there are fewer coins, so a short
+  // history fills the plot). The expanded copy is handed this same unit (slotUnit)
+  // so coins keep their size and the wider dialog shows more of them.
   const count = shown.length;
-  const baseUnit = viewport / VISIBLE_COINS;
+  const baseUnit = viewport / visibleCoins;
   const unit = slotUnit ?? baseUnit;
   const slot = count > 0 ? Math.max(unit, viewport / count) : viewport;
   const plotW = count > 0 ? count * slot : viewport;
   const scrolls = plotW > viewport + 1; // more coins than fit the visible width
   const barW = Math.max(Math.min(slot * 0.82, 96), 1);
+  // Thumbnails crown the columns, so they must never be wider than the slot they
+  // sit in — on a phone the slot narrows to ~90px, below the 104px nominal size,
+  // and fixed avatars would overlap their neighbours.
+  const avatar = Math.max(Math.min(AVATAR, slot * 0.85), 1);
 
   // Default the horizontal scroll to the newest (right) end so the most recent
   // acquisitions are in view first; resets when the data or layout width changes.
@@ -133,8 +144,8 @@ export function CostBreakdownChart({
 
   // Fixed top band for the thumbnail crown + total label; the y-axis and plot
   // share these so their gridlines line up across the frozen-axis boundary.
-  const padTop = AVATAR + 22;
-  const avatarCy = AVATAR / 2 + 4;
+  const padTop = avatar + 22;
+  const avatarCy = avatar / 2 + 4;
   const innerH = chartH - padTop - PAD.bottom;
   const baseline = padTop + innerH;
 
@@ -217,14 +228,14 @@ export function CostBreakdownChart({
           {/* Frozen y-axis: cost labels stay visible while the plot scrolls. */}
           <svg
             className="chart-yaxis"
-            width={AXIS_W}
+            width={axisW}
             height={chartH}
             aria-hidden="true"
           >
             {ticks.map((t) => (
               <text
                 key={t}
-                x={AXIS_W - 6}
+                x={axisW - 6}
                 y={y(t) + 3}
                 textAnchor="end"
                 className="chart-axis"
@@ -234,7 +245,11 @@ export function CostBreakdownChart({
             ))}
           </svg>
 
-          <div className="chart-scroll" ref={scrollRef}>
+          {/* tabIndex: the plot scrolls horizontally, so it must be reachable by
+              keyboard to be scrollable by keyboard (WCAG 2.1.1; axe
+              scrollable-region-focusable). The <svg role="img"> inside carries the
+              description, so the region needs no label of its own. */}
+          <div className="chart-scroll" ref={scrollRef} tabIndex={0}>
             <svg
               width={plotW}
               height={chartH}
@@ -246,7 +261,7 @@ export function CostBreakdownChart({
                 {shown.map((e, i) =>
                   e.imageId ? (
                     <clipPath key={e.id} id={`cbc-clip-${clipUid}-${e.id}`}>
-                      <circle cx={slot * (i + 0.5)} cy={avatarCy} r={AVATAR / 2} />
+                      <circle cx={slot * (i + 0.5)} cy={avatarCy} r={avatar / 2} />
                     </clipPath>
                   ) : null,
                 )}
@@ -328,14 +343,14 @@ export function CostBreakdownChart({
                       <>
                         <image
                           href={`/api/coins/${e.id}/images/${e.imageId}?w=256`}
-                          x={cx - AVATAR / 2}
-                          y={avatarCy - AVATAR / 2}
-                          width={AVATAR}
-                          height={AVATAR}
+                          x={cx - avatar / 2}
+                          y={avatarCy - avatar / 2}
+                          width={avatar}
+                          height={avatar}
                           preserveAspectRatio="xMidYMid slice"
                           clipPath={`url(#cbc-clip-${clipUid}-${e.id})`}
                         />
-                        <circle cx={cx} cy={avatarCy} r={AVATAR / 2} className="bar-avatar-ring" />
+                        <circle cx={cx} cy={avatarCy} r={avatar / 2} className="bar-avatar-ring" />
                       </>
                     )}
                   </g>

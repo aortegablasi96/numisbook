@@ -205,7 +205,10 @@ function FacetPopover({
   }, [open]);
 
   return (
-    <div ref={ref} style={{ position: "relative" }}>
+    // .facet-wrap, not an inline style: at the phone stop it becomes full-width and
+    // the popover expands the bar in place instead of floating (DDR-006), which an
+    // inline `position: relative` would override.
+    <div ref={ref} className="facet-wrap">
       <button
         ref={triggerRef}
         type="button"

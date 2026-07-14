@@ -15,6 +15,7 @@ import {
   useCoinColumns,
   COIN_COLUMNS,
   COIN_COLUMNS_KEY,
+  type CoinSortKey,
   type CoinView,
   type ColumnKey,
   type SearchResult,
@@ -123,7 +124,7 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
     setForm(toForm(coin)); setEditingId(coin.id); setShowForm(true); setError(null);
   }
 
-  function handleSort(key: ColumnKey) {
+  function handleSort(key: CoinSortKey) {
     setFilters((f) => ({ ...f, ...nextSort(f, key) }));
   }
 
@@ -159,7 +160,12 @@ export function CoinsManager({ collectionId, initial }: { collectionId: string; 
       <div className="toolbar" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <CoinFilters filters={filters} facets={facets} onChange={setFilters} />
         <div className="row" style={{ gap: "0.5rem", flexShrink: 0 }}>
-          <ColumnPicker columns={COIN_COLUMNS} colState={colState} onToggle={toggleCol} onReorder={reorderCols} />
+          {/* Column visibility + drag-reorder are pointer affordances with no touch
+              equivalent, and the phone card form makes column order meaningless —
+              so the picker is desktop/tablet only (DDR-006). */}
+          <div className="hide-phone">
+            <ColumnPicker columns={COIN_COLUMNS} colState={colState} onToggle={toggleCol} onReorder={reorderCols} />
+          </div>
           <button type="button" className="btn-primary btn-sm"
             onClick={() => {
               if (showForm && !editingId) { resetForm(); }

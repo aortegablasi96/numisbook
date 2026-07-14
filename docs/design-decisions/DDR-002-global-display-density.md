@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted — **amended by DDR-006** (the scale is now desktop-only)
 
 ## Date
 
@@ -12,6 +12,17 @@ Accepted
 > supersede it. DDR-001's tokens, typography, spacing scale, and the exact px
 > geometry recorded across its addenda all stand unchanged. DDR-002 adds a single
 > global scale factor on top of that system.
+
+> **Amended by DDR-006 (2026-07-14).** The Decision below — `zoom: 0.75` on the
+> root, for every user on every screen — now applies to **desktop only**
+> (≥ 1025px). At and below the tablet breakpoint the app renders at 100%.
+> DDR-006 found that the root zoom puts media queries (evaluated in real viewport
+> px) and layout boxes (laid out in nominal px, 1.333× larger) into different
+> coordinate spaces, and that on a phone it shrank body text to ~12px and touch
+> targets below the WCAG 2.5.5 minimum. Everything below still governs the desktop
+> rendering unchanged, including the `zoom`-over-`transform` rationale and the
+> 0.75 factor; only its *scope* narrows. The `ZOOM = 0.75` constant named in the
+> 2026-07-04 addendum is now a viewport-dependent `currentZoom()` — see DDR-006 §4.
 
 ## Context
 
