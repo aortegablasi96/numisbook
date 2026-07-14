@@ -878,6 +878,40 @@ Both were found by rendering the page, not by the gates. Validated with **30 axe
 scans** (5 pages × 2 colour schemes × 3 viewports): zero violations. See
 `docs/testing/mobile-responsive-ui-testing-report.md`.
 
+## Refinements after the ship (2026-07-14)
+
+Four follow-ups, each from using the shipped result on a phone. All are recorded as
+addenda to DDR-006 rather than a new DDR — none of them changes the decision, they
+finish it.
+
+- **The filter bar starts collapsed** (#156). At phone width the bar — search, four
+  facet triggers, seven grade chips, two year bounds, all at 44px — was a full screen
+  tall, so the coin list opened below the fold. It now sits behind a `Filters` toggle
+  carrying the active-filter count. Collapse is CSS-driven, keyed on a `data-open`
+  attribute honoured only inside the phone media query, so no client breakpoint check
+  can drift from the stylesheet.
+- **One sort control, and "clear all" follows the bar** (#158). The sort `<select>`
+  had a separate direction button beside it — the phone's only way to reverse the
+  list. Direction folded into the select (each field appears once per direction, named
+  `A–Z` / `oldest first` by a `sortKind` on the column), and the button went. The
+  active-filter row split by nature: the **chips are a report** and stay visible when
+  the bar is shut; **"clear all" is a control** and hides with it.
+- **Sortability is not visibility** (#160, a bug). The select was built from the
+  *visible* sortable columns, so `Year` and `Category` — hidden by default, revealable
+  only through the desktop-only column picker — could not be sorted by at all on a
+  phone. The two constraints had closed on each other. What the list can be sorted by
+  is a property of the query (`COIN_SORT_BY`), not of what is on screen.
+- **A card describes the coin; a column describes the list** (#162). Inside a
+  collection a card read *Silver · Tetradrachm* where `/coins` read *Ancient Coins ·
+  Silver · Tetradrachm* — the same coin describing itself differently by route.
+  `CoinTable` gained an optional `cardLead`: a cell hidden at every stop but the phone
+  one, where it becomes the card's first attribute. It is deliberately **not** a
+  column — a table scoped to one collection would only repeat the name down every row.
+
+The thread running through all four: on a phone `ColState` is not choosing columns,
+it is choosing how much metadata rides under each card title. Controls that assume
+otherwise (the column picker; a sort select mirroring the headers) mislead there.
+
 ---
 
 # Major Architectural Decisions
