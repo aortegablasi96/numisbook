@@ -64,8 +64,11 @@ DDR-005, and `docs/testing/rework-filters-testing-report.md`). And the
 one three-stop breakpoint scale replaces eight ad-hoc ones, the 75% display density
 is now desktop-only, the coin list reads as cards, and the filter bar works on
 touch (see `history.md` Phase 18, DDR-006, and
-`docs/testing/mobile-responsive-ui-testing-report.md`). The active milestone is now
-**Public Demo Account**.
+`docs/testing/mobile-responsive-ui-testing-report.md`); four refinements from using
+it since then — a filter bar that starts collapsed, one sort control, every sortable
+field reachable, and cards that name their collection — are recorded as DDR-006
+addenda (`history.md` Phase 18, "Refinements after the ship"). The active milestone
+is now **Public Demo Account**.
 
 Primary objective:
 
@@ -165,7 +168,7 @@ leaving all call sites untouched.
 
 ## Accessibility checks in CI
 
-Promoted from the technical backlog. CI gates on lint + type-check + 263 unit
+Promoted from the technical backlog. CI gates on lint + type-check + 265 unit
 tests, and **none of them render a page** — `vitest.config.ts` runs
 `environment: "node"`, so there is no DOM. The Rework Filters milestone shipped
 two defects straight through that gate, both of which needed a browser to see:
