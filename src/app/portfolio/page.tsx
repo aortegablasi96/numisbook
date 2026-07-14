@@ -3,6 +3,7 @@ import { auth, signIn } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { setBaseCurrency } from "@/services/user.service";
 import { getPortfolioSummary } from "@/services/analytics.service";
+import { assertWritable } from "@/lib/demo";
 import { COMMON_CURRENCIES, formatMoney as money } from "@/lib/currencies";
 import { TrendChart } from "@/components/analytics/TrendChart";
 import { CostBreakdownChart } from "@/components/analytics/CostBreakdownChart";
@@ -16,11 +17,15 @@ function BaseCurrencySelect({
   selected: string | null;
   locale: Locale;
 }) {
+  // The base currency lives on the shared demo row, so a demo visitor changing it
+  // would re-price every other visitor's portfolio (ADR-016). The select is not
+  // rendered for a demo session; this refuses a forged submission.
   async function update(formData: FormData) {
     "use server";
     const session = await auth();
     const user = await resolveCurrentUser(session);
     if (!user) return;
+    assertWritable(user);
     await setBaseCurrency(user.id, String(formData.get("baseCurrency") ?? ""));
     revalidatePath("/portfolio");
   }
@@ -77,9 +82,14 @@ export default async function PortfolioPage() {
     <main className="stack portfolio-page">
       <h1 style={{ margin: 0 }}>{t(locale, "nav.portfolio")}</h1>
 
+      {/* The base currency lives on the shared demo row, so changing it would
+          re-price every other visitor's portfolio. Not offered in the demo
+          (ADR-016) — the Server Action refuses it too. */}
       {summary.pricedCoins === 0 || !baseCurrency ? (
         <>
-          <BaseCurrencySelect selected={user.baseCurrency} locale={locale} />
+          {!user.isDemo && (
+            <BaseCurrencySelect selected={user.baseCurrency} locale={locale} />
+          )}
           <p className="empty">{t(locale, "portfolio.empty")}</p>
         </>
       ) : (
@@ -112,7 +122,9 @@ export default async function PortfolioPage() {
                   )}`}
               </span>
             </div>
-            <BaseCurrencySelect selected={user.baseCurrency} locale={locale} />
+            {!user.isDemo && (
+              <BaseCurrencySelect selected={user.baseCurrency} locale={locale} />
+            )}
           </section>
 
           <div className="analytics-grid">

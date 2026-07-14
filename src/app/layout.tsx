@@ -7,6 +7,8 @@ import { auth } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { AssistantWidget } from "@/components/assistant/AssistantWidget";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
+import { DemoProvider } from "@/components/demo/DemoProvider";
+import { DemoBanner } from "@/components/demo/DemoBanner";
 import { getMessages, t } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { getRequestTheme } from "@/lib/theme/server";
@@ -65,14 +67,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <body>
         <LocaleProvider locale={locale} messages={messages}>
-          <a href="#main-content" className="skip-link">
-            {t(locale, "skip.toContent")}
-          </a>
-          <SiteHeader />
-          <div id="main-content" tabIndex={-1} className="container">
-            {children}
-          </div>
-          {user ? <AssistantWidget /> : null}
+          <DemoProvider isDemo={user?.isDemo ?? false}>
+            <a href="#main-content" className="skip-link">
+              {t(locale, "skip.toContent")}
+            </a>
+            {user?.isDemo && <DemoBanner locale={locale} />}
+            <SiteHeader />
+            <div id="main-content" tabIndex={-1} className="container">
+              {children}
+            </div>
+            {user ? <AssistantWidget /> : null}
+          </DemoProvider>
         </LocaleProvider>
       </body>
     </html>

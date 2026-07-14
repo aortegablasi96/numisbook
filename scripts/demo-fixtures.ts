@@ -1,0 +1,518 @@
+// The demo collector's collection (ADR-016).
+//
+// This is a shop window: it is the first and possibly only NumisBook a visitor
+// ever sees, so it is built to exercise every surface rather than to be minimal.
+// Concretely, it deliberately spans
+//
+//   * three collections, so the collections grid and the collection filter mean
+//     something;
+//   * gold and silver, seven grades, BC and AD years, and several mints, so the
+//     facet filters have something to filter;
+//   * three price currencies (EUR / GBP / USD) against an EUR base currency, so
+//     the portfolio's FX conversion is visibly doing work;
+//   * multi-point valuation histories, so the trend chart is a curve and not a
+//     flat line;
+//   * obverse/reverse image pairs, so the coin carousel has a second slide.
+//
+// Photographs are public-domain / CC0 museum images — see demo-assets/LICENSES.md.
+
+export type DemoValuation = {
+  amount: number;
+  currency: string;
+  valuedAt: string;
+  source?: string;
+  sourceUrl?: string;
+};
+
+export type DemoCoin = {
+  // Coins have no name column: the title is derived from these attributes by
+  // formatCoinTitle (ADR-006).
+  attributes: Record<string, unknown>;
+  /** Files in demo-assets/, in carousel order (obverse first). */
+  images?: string[];
+  /** Auction invoice: a generated PDF receipt. */
+  invoice?: { filename: string; house: string; lot: string; date: string; total: string };
+  valuations?: DemoValuation[];
+};
+
+export type DemoCollection = { name: string; coins: DemoCoin[] };
+
+export const DEMO_BASE_CURRENCY = "EUR";
+
+export const DEMO_COLLECTIONS: DemoCollection[] = [
+  {
+    name: "Roman & Greek Antiquity",
+    coins: [
+      {
+        attributes: {
+          issuingAuthority: "Hadrian",
+          category: "Roman Imperial",
+          yearFrom: 125,
+          yearTo: 128,
+          denomination: "Aureus",
+          mint: "Rome",
+          metal: "Gold",
+          grade: "EF",
+          weight: 7.21,
+          diameter: 19.5,
+          obverseDescription:
+            "HADRIANVS AVGVSTVS. Laureate bust of Hadrian right, drapery on far shoulder.",
+          reverseDescription:
+            "COS III. Roma seated left on cuirass, holding Victory and spear.",
+          catalogueReferences: "RIC II 185; Calicó 1234",
+          pedigree: "Ex Hess-Leu 1962, lot 412",
+          auctionHouse: "Numismatica Ars Classica",
+          auctionName: "Auction 141",
+          auctionLot: "212",
+          auctionDate: "2024-05-18",
+          hammerPrice: 18500,
+          auctionPremium: 3700,
+          shippingCost: 85,
+          taxCost: 1295,
+          priceCurrency: "EUR",
+        },
+        images: ["hadrian-aureus.jpg"],
+        invoice: {
+          filename: "nac-141-lot-212.pdf",
+          house: "Numismatica Ars Classica",
+          lot: "212",
+          date: "2024-05-18",
+          total: "EUR 23,580.00",
+        },
+        valuations: [
+          { amount: 22000, currency: "EUR", valuedAt: "2024-06-01", source: "Dealer appraisal" },
+          { amount: 24500, currency: "EUR", valuedAt: "2025-01-15", source: "CoinArchives comparable" },
+          { amount: 26800, currency: "EUR", valuedAt: "2025-09-20", source: "Dealer appraisal" },
+          { amount: 28400, currency: "EUR", valuedAt: "2026-04-12", source: "CoinArchives comparable" },
+        ],
+      },
+      {
+        attributes: {
+          issuingAuthority: "Alexander III the Great",
+          category: "Greek",
+          yearFrom: -336,
+          yearTo: -323,
+          denomination: "Tetradrachm",
+          mint: "Amphipolis",
+          metal: "Silver",
+          grade: "VF",
+          weight: 17.14,
+          diameter: 25,
+          obverseDescription: "Head of Herakles right, wearing lion skin headdress.",
+          reverseDescription:
+            "ΑΛΕΞΑΝΔΡΟΥ. Zeus enthroned left, holding eagle and sceptre.",
+          catalogueReferences: "Price 79; Müller ract. 122",
+          auctionHouse: "Roma Numismatics",
+          auctionName: "Auction XXVII",
+          auctionLot: "486",
+          auctionDate: "2023-09-30",
+          hammerPrice: 1400,
+          auctionPremium: 280,
+          shippingCost: 45,
+          taxCost: 98,
+          priceCurrency: "EUR",
+        },
+        images: ["alexander-tetradrachm.jpg"],
+        valuations: [
+          { amount: 1650, currency: "EUR", valuedAt: "2024-02-10", source: "Dealer appraisal" },
+          { amount: 1780, currency: "EUR", valuedAt: "2025-03-05", source: "CoinArchives comparable" },
+          { amount: 1920, currency: "EUR", valuedAt: "2026-02-28", source: "Dealer appraisal" },
+        ],
+      },
+      {
+        attributes: {
+          issuingAuthority: "Vologases III",
+          category: "Parthian",
+          yearFrom: 105,
+          yearTo: 147,
+          denomination: "Tetradrachm",
+          mint: "Seleucia on the Tigris",
+          metal: "Silver",
+          grade: "F",
+          weight: 13.6,
+          diameter: 27,
+          obverseDescription: "Diademed bust of Vologases III left, wearing tiara.",
+          reverseDescription: "King enthroned right, receiving diadem from Tyche.",
+          catalogueReferences: "Sellwood 78.1",
+          auctionHouse: "Savoca Coins",
+          auctionName: "Blue Auction 92",
+          auctionLot: "118",
+          auctionDate: "2025-02-09",
+          hammerPrice: 240,
+          auctionPremium: 48,
+          shippingCost: 25,
+          taxCost: 17,
+          priceCurrency: "EUR",
+        },
+        images: ["greek-tetradrachm.jpg"],
+        valuations: [
+          { amount: 300, currency: "EUR", valuedAt: "2025-06-14", source: "Dealer appraisal" },
+          { amount: 340, currency: "EUR", valuedAt: "2026-05-02", source: "Dealer appraisal" },
+        ],
+      },
+      {
+        attributes: {
+          issuingAuthority: "Vologases IV",
+          category: "Parthian",
+          yearFrom: 147,
+          yearTo: 191,
+          denomination: "Tetradrachm",
+          mint: "Seleucia on the Tigris",
+          metal: "Silver",
+          grade: "VG",
+          weight: 12.9,
+          diameter: 26,
+          obverseDescription: "Diademed bust of Vologases IV left.",
+          reverseDescription: "King enthroned right; Greek legend, largely off flan.",
+          catalogueReferences: "Sellwood 84.15",
+          observations:
+            "Bought as part of a small group lot; the flan is short but the portrait is clear.",
+          auctionHouse: "Savoca Coins",
+          auctionName: "Blue Auction 92",
+          auctionLot: "119",
+          auctionDate: "2025-02-09",
+          hammerPrice: 130,
+          auctionPremium: 26,
+          shippingCost: 0,
+          taxCost: 9,
+          priceCurrency: "EUR",
+        },
+        images: ["greek-tetradrachm-2.jpg"],
+        valuations: [
+          { amount: 165, currency: "EUR", valuedAt: "2026-05-02", source: "Dealer appraisal" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "British Gold",
+    coins: [
+      {
+        attributes: {
+          issuingAuthority: "Victoria",
+          category: "British",
+          yearFrom: 1839,
+          yearTo: 1839,
+          denomination: "Sovereign",
+          mint: "Royal Mint, London",
+          metal: "Gold",
+          grade: "AU",
+          weight: 7.98,
+          diameter: 22.05,
+          obverseDescription: "VICTORIA DEI GRATIA. Young head left, hair in bun.",
+          reverseDescription: "BRITANNIARUM REGINA FID DEF. Crowned shield within wreath.",
+          catalogueReferences: "Marsh 22; S.3852",
+          pedigree: "Ex Spink 2019",
+          auctionHouse: "Spink",
+          auctionName: "The Numismatic Collector's Series",
+          auctionLot: "88",
+          auctionDate: "2024-11-06",
+          hammerPrice: 3200,
+          auctionPremium: 640,
+          shippingCost: 30,
+          taxCost: 128,
+          priceCurrency: "GBP",
+        },
+        images: ["victoria-sovereign.jpg"],
+        invoice: {
+          filename: "spink-2024-lot-88.pdf",
+          house: "Spink",
+          lot: "88",
+          date: "2024-11-06",
+          total: "GBP 3,998.00",
+        },
+        valuations: [
+          { amount: 3900, currency: "GBP", valuedAt: "2025-01-20", source: "Dealer appraisal" },
+          { amount: 4250, currency: "GBP", valuedAt: "2025-08-11", source: "Auction comparable" },
+          { amount: 4600, currency: "GBP", valuedAt: "2026-06-01", source: "Dealer appraisal" },
+        ],
+      },
+      {
+        attributes: {
+          issuingAuthority: "Victoria",
+          category: "British",
+          yearFrom: 1893,
+          yearTo: 1893,
+          denomination: "Double Sovereign",
+          mint: "Royal Mint, London",
+          metal: "Gold",
+          grade: "MS",
+          weight: 15.98,
+          diameter: 28.4,
+          obverseDescription:
+            "VICTORIA DEI GRA BRITT REGINA FID DEF IND IMP. Veiled (old) head left.",
+          reverseDescription: "St George slaying the dragon.",
+          catalogueReferences: "Marsh 146; S.3873",
+          observations: "Proof striking; light hairlines in the field under raking light.",
+          auctionHouse: "Baldwin's",
+          auctionName: "Autumn Argentum",
+          auctionLot: "301",
+          auctionDate: "2025-10-14",
+          hammerPrice: 5400,
+          auctionPremium: 1080,
+          shippingCost: 35,
+          taxCost: 216,
+          priceCurrency: "GBP",
+        },
+        images: ["victoria-double-sovereign.jpg"],
+        valuations: [
+          { amount: 6800, currency: "GBP", valuedAt: "2026-01-09", source: "Dealer appraisal" },
+          { amount: 7150, currency: "GBP", valuedAt: "2026-06-18", source: "Auction comparable" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "United States Gold & Silver",
+    coins: [
+      {
+        attributes: {
+          issuingAuthority: "United States",
+          category: "US Federal",
+          yearFrom: 1795,
+          yearTo: 1795,
+          denomination: "$5 Half Eagle (Turban Head)",
+          mint: "Philadelphia",
+          metal: "Gold",
+          grade: "AU",
+          weight: 8.75,
+          diameter: 25,
+          obverseDescription: "LIBERTY. Capped bust right, 15 stars.",
+          reverseDescription: "Small eagle perched on palm branch, wreath in beak.",
+          catalogueReferences: "BD-3; Breen 6412",
+          pedigree: "Ex Eliasberg (privately)",
+          auctionHouse: "Heritage Auctions",
+          auctionName: "US Coins Signature Sale",
+          auctionLot: "3140",
+          auctionDate: "2024-01-11",
+          hammerPrice: 42000,
+          auctionPremium: 8400,
+          shippingCost: 120,
+          taxCost: 0,
+          priceCurrency: "USD",
+        },
+        images: [
+          "turban-head-half-eagle-obverse.jpg",
+          "turban-head-half-eagle-reverse.jpg",
+        ],
+        invoice: {
+          filename: "heritage-2024-lot-3140.pdf",
+          house: "Heritage Auctions",
+          lot: "3140",
+          date: "2024-01-11",
+          total: "USD 50,520.00",
+        },
+        valuations: [
+          { amount: 52000, currency: "USD", valuedAt: "2024-03-02", source: "PCGS price guide" },
+          { amount: 55500, currency: "USD", valuedAt: "2024-12-19", source: "Auction comparable" },
+          { amount: 58000, currency: "USD", valuedAt: "2025-07-30", source: "PCGS price guide" },
+          { amount: 61500, currency: "USD", valuedAt: "2026-05-22", source: "Auction comparable" },
+        ],
+      },
+      {
+        attributes: {
+          issuingAuthority: "United States",
+          category: "US Federal",
+          yearFrom: 1795,
+          yearTo: 1795,
+          denomination: "$10 Eagle (Turban Head)",
+          mint: "Philadelphia",
+          metal: "Gold",
+          grade: "EF",
+          weight: 17.5,
+          diameter: 33,
+          obverseDescription: "LIBERTY. Capped bust right, 15 stars.",
+          reverseDescription: "Small eagle on palm branch.",
+          catalogueReferences: "BD-1; Taraszka 1",
+          auctionHouse: "Stack's Bowers",
+          auctionName: "Rarities Night",
+          auctionLot: "2077",
+          auctionDate: "2025-03-27",
+          hammerPrice: 61000,
+          auctionPremium: 12200,
+          shippingCost: 150,
+          taxCost: 0,
+          priceCurrency: "USD",
+        },
+        images: ["turban-head-eagle.jpg"],
+        valuations: [
+          { amount: 74000, currency: "USD", valuedAt: "2025-05-15", source: "PCGS price guide" },
+          { amount: 79500, currency: "USD", valuedAt: "2026-03-08", source: "Auction comparable" },
+        ],
+      },
+      {
+        attributes: {
+          issuingAuthority: "United States",
+          category: "US Federal",
+          yearFrom: 1849,
+          yearTo: 1849,
+          denomination: "$20 Double Eagle (Liberty Head)",
+          mint: "Philadelphia",
+          metal: "Gold",
+          grade: "MS",
+          weight: 33.44,
+          diameter: 34,
+          obverseDescription: "LIBERTY. Coronet head left, 13 stars.",
+          reverseDescription: "TWENTY D. Heraldic eagle with shield, rays and stars above.",
+          catalogueReferences: "Judd-117",
+          observations:
+            "First-year Liberty Head design. Struck as a pattern; provenance documented from the 1930s.",
+          auctionHouse: "Heritage Auctions",
+          auctionName: "US Coins Signature Sale",
+          auctionLot: "4501",
+          auctionDate: "2025-08-14",
+          hammerPrice: 96000,
+          auctionPremium: 19200,
+          shippingCost: 200,
+          taxCost: 0,
+          priceCurrency: "USD",
+        },
+        images: [
+          "liberty-double-eagle-obverse.jpg",
+          "liberty-double-eagle-reverse.jpg",
+        ],
+        invoice: {
+          filename: "heritage-2025-lot-4501.pdf",
+          house: "Heritage Auctions",
+          lot: "4501",
+          date: "2025-08-14",
+          total: "USD 115,400.00",
+        },
+        valuations: [
+          { amount: 118000, currency: "USD", valuedAt: "2025-10-01", source: "Dealer appraisal" },
+          { amount: 126000, currency: "USD", valuedAt: "2026-06-11", source: "Auction comparable" },
+        ],
+      },
+      {
+        attributes: {
+          issuingAuthority: "United States",
+          category: "US Federal",
+          yearFrom: 1907,
+          yearTo: 1907,
+          denomination: "$20 Double Eagle (Saint-Gaudens, High Relief)",
+          mint: "Philadelphia",
+          metal: "Gold",
+          grade: "MS",
+          weight: 33.44,
+          diameter: 34,
+          obverseDescription:
+            "LIBERTY. Liberty striding forward holding torch and olive branch, Capitol at lower left. MCMVII in Roman numerals.",
+          reverseDescription: "Eagle in flight above a radiant sun.",
+          catalogueReferences: "Fr-183; Breen 7358",
+          observations: "Roman numerals, wire rim. The design Saint-Gaudens intended.",
+          auctionHouse: "Stack's Bowers",
+          auctionName: "Rarities Night",
+          auctionLot: "3011",
+          auctionDate: "2026-01-22",
+          hammerPrice: 21000,
+          auctionPremium: 4200,
+          shippingCost: 150,
+          taxCost: 0,
+          priceCurrency: "USD",
+        },
+        images: ["double-eagle-1907.jpg"],
+        valuations: [
+          { amount: 26500, currency: "USD", valuedAt: "2026-02-05", source: "PCGS price guide" },
+          { amount: 28900, currency: "USD", valuedAt: "2026-06-30", source: "Auction comparable" },
+        ],
+      },
+      {
+        attributes: {
+          issuingAuthority: "United States",
+          category: "US Federal",
+          yearFrom: 1907,
+          yearTo: 1907,
+          denomination: "$10 Eagle (Indian Head)",
+          mint: "Philadelphia",
+          metal: "Gold",
+          grade: "MS",
+          weight: 16.72,
+          diameter: 27,
+          obverseDescription:
+            "Liberty wearing a Native American war bonnet, LIBERTY on the headband.",
+          reverseDescription: "Standing eagle left on a bundle of arrows with an olive branch.",
+          catalogueReferences: "Fr-166; Breen 7104",
+          observations: "No-motto first-year issue, periods between the legend.",
+          auctionHouse: "Stack's Bowers",
+          auctionName: "Rarities Night",
+          auctionLot: "3018",
+          auctionDate: "2026-01-22",
+          hammerPrice: 14500,
+          auctionPremium: 2900,
+          shippingCost: 150,
+          taxCost: 0,
+          priceCurrency: "USD",
+        },
+        images: ["indian-head-eagle-obverse.jpg", "indian-head-eagle-reverse.jpg"],
+        valuations: [
+          { amount: 18200, currency: "USD", valuedAt: "2026-02-05", source: "PCGS price guide" },
+          { amount: 19400, currency: "USD", valuedAt: "2026-06-30", source: "Auction comparable" },
+        ],
+      },
+      {
+        attributes: {
+          issuingAuthority: "United States",
+          category: "US Federal",
+          yearFrom: 1879,
+          yearTo: 1879,
+          denomination: "Morgan Dollar",
+          mint: "San Francisco",
+          metal: "Silver",
+          grade: "MS",
+          weight: 26.73,
+          diameter: 38.1,
+          obverseDescription: "E PLURIBUS UNUM. Liberty head left wearing Phrygian cap.",
+          reverseDescription: "Eagle with outstretched wings clutching arrows and olive branch.",
+          catalogueReferences: "VAM-1; Breen 5591",
+          observations: "Blast white, deeply frosted devices.",
+          auctionHouse: "Great Collections",
+          auctionName: "Weekly Auction",
+          auctionLot: "1194522",
+          auctionDate: "2025-06-08",
+          hammerPrice: 640,
+          auctionPremium: 64,
+          shippingCost: 18,
+          taxCost: 0,
+          priceCurrency: "USD",
+        },
+        images: ["morgan-dollar-obverse.jpg", "morgan-dollar-reverse.jpg"],
+        valuations: [
+          { amount: 780, currency: "USD", valuedAt: "2025-09-12", source: "PCGS price guide" },
+          { amount: 845, currency: "USD", valuedAt: "2026-06-20", source: "PCGS price guide" },
+        ],
+      },
+      {
+        attributes: {
+          issuingAuthority: "United States",
+          category: "US Federal",
+          yearFrom: 1921,
+          yearTo: 1921,
+          denomination: "Peace Dollar",
+          mint: "Philadelphia",
+          metal: "Silver",
+          grade: "VF",
+          weight: 26.73,
+          diameter: 38.1,
+          obverseDescription: "LIBERTY. Head of Liberty with radiate crown.",
+          reverseDescription: "PEACE. Eagle at rest clutching an olive branch.",
+          catalogueReferences: "VAM-1B; Breen 5703",
+          observations: "High relief first-year issue; the reverse shows honest circulation wear.",
+          auctionHouse: "Great Collections",
+          auctionName: "Weekly Auction",
+          auctionLot: "1201044",
+          auctionDate: "2025-11-16",
+          hammerPrice: 310,
+          auctionPremium: 31,
+          shippingCost: 18,
+          taxCost: 0,
+          priceCurrency: "USD",
+        },
+        images: ["peace-dollar.jpg"],
+        valuations: [
+          { amount: 395, currency: "USD", valuedAt: "2026-01-30", source: "PCGS price guide" },
+          { amount: 430, currency: "USD", valuedAt: "2026-06-20", source: "Auction comparable" },
+        ],
+      },
+    ],
+  },
+];

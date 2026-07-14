@@ -301,4 +301,18 @@ export const de: Partial<Messages> = {
   "chart.seg.tax": "Steuer",
   "chart.seg.shipping": "Versand",
   "chart.seg.unsplit": "Nur Endpreis",
+
+  // Public demo account (ADR-016, DDR-007).
+  "demo.badge":
+    "Demo",
+  "demo.banner":
+    "Sie sehen eine Demo-Sammlung – Änderungen sind deaktiviert.",
+  "demo.banner.cta":
+    "Anmelden und eigene Sammlung anlegen",
+  "demo.tryIt":
+    "Demo ausprobieren",
+  "demo.tryIt.hint":
+    "Keine Anmeldung nötig. Sehen Sie sich zuerst eine echte Sammlung an.",
+  "demo.settings.note":
+    "Dies ist das schreibgeschützte Demo-Konto. Sprache und Design richten sich weiterhin nach Ihrem Browser, Profiländerungen und die Kontolöschung sind jedoch deaktiviert. Melden Sie sich mit Google an, um eine eigene Sammlung anzulegen.",
 };

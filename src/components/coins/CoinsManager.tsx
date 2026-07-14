@@ -7,6 +7,7 @@ import { COIN_GRADES } from "@/lib/validation/coin";
 import { formatCoinTitle } from "@/lib/coin-format";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { useT } from "@/components/i18n/LocaleProvider";
+import { useIsDemo } from "@/components/demo/DemoProvider";
 import type { MessageKey } from "@/lib/i18n";
 import { CoinFilters, EMPTY_FACETS, type CoinFacets } from "./CoinFilters";
 import {
@@ -82,6 +83,9 @@ export function CoinsManager({
   initial: SearchResult;
 }) {
   const t = useT();
+  // Read-only demo tenant: no add form, no per-row edit/delete (DDR-007). The
+  // API refuses these writes anyway (ADR-016) — this just stops offering them.
+  const isDemo = useIsDemo();
   const [coins, setCoins] = useState<CoinView[]>(initial.coins);
   const [total, setTotal] = useState(initial.total);
   const [page, setPage] = useState(initial.page);
@@ -180,13 +184,15 @@ export function CoinsManager({
           <div className="hide-phone">
             <ColumnPicker columns={COIN_COLUMNS} colState={colState} onToggle={toggleCol} onReorder={reorderCols} />
           </div>
-          <button type="button" className="btn-primary btn-sm"
-            onClick={() => {
-              if (showForm && !editingId) { resetForm(); }
-              else { setForm(EMPTY_FORM); setEditingId(null); setShowForm(true); setError(null); }
-            }}>
-            {showForm && !editingId ? t("action.cancel") : t("coins.add")}
-          </button>
+          {!isDemo && (
+            <button type="button" className="btn-primary btn-sm"
+              onClick={() => {
+                if (showForm && !editingId) { resetForm(); }
+                else { setForm(EMPTY_FORM); setEditingId(null); setShowForm(true); setError(null); }
+              }}>
+              {showForm && !editingId ? t("action.cancel") : t("coins.add")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -258,19 +264,23 @@ export function CoinsManager({
           // repeat one value down every row (DDR-006). Plain text, not a link: it
           // names the page you are already on.
           cardLead={{ labelKey: "field.collection", render: () => collectionName }}
-          renderActions={(coin) => (
-            <span className="row row-actions" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
-              <button type="button" className="btn-sm btn-icon" onClick={() => startEdit(coin)} disabled={busy}
-                aria-label={t("coins.editAria")} title={t("action.edit")}>
-                <IconPencil />
-              </button>
-              <ConfirmButton className="btn-sm btn-danger btn-icon" disabled={busy} title={t("action.delete")}
-                message={t("coins.deleteConfirm", { title: formatCoinTitle(coin) })}
-                onConfirm={() => handleDelete(coin)}>
-                <IconTrash /><span className="sr-only">{t("coins.deleteSr")}</span>
-              </ConfirmButton>
-            </span>
-          )}
+          renderActions={
+            isDemo
+              ? undefined
+              : (coin) => (
+                  <span className="row row-actions" style={{ gap: "0.4rem", justifyContent: "flex-end" }}>
+                    <button type="button" className="btn-sm btn-icon" onClick={() => startEdit(coin)} disabled={busy}
+                      aria-label={t("coins.editAria")} title={t("action.edit")}>
+                      <IconPencil />
+                    </button>
+                    <ConfirmButton className="btn-sm btn-danger btn-icon" disabled={busy} title={t("action.delete")}
+                      message={t("coins.deleteConfirm", { title: formatCoinTitle(coin) })}
+                      onConfirm={() => handleDelete(coin)}>
+                      <IconTrash /><span className="sr-only">{t("coins.deleteSr")}</span>
+                    </ConfirmButton>
+                  </span>
+                )
+          }
         />
       )}
 

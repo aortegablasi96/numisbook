@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { useT } from "@/components/i18n/LocaleProvider";
+import { useIsDemo } from "@/components/demo/DemoProvider";
 
 // Client-side shape of a valuation. `amount` is numeric(12,2), serialized as a
 // string; the timestamps arrive as ISO strings.
@@ -47,6 +48,7 @@ export function ValuationsManager({
   defaultCurrency?: string;
 }) {
   const t = useT();
+  const isDemo = useIsDemo();
   const [valuations, setValuations] =
     useState<ValuationView[]>(initialValuations);
   const [amount, setAmount] = useState("");
@@ -109,6 +111,9 @@ export function ValuationsManager({
         )}
       </div>
 
+      {/* The demo keeps the valuation *history* — it is half the point of the
+          product — but not the form that would append to everyone's copy of it. */}
+      {!isDemo && (
       <form onSubmit={handleSubmit} className="row" style={{ alignItems: "flex-end" }}>
         <label>
           {t("valuations.amount")}
@@ -165,6 +170,7 @@ export function ValuationsManager({
           {t("action.record")}
         </button>
       </form>
+      )}
 
       {error && <p className="alert">{error}</p>}
 

@@ -301,4 +301,18 @@ export const fr: Partial<Messages> = {
   "chart.seg.tax": "Taxe",
   "chart.seg.shipping": "Port",
   "chart.seg.unsplit": "Prix final seul",
+
+  // Public demo account (ADR-016, DDR-007).
+  "demo.badge":
+    "Démo",
+  "demo.banner":
+    "Vous explorez une collection de démonstration — les modifications sont désactivées.",
+  "demo.banner.cta":
+    "Connectez-vous pour créer la vôtre",
+  "demo.tryIt":
+    "Essayer la démo",
+  "demo.tryIt.hint":
+    "Aucune inscription. Explorez d'abord une vraie collection.",
+  "demo.settings.note":
+    "Ceci est le compte de démonstration, en lecture seule. La langue et le thème suivent toujours votre navigateur, mais les modifications du profil et la suppression du compte sont désactivées. Connectez-vous avec Google pour créer votre propre collection.",
 };

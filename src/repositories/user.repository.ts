@@ -26,6 +26,36 @@ export const userRepository = {
     return row ?? null;
   },
 
+  /**
+   * The public demo tenant, or null when none is seeded (ADR-016). A partial
+   * unique index guarantees there is at most one. This is the only way the demo
+   * user's id is ever obtained — it is never accepted from client input.
+   */
+  async findDemo(): Promise<User | null> {
+    const [row] = await db
+      .select()
+      .from(users)
+      .where(eq(users.isDemo, true))
+      .limit(1);
+    return row ?? null;
+  },
+
+  /**
+   * Create the demo tenant. Used only by the seed script — the demo user has no
+   * OAuth account, so the Auth.js adapter never creates it (ADR-016).
+   */
+  async createDemo(user: {
+    email: string;
+    name: string;
+    baseCurrency: string;
+  }): Promise<User> {
+    const [row] = await db
+      .insert(users)
+      .values({ ...user, isDemo: true })
+      .returning();
+    return row;
+  },
+
   /** Update the user's display name. */
   async updateName(id: string, name: string): Promise<void> {
     await db.update(users).set({ name }).where(eq(users.id, id));

@@ -2949,3 +2949,87 @@ dialog.modal.modal-chart {
   }
 }
 
+
+/* ---------------------------------------------------------------------------
+   Public demo account (DDR-007)
+
+   Two pieces: the entry point on the signed-out home page, and a persistent bar
+   that marks every page of a demo session. The bar is deliberately *not*
+   dismissible — it is the only thing explaining why the create/edit/delete
+   controls are absent, so a visitor who closed it would be left thinking the
+   product simply lacks them.
+   --------------------------------------------------------------------------- */
+
+.demo-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+/* Secondary to the gold Google button: this is the on-ramp, not the goal. */
+.btn-demo {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+}
+
+.btn-demo:hover {
+  background: var(--accent-weak);
+}
+
+.demo-entry-hint {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  padding: 0.5rem var(--space-4);
+  background: var(--accent-weak);
+  border-bottom: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+}
+
+.demo-banner-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+/* The badge already sits on --accent-weak here, so it would tint twice. */
+.demo-banner-badge {
+  background: transparent;
+}
+
+.demo-banner-cta {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.demo-banner-cta:hover {
+  text-decoration: none;
+}
+
+/* On a phone the bar stacks; keep it compact so it does not eat the fold. */
+@media (max-width: 640px) {
+  .demo-banner {
+    justify-content: flex-start;
+    padding: 0.5rem var(--space-3);
+    font-size: 0.85rem;
+  }
+}

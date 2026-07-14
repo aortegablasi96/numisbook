@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getCoinInvoice, removeCoinInvoice } from "@/services/coinInvoice.service";
-import { currentUser, errorResponse, unauthorized } from "../../../../_lib";
+import {
+  assertWritable,
+  currentUser,
+  errorResponse,
+  unauthorized,
+} from "../../../../_lib";
 
 type Params = { params: Promise<{ id: string; invoiceId: string }> };
 
@@ -38,6 +43,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   try {
     const user = await currentUser();
     if (!user) return unauthorized();
+    assertWritable(user);
     const { id, invoiceId } = await params;
     await removeCoinInvoice(user.id, id, invoiceId);
     return new NextResponse(null, { status: 204 });

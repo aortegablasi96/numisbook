@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { listValuations, recordValuation } from "@/services/valuation.service";
-import { currentUser, errorResponse, unauthorized } from "../../../_lib";
+import {
+  assertWritable,
+  currentUser,
+  errorResponse,
+  unauthorized,
+} from "../../../_lib";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -20,6 +25,7 @@ export async function POST(request: Request, { params }: Params) {
   try {
     const user = await currentUser();
     if (!user) return unauthorized();
+    assertWritable(user);
     const { id } = await params;
     const valuation = await recordValuation(user.id, id, await request.json());
     return NextResponse.json({ valuation }, { status: 201 });

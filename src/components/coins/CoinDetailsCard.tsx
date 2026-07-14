@@ -7,6 +7,7 @@ import { formatCoinTitle, formatYearRange } from "@/lib/coin-format";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { IconPencil } from "@/components/ui/icons";
 import { useT } from "@/components/i18n/LocaleProvider";
+import { useIsDemo } from "@/components/demo/DemoProvider";
 import type { MessageKey } from "@/lib/i18n";
 
 type Translate = ReturnType<typeof useT>;
@@ -170,6 +171,7 @@ export function CoinDetailsCard({
   children?: React.ReactNode;
 }) {
   const t = useT();
+  const isDemo = useIsDemo();
   const [current, setCurrent] = useState<CoinFields>(coin);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -379,16 +381,18 @@ export function CoinDetailsCard({
         <>
           <div className="head-row">
             <h1 className="coin-detail-title">{title}</h1>
-            <button
-              type="button"
-              className="btn-sm btn-icon coin-edit-btn"
-              onClick={startEdit}
-              style={{ flexShrink: 0 }}
-              aria-label={t("coins.editAria")}
-              title={t("action.edit")}
-            >
-              <IconPencil size={20} />
-            </button>
+            {!isDemo && (
+              <button
+                type="button"
+                className="btn-sm btn-icon coin-edit-btn"
+                onClick={startEdit}
+                style={{ flexShrink: 0 }}
+                aria-label={t("coins.editAria")}
+                title={t("action.edit")}
+              >
+                <IconPencil size={20} />
+              </button>
+            )}
           </div>
           {attributes.length > 0 && (
             <dl className="attr-grid">

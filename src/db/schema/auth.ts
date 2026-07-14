@@ -5,6 +5,7 @@ import {
   integer,
   timestamp,
   primaryKey,
+  index,
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
 
@@ -36,13 +37,22 @@ export const accounts = pgTable(
   ],
 );
 
-export const sessions = pgTable("sessions", {
-  sessionToken: text("session_token").primaryKey(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expires: timestamp("expires", { withTimezone: true }).notNull(),
-});
+export const sessions = pgTable(
+  "sessions",
+  {
+    sessionToken: text("session_token").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expires: timestamp("expires", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    // Sessions are read by token (the primary key), but the demo tenant is the
+    // first user to accumulate many rows here — every demo visitor mints one —
+    // and its expired-session sweep looks them up by user (ADR-016).
+    index("sessions_user_id_idx").on(table.userId),
+  ],
+);
 
 export const verificationTokens = pgTable(
   "verification_tokens",
