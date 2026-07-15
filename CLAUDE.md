@@ -43,6 +43,7 @@ npm run db:generate    # generate a SQL migration from src/db/schema into drizzl
 npm run db:migrate     # apply pending migrations
 npm run db:push        # push schema directly to the DB (dev convenience)
 npm run db:studio      # open Drizzle Studio
+npm run db:export-demo # regenerate demo fixtures + assets from the source demo account
 npm run db:seed-demo   # seed the read-only public demo tenant (ADR-016)
 ```
 
