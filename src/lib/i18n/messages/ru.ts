@@ -221,7 +221,7 @@ export const ru: Partial<Messages> = {
   "coinImage.removeConfirm": "Удалить это фото?",
   "coinImage.removeError": "Не удалось удалить изображение.",
 
-  "invoices.title": "Счета",
+  "invoices.title": "Счёт",
   "invoices.empty": "Пока нет счёта. Загрузите чек аукциона или продавца (PDF).",
   "invoices.fallbackName": "Счёт {n}.pdf",
   "invoices.removeConfirm": "Удалить «{name}»?",
