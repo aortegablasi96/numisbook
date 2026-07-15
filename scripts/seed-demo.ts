@@ -14,6 +14,7 @@ import { formatCoinTitle } from "@/lib/coin-format";
 import { DEMO_EMAIL, DEMO_NAME } from "@/lib/demo";
 import { DEMO_BASE_CURRENCY, DEMO_COLLECTIONS } from "./demo-fixtures";
 import { buildInvoicePdf } from "./demo-invoice-pdf";
+import { syntheticInvoice, syntheticValuations } from "./demo-enrichment";
 
 // Seed the public demo tenant (ADR-016).
 //
@@ -70,6 +71,8 @@ async function main() {
         images++;
       }
 
+      // Invoice: use the fixture's if it carries one, otherwise generate one from
+      // the coin's own auction metadata (see demo-enrichment).
       if (coinFixture.invoice) {
         const { filename, house, lot, date, total } = coinFixture.invoice;
         const pdf = buildInvoicePdf({
@@ -82,9 +85,20 @@ async function main() {
         });
         await addCoinInvoice(demo.id, coin.id, "application/pdf", filename, pdf);
         invoices++;
+      } else {
+        const generated = syntheticInvoice(coin, { buyer: DEMO_NAME });
+        if (generated) {
+          await addCoinInvoice(demo.id, coin.id, "application/pdf", generated.filename, generated.pdf);
+          invoices++;
+        }
       }
 
-      for (const valuation of coinFixture.valuations ?? []) {
+      // Valuations: use the fixture's history if present, otherwise synthesize one
+      // trending up from the total price paid.
+      const history = coinFixture.valuations?.length
+        ? coinFixture.valuations
+        : syntheticValuations(coin);
+      for (const valuation of history) {
         await recordValuation(demo.id, coin.id, valuation);
         valuations++;
       }
