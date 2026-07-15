@@ -224,7 +224,7 @@ export const fr: Partial<Messages> = {
   "coinImage.removeConfirm": "Retirer cette photo ?",
   "coinImage.removeError": "Impossible de retirer l’image.",
 
-  "invoices.title": "Factures",
+  "invoices.title": "Facture",
   "invoices.empty":
     "Pas encore de facture. Téléversez le reçu de la vente ou du vendeur (PDF).",
   "invoices.fallbackName": "Facture {n}.pdf",

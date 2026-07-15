@@ -182,7 +182,7 @@ export const en = {
   "coinImage.removeError": "Couldn’t remove the image.",
 
   // Coin invoices
-  "invoices.title": "Invoices",
+  "invoices.title": "Invoice",
   "invoices.empty": "No invoice yet. Upload the auction or seller receipt (PDF).",
   "invoices.fallbackName": "Invoice {n}.pdf",
   "invoices.removeConfirm": "Remove \"{name}\"?",
