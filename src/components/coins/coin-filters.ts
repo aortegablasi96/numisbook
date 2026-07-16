@@ -62,6 +62,36 @@ export const FIELD_LABEL: Record<MultiField, MessageKey> = {
   grades: "field.grade",
 };
 
+/**
+ * Facet lists longer than this get a type-to-filter box inside the popover
+ * (DDR-005 addendum). Below it the list is short enough to read at a glance, and
+ * a search box over six checkboxes is clutter plus an extra tab stop.
+ */
+export const FACET_SEARCH_THRESHOLD = 10;
+
+/**
+ * Comparison key for facet search: case- and accent-insensitive, so "zur" matches
+ * "Zürich". Catalogue data (mints, denominations) is full of diacritics that a
+ * user typing quickly will not reproduce.
+ */
+function foldForSearch(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLocaleLowerCase();
+}
+
+/**
+ * The facet values matching a type-to-filter query. Narrowing is presentation
+ * only: it never changes the selection, so a selected value that stops matching
+ * stays selected and keeps its active-filter chip.
+ */
+export function filterFacetValues(values: string[], query: string): string[] {
+  const q = foldForSearch(query.trim());
+  if (!q) return values;
+  return values.filter((value) => foldForSearch(value).includes(q));
+}
+
 /** Add a value if absent, remove it if present — a facet checkbox / grade chip. */
 export function toggleValue(values: string[], value: string): string[] {
   return values.includes(value)
