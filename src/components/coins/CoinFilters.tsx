@@ -6,8 +6,10 @@ import { formatYearRange } from "@/lib/coin-format";
 import { useT } from "@/components/i18n/LocaleProvider";
 import {
   EMPTY_FILTERS,
+  FACET_SEARCH_THRESHOLD,
   FIELD_LABEL,
   activeFilters,
+  filterFacetValues,
   isDefaultState,
   removeFilter,
   toggleValue,
@@ -201,6 +203,12 @@ export function CoinFilters({
  * A multi-select facet dropdown. Reuses the `.col-picker` popover the column
  * picker established: anchored, dismissed on Escape or outside click, with focus
  * returning to the trigger.
+ *
+ * Facets longer than FACET_SEARCH_THRESHOLD also get a type-to-filter box
+ * (DDR-005 addendum). Escape keeps its single meaning — close the popover — rather
+ * than clearing the query first; and the box is deliberately not autofocused,
+ * because at the phone stop the panel expands in place (DDR-006) and the on-screen
+ * keyboard would cover the results being narrowed.
  */
 function FacetPopover({
   label,
@@ -215,8 +223,14 @@ function FacetPopover({
 }) {
   const t = useT();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const searchable = values.length > FACET_SEARCH_THRESHOLD;
+  // Narrowing is presentation only — `selected` is untouched, so a value filtered
+  // out of view stays ticked and keeps its chip in the active-filter row.
+  const shown = searchable ? filterFacetValues(values, query) : values;
 
   useEffect(() => {
     if (!open) return;
@@ -248,17 +262,34 @@ function FacetPopover({
         aria-haspopup="true"
         aria-expanded={open}
         disabled={values.length === 0}
-        onClick={() => setOpen((v) => !v)}
+        // A stale query would silently hide values from the next visitor to this
+        // popover, so each opening starts from the full list.
+        onClick={() => {
+          setOpen((v) => !v);
+          setQuery("");
+        }}
       >
         {label}
         {selected.length > 0 && ` · ${selected.length}`} {open ? "▴" : "▾"}
       </button>
       {open && (
         <div className="col-picker facet-picker">
+          {searchable && (
+            <input
+              type="search"
+              className="facet-search"
+              value={query}
+              placeholder={t("coins.facetSearchPlaceholder")}
+              aria-label={t("coins.facetSearchAria", { field: label })}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          )}
           {values.length === 0 ? (
             <p className="col-picker-hint">{t("coins.filterAll")}</p>
+          ) : shown.length === 0 ? (
+            <p className="col-picker-hint">{t("coins.facetNoMatches")}</p>
           ) : (
-            values.map((value) => (
+            shown.map((value) => (
               <label key={value} className="col-picker-item">
                 <input
                   type="checkbox"

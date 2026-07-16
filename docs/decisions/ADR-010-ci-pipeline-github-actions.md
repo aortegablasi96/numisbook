@@ -114,6 +114,37 @@ Cons:
 * Rejected in favour of a single pinned Node 20 (revisit if/when the deployment
   target's Node version changes).
 
+## Addendum — both deprecations discharged (2026-07-16)
+
+Two of this ADR's Risks have been closed. The decision is unchanged; this records
+what the gates now run on.
+
+**`next lint` → the ESLint CLI.** The `lint` gate no longer calls `next lint`
+(removed in Next 16). It runs `eslint .` against a flat config
+(`eslint.config.mjs`), on ESLint 9 — `.eslintrc.json` and ESLint 8 are gone, the
+latter having been end-of-life since October 2024. The Risk's prediction held
+exactly: CI invokes the `npm run lint` script, so the migration changed the script
+body and the config format, and **not** this workflow. `eslint-config-next` ships
+only an eslintrc-style config, so `next/core-web-vitals` is consumed through
+`FlatCompat` (`@eslint/eslintrc`) — the sole reason that dependency exists.
+
+The load-bearing part of that gate is the `no-restricted-imports` guard on `@/db`
+(the mechanism enforcing the repository boundary). A migration that left lint green
+because the guard had silently stopped applying would be indistinguishable from a
+successful one, so it was verified by probe rather than by a passing run: a service
+importing `@/db` errors, `@next/next` and `jsx-a11y` rules still fire, and
+`src/repositories` remains exempt.
+
+**Actions off deprecated Node 20.** `actions/checkout` and `actions/setup-node` are
+at `@v5` in both the `check` and `migrate` jobs; v4 targeted a Node the runners had
+deprecated, forcing a fallback and annotating every run. Unrelated to `.nvmrc`,
+which pins the *app's* runtime and still reads 20.
+
+One incidental finding: `next/core-web-vitals` never enabled `jsx-a11y/no-autofocus`,
+so a `eslint-disable` for it in `AssistantWidget` had always been dead. ESLint 9
+reports unused directives by default, which surfaced it; the comment was removed
+rather than left claiming to suppress a rule that never ran.
+
 ## Related Documents
 
 * docs/roadmap.md (Production Readiness milestone — CI/CD)

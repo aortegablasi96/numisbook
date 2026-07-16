@@ -309,7 +309,6 @@ export function AssistantWidget() {
               placeholder={t("assistant.inputPlaceholder")}
               aria-label={t("assistant.messageAria")}
               disabled={busy}
-              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
             />
             <button

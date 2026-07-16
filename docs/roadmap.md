@@ -263,42 +263,10 @@ Product positioning and user segmentation remain incomplete.
 
 ## Tooling
 
-### Filter facet popovers: type-to-filter
-
-**Problem**
-
-Facet lists are unbounded on `/coins` — fine at 6 mints, unpleasant at 60
-(DDR-005 risk).
-
-**Fix**
-
-- Add a type-to-filter box inside the facet popover.
-
-### Migrate off deprecated next lint
-
-**Problem**
-
-`next lint` will be removed in Next.js 16.
-
-**Fix**
-
-- Migrate to the ESLint CLI
-
-### Bump CI actions off deprecated Node 20
-
-**Problem**
-
-`actions/checkout@v4` and `actions/setup-node@v4` target Node 20, which GitHub
-Actions has deprecated; runners force them onto Node 24 and annotate every run.
-A warning today, a failure once the fallback is dropped. Unrelated to the Node 20
-pin in `.nvmrc`, which is the app's own runtime.
-
-**Fix**
-
-- Bump both actions to `@v5` in `.github/workflows/ci.yml` (both jobs), checking
-  each one's breaking changes against a real CI run.
-- Good candidate to bundle with the `next lint` migration — same file, same class
-  of chore.
+> Cleared 2026-07-16. The three entries that stood here — a type-to-filter box in
+> the facet popovers (DDR-005 addendum), the `next lint` → ESLint CLI migration,
+> and the CI actions bump off deprecated Node 20 (both ADR-010 addendum) — have
+> shipped.
 
 ---
 

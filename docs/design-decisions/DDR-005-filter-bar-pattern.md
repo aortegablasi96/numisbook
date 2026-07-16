@@ -181,6 +181,56 @@ Risks:
 * Long facet lists in a scrolling popover are usable but not pleasant; a
   type-to-filter box inside the popover is the expected follow-up.
 
+## Addendum — type-to-filter inside long facet popovers (2026-07-16)
+
+> Discharges the second Risk above ("Long facet lists in a scrolling popover are
+> usable but not pleasant; a type-to-filter box inside the popover is the expected
+> follow-up"). The facet pattern of §1 is unchanged; this adds a way to narrow the
+> list inside it.
+
+A facet popover on `/coins` lists every distinct value the user's coins carry.
+That is fine at six metals and unpleasant at sixty mints, where finding a value
+means scrolling a 16rem panel. A text box at the top of the popover now narrows
+the checkbox list as the user types.
+
+* **Only above ten values** (`FACET_SEARCH_THRESHOLD`). Short facets are unchanged.
+  A search box over six checkboxes is visible clutter and an extra tab stop, and
+  the risk this addendum answers only bites on the open-ended facets — mints and
+  denominations. The cost is a variable affordance: the box is present on one
+  popover and absent on the next. That is accepted, because the alternative is
+  paying for a long-list tool on every short list to make the *absence* of a
+  problem look consistent.
+* **Matching is case- and accent-insensitive.** Catalogue data is full of
+  diacritics ("Zürich", "Kraków") that a user typing quickly will not reproduce, so
+  values are folded (NFD, diacritics stripped, lowercased) on both sides before the
+  substring test. Matching is a plain substring, not a prefix: "ome" finds "Rome".
+* **Narrowing never selects.** The query filters what is *shown*; a selected value
+  that stops matching stays selected and keeps its chip in the active-filter row of
+  §4. That row is what makes this safe — it is already the user's account of what is
+  applied, so a value can leave the popover's view without leaving their view.
+* **Escape keeps one meaning: close the popover.** §1 gave the key a single job.
+  A two-stage Escape (clear the query, then close) is a rule only its author
+  remembers, and the query is discarded on close anyway.
+* **The box is not autofocused.** On desktop autofocus would be the obvious choice.
+  But DDR-006 makes the phone popover expand *in place* rather than float, so
+  autofocus raises the on-screen keyboard directly over the results being narrowed.
+  The input is the first tab stop instead, which costs a keyboard user one Tab and
+  costs a phone user nothing.
+* **The query resets when the popover reopens.** A remembered query would silently
+  hide values from the next visit to that popover — the one state where the panel
+  could lie about what the facet contains.
+* An empty result renders the existing `.col-picker-hint` ("No matches"), reusing
+  the affordance already there for an empty facet, and the box is `position: sticky`
+  because the popover itself is the scroll container.
+
+This stays presentation-only: facets are already fetched in full, so filtering is
+client-side over an in-memory array. Nothing touches the API, the service, the
+repository, or the query contract of ADR-015. Both coin surfaces get it at once,
+from the one shared component — the consistency §1 was built for.
+
+Rejected: **server-side facet search.** It would add a round-trip per keystroke,
+a new endpoint, and a debounce, to filter a list already sitting in the client.
+
 ## Related Documents
 
 * docs/decisions/ADR-015-coin-filter-rework.md

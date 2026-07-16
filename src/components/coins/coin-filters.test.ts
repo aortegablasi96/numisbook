@@ -3,6 +3,7 @@ import {
   EMPTY_FILTERS,
   activeFilters,
   buildSearchParams,
+  filterFacetValues,
   isDefaultState,
   nextSort,
   parseSortOption,
@@ -134,5 +135,52 @@ describe("sortOptionValue / parseSortOption", () => {
     expect(parseSortOption("metal")).toEqual(fallback);
     expect(parseSortOption("metal:sideways")).toEqual(fallback);
     expect(parseSortOption(":asc")).toEqual(fallback);
+  });
+});
+
+describe("filterFacetValues", () => {
+  const mints = ["London", "Londinium", "Lyon", "Zürich", "Kraków", "Rome"];
+
+  it("returns every value for an empty or whitespace-only query", () => {
+    expect(filterFacetValues(mints, "")).toEqual(mints);
+    expect(filterFacetValues(mints, "   ")).toEqual(mints);
+  });
+
+  it("matches a substring anywhere in the value, not just the start", () => {
+    expect(filterFacetValues(mints, "lond")).toEqual(["London", "Londinium"]);
+    expect(filterFacetValues(mints, "ome")).toEqual(["Rome"]);
+  });
+
+  it("ignores case", () => {
+    expect(filterFacetValues(mints, "LONDON")).toEqual(["London"]);
+    expect(filterFacetValues(mints, "rOmE")).toEqual(["Rome"]);
+  });
+
+  it("ignores diacritics, so a plain-ASCII query finds an accented value", () => {
+    expect(filterFacetValues(mints, "zur")).toEqual(["Zürich"]);
+    expect(filterFacetValues(mints, "krakow")).toEqual(["Kraków"]);
+  });
+
+  it("matches an accented query against the same accented value", () => {
+    expect(filterFacetValues(mints, "zürich")).toEqual(["Zürich"]);
+  });
+
+  it("returns nothing when no value matches", () => {
+    expect(filterFacetValues(mints, "atlantis")).toEqual([]);
+  });
+
+  it("trims the query, so a trailing space does not lose the match", () => {
+    expect(filterFacetValues(mints, " lyon ")).toEqual(["Lyon"]);
+  });
+
+  it("preserves the facet's original order", () => {
+    // "Kraków" matches too — it folds to "krakow" before the substring test.
+    expect(filterFacetValues(mints, "o")).toEqual([
+      "London",
+      "Londinium",
+      "Lyon",
+      "Kraków",
+      "Rome",
+    ]);
   });
 });
