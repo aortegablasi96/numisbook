@@ -1,6 +1,7 @@
 import {
   coinRepository,
   type Coin,
+  type CoinCriteria,
   type CoinFacets,
   type CoinFilters,
   type CoinGrade,
@@ -17,6 +18,8 @@ import {
   updateCoinSchema,
   type CreateCoinInput,
 } from "@/lib/validation/coin";
+import { toCsv } from "@/lib/csv";
+import { coinExportHeaders, coinExportRow } from "@/lib/coin-export";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 
 export const COINS_PAGE_SIZE = 20;
@@ -54,9 +57,10 @@ export type AllCoinsSearchResult = Omit<CoinSearchResult, "coins"> & {
   coins: CoinWithCollection[];
 };
 
-// Translate the search input into repository filters: drop empty values so an
-// absent filter is `undefined` rather than an empty list, and page → offset.
-function toFilters(search: CoinSearch, page: number): CoinFilters {
+// Translate the search input into repository criteria: drop empty values so an
+// absent filter is `undefined` rather than an empty list. Shared by the paginated
+// list and the unpaginated export, so the two read the same search identically.
+function toCriteria(search: CoinSearch): CoinCriteria {
   const present = <T,>(values: T[] | undefined): T[] | undefined =>
     values?.length ? values : undefined;
 
@@ -71,6 +75,13 @@ function toFilters(search: CoinSearch, page: number): CoinFilters {
     yearTo: Number.isFinite(search.yearTo) ? search.yearTo : undefined,
     sortBy: search.sortBy,
     sortDir: search.sortDir,
+  };
+}
+
+// Criteria plus the page window (page → offset), for the paginated list.
+function toFilters(search: CoinSearch, page: number): CoinFilters {
+  return {
+    ...toCriteria(search),
     limit: COINS_PAGE_SIZE,
     offset: (page - 1) * COINS_PAGE_SIZE,
   };
@@ -127,6 +138,84 @@ export async function searchAllCoins(
     toFilters(search, page),
   );
   return { coins, total, page, pageSize: COINS_PAGE_SIZE };
+}
+
+// ---- CSV export (ADR-017) ---------------------------------------------------
+
+/** A generated export: the file's contents and the name to offer it under. */
+export type CoinExport = {
+  filename: string;
+  csv: string;
+};
+
+/**
+ * Fold arbitrary user text into an ASCII slug safe to put in a filename.
+ *
+ * Collection names are free text, and interpolating one into a
+ * `Content-Disposition` header is both a header-injection vector (quotes,
+ * newlines) and an RFC 5987 encoding problem ("Münzen"). Folding to `[a-z0-9-]`
+ * sidesteps both at once: the header can only ever contain characters that are
+ * safe in it (ADR-017 §9). Falls back when a name slugs away to nothing — e.g. a
+ * collection named entirely in Chinese.
+ */
+export function slugForFilename(name: string, fallback: string): string {
+  const slug = name
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .slice(0, 60)
+    .replace(/^-+|-+$/g, "");
+  return slug || fallback;
+}
+
+/** `numisbook-<stem>-YYYY-MM-DD.csv` — names both the source and the date. */
+export function buildExportFilename(stem: string, on: Date): string {
+  return `numisbook-${stem}-${on.toISOString().slice(0, 10)}.csv`;
+}
+
+// Rows → a named CSV document, via the one column contract (`@/lib/coin-export`).
+function toCoinExport(coins: CoinWithCollection[], stem: string): CoinExport {
+  return {
+    filename: buildExportFilename(stem, new Date()),
+    csv: toCsv(coinExportHeaders(), coins.map(coinExportRow)),
+  };
+}
+
+/**
+ * Every coin in a collection matching the search, as CSV — no pagination: an
+ * export is of the whole filtered list, not the page in view.
+ *
+ * The collection is read (not just ownership-checked) because its name titles the
+ * file, and it must resolve even when the search matches no coins — a filter that
+ * matches nothing still yields a valid header-only file.
+ */
+export async function exportCoins(
+  userId: string,
+  collectionId: string,
+  search: CoinSearch,
+): Promise<CoinExport> {
+  const collection = await collectionRepository.findByIdForUser(collectionId, userId);
+  if (!collection) throw new NotFoundError("Collection not found");
+
+  const coins = await coinRepository.listForExportInCollection(
+    collectionId,
+    toCriteria(search),
+  );
+  return toCoinExport(coins, slugForFilename(collection.name, "collection"));
+}
+
+/**
+ * Every coin the user owns matching the search, as CSV (the `/coins` export).
+ * No per-collection ownership check to make — the query spans them all, and
+ * tenant isolation is enforced by the repository, mirroring `searchAllCoins`.
+ */
+export async function exportAllCoins(
+  userId: string,
+  search: CoinSearch,
+): Promise<CoinExport> {
+  const coins = await coinRepository.listForExportForUser(userId, toCriteria(search));
+  return toCoinExport(coins, "coins");
 }
 
 export async function getCoinFacets(

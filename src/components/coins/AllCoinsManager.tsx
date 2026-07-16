@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { useT } from "@/components/i18n/LocaleProvider";
 import { CoinFilters, EMPTY_FACETS, type CoinFacets } from "./CoinFilters";
+import { ExportCsvLink } from "./ExportCsvLink";
 import {
   CoinTable,
   ColumnPicker,
@@ -86,9 +87,15 @@ export function AllCoinsManager({ initial }: { initial: SearchResult }) {
     <section className="stack">
       <div className="toolbar" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <CoinFilters filters={filters} facets={facets} onChange={setFilters} />
-        {/* Desktop/tablet only — see CoinsManager (DDR-006). */}
-        <div className="hide-phone">
-          <ColumnPicker columns={ALL_COIN_COLUMNS} colState={colState} onToggle={toggleCol} onReorder={reorderCols} />
+        <div className="row" style={{ gap: "0.5rem", flexShrink: 0 }}>
+          {/* Outside the hide-phone wrapper on purpose: column choice is
+              desktop-only (the card form has no columns to pick, DDR-006), but a
+              collector on a phone has the same claim on their data. */}
+          <ExportCsvLink href="/api/coins/export" filters={filters} />
+          {/* Desktop/tablet only — see CoinsManager (DDR-006). */}
+          <div className="hide-phone">
+            <ColumnPicker columns={ALL_COIN_COLUMNS} colState={colState} onToggle={toggleCol} onReorder={reorderCols} />
+          </div>
         </div>
       </div>
 

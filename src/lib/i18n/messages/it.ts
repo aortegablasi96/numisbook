@@ -93,6 +93,7 @@ export const it: Partial<Messages> = {
   "action.clearAll": "Cancella tutto",
   "action.close": "Chiudi",
   "action.download": "Scarica",
+  "action.exportCsv": "Esporta CSV",
   "action.expand": "Ingrandisci",
   "action.record": "Registra",
   "status.loading": "caricamento…",

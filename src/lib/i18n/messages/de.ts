@@ -95,6 +95,7 @@ export const de: Partial<Messages> = {
   "action.clearAll": "Alles zurücksetzen",
   "action.close": "Schließen",
   "action.download": "Herunterladen",
+  "action.exportCsv": "CSV exportieren",
   "action.expand": "Vergrößern",
   "action.record": "Erfassen",
   "status.loading": "lädt…",

@@ -11,11 +11,19 @@ import {
   editCoin,
   deleteCoin,
   listRecentAcquisitions,
+  exportCoins,
+  exportAllCoins,
+  slugForFilename,
+  buildExportFilename,
   COINS_PAGE_SIZE,
   RECENT_ACQUISITIONS_LIMIT,
   type CoinSearch,
 } from "./coin.service";
-import { coinRepository, type Coin } from "@/repositories/coin.repository";
+import {
+  coinRepository,
+  type Coin,
+  type CoinWithCollection,
+} from "@/repositories/coin.repository";
 import { collectionRepository } from "@/repositories/collection.repository";
 import { buildConverter, type Converter } from "@/services/fx.service";
 import { NotFoundError, ValidationError } from "@/lib/errors";
@@ -27,6 +35,8 @@ vi.mock("@/repositories/coin.repository", () => ({
     searchForUser: vi.fn(),
     getDistinctFacets: vi.fn(),
     getDistinctFacetsForUser: vi.fn(),
+    listForExportInCollection: vi.fn(),
+    listForExportForUser: vi.fn(),
     listRecentAcquisitionsForUser: vi.fn(),
     findByIdForUser: vi.fn(),
     create: vi.fn(),
@@ -495,6 +505,146 @@ describe("coin.service", () => {
       await expect(deleteCoin("user-1", "coin-x")).rejects.toBeInstanceOf(
         NotFoundError,
       );
+    });
+  });
+
+  // ---- CSV export (ADR-017) -------------------------------------------------
+
+  const exportableCoin: CoinWithCollection = {
+    ...fakeCoin,
+    collectionName: "Ancient Rome",
+  };
+
+  /** The CSV's data rows, BOM and header row dropped. */
+  const dataRows = (csv: string): string[] =>
+    csv.replace(/^﻿/, "").trimEnd().split("\r\n").slice(1);
+
+  const headerRow = (csv: string): string =>
+    csv.replace(/^﻿/, "").split("\r\n")[0];
+
+  describe("slugForFilename", () => {
+    it("folds diacritics rather than dropping the word", () => {
+      expect(slugForFilename("Münzen", "collection")).toBe("munzen");
+    });
+
+    it("reduces punctuation and spaces to single dashes", () => {
+      expect(slugForFilename("Roman  Silver / Denarii!", "collection")).toBe(
+        "roman-silver-denarii",
+      );
+    });
+
+    it("strips characters that could break out of a header", () => {
+      // The Content-Disposition injection vector: quotes and newlines cannot
+      // survive the fold (ADR-017 §9).
+      const slug = slugForFilename('evil"\r\nX-Injected: yes', "collection");
+      expect(slug).not.toMatch(/["\r\n]/);
+    });
+
+    it("falls back when a name slugs away to nothing", () => {
+      expect(slugForFilename("中国钱币", "collection")).toBe("collection");
+      expect(slugForFilename("!!!", "collection")).toBe("collection");
+    });
+
+    it("leaves no trailing dash when a long name is truncated", () => {
+      const slug = slugForFilename(`${"a".repeat(59)} tail`, "collection");
+      expect(slug.endsWith("-")).toBe(false);
+      expect(slug.length).toBeLessThanOrEqual(60);
+    });
+  });
+
+  describe("buildExportFilename", () => {
+    it("names the source and the date", () => {
+      expect(buildExportFilename("coins", new Date("2026-07-16T10:00:00Z"))).toBe(
+        "numisbook-coins-2026-07-16.csv",
+      );
+    });
+  });
+
+  describe("exportCoins", () => {
+    it("exports a collection's coins as CSV named after the collection", async () => {
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.listForExportInCollection.mockResolvedValue([exportableCoin]);
+
+      const result = await exportCoins("user-1", "col-1", {});
+
+      expect(result.filename).toMatch(/^numisbook-ancient-rome-\d{4}-\d{2}-\d{2}\.csv$/);
+      expect(headerRow(result.csv).startsWith("title,collection,")).toBe(true);
+      expect(dataRows(result.csv)).toHaveLength(1);
+    });
+
+    it("exports the whole filtered list, not a page", async () => {
+      // The repository read must receive no page window: an export is of
+      // everything matching, not the 20 rows in view.
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.listForExportInCollection.mockResolvedValue([]);
+
+      await exportCoins("user-1", "col-1", { metals: ["Silver"], sortBy: "year" });
+
+      const [collectionId, criteria] = coins.listForExportInCollection.mock.calls[0];
+      expect(collectionId).toBe("col-1");
+      expect(criteria).toMatchObject({ metals: ["Silver"], sortBy: "year" });
+      expect(criteria).not.toHaveProperty("limit");
+      expect(criteria).not.toHaveProperty("offset");
+    });
+
+    it("produces a valid header-only file when nothing matches", async () => {
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.listForExportInCollection.mockResolvedValue([]);
+
+      const result = await exportCoins("user-1", "col-1", { q: "nothing" });
+
+      expect(headerRow(result.csv)).toContain("title");
+      expect(dataRows(result.csv)).toEqual([]);
+      expect(result.filename).toContain("ancient-rome");
+    });
+
+    it("throws NotFound for a collection the user does not own", async () => {
+      // Tenant isolation: another user's collection is invisible, not forbidden.
+      collections.findByIdForUser.mockResolvedValue(null);
+
+      await expect(exportCoins("user-1", "col-x", {})).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+      expect(coins.listForExportInCollection).not.toHaveBeenCalled();
+    });
+
+    it("scopes the collection lookup by the acting user", async () => {
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.listForExportInCollection.mockResolvedValue([]);
+
+      await exportCoins("user-1", "col-1", {});
+
+      expect(collections.findByIdForUser).toHaveBeenCalledWith("col-1", "user-1");
+    });
+  });
+
+  describe("exportAllCoins", () => {
+    it("exports the user's coins across collections", async () => {
+      coins.listForExportForUser.mockResolvedValue([
+        exportableCoin,
+        { ...exportableCoin, id: "coin-2", collectionName: "Greek Bronze" },
+      ]);
+
+      const result = await exportAllCoins("user-1", {});
+
+      expect(result.filename).toMatch(/^numisbook-coins-\d{4}-\d{2}-\d{2}\.csv$/);
+      expect(dataRows(result.csv)).toHaveLength(2);
+      // Each row names its own collection — the file is self-describing.
+      expect(result.csv).toContain("Ancient Rome");
+      expect(result.csv).toContain("Greek Bronze");
+    });
+
+    it("scopes the read by the acting user and applies no page window", async () => {
+      // Coins carry no user_id, so this is the only thing standing between one
+      // collector's export and another's inventory.
+      coins.listForExportForUser.mockResolvedValue([]);
+
+      await exportAllCoins("user-1", { metals: ["Gold"] });
+
+      const [userId, criteria] = coins.listForExportForUser.mock.calls[0];
+      expect(userId).toBe("user-1");
+      expect(criteria).toMatchObject({ metals: ["Gold"] });
+      expect(criteria).not.toHaveProperty("limit");
     });
   });
 });

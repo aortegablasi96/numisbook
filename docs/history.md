@@ -1014,6 +1014,65 @@ case for the accessibility/rendering gate that became the next milestone.
 
 ---
 
+# Phase 20 — Collector Experience: CSV Export
+
+Goal: let a collector get their data **out**. Everything the platform held was
+trapped in it — a collection could only be built by typing coins in one at a time,
+and there was no way to take it elsewhere. Export lowers the cost of leaving, which
+is what makes the cost of adopting worth paying.
+
+First slice of the Collector Experience milestone (Epic #180, story #181).
+Decision: `ADR-017`.
+
+## What shipped
+
+- **`Export CSV` on both coin surfaces** — a collection's coin list and `/coins`.
+  It downloads **every coin matching the current filter, search, and sort**, not
+  the page in view. Export reuses the existing filter contract (ADR-015) rather
+  than adding one: it parses the same `coinSearchParamsSchema` and ignores `page`,
+  and the link builds its query with the same helper the list queries with, so a
+  filtered list and its export cannot disagree.
+- **Two routes mirroring `/facets`** — `GET /api/coins/export` and
+  `GET /api/collections/[id]/coins/export`, the sibling sub-resource shape already
+  established on both surfaces.
+- **One typed column contract** (`src/lib/coin-export.ts`), 27 columns, which CSV
+  import will read back. A compile-time exhaustiveness check pins it to the schema:
+  adding a coin column without deciding whether it exports **fails the build**,
+  naming the offending column. This matters because `src/lib` never imports from
+  `@/repositories`, so the coin shape is structural and would otherwise drift
+  silently.
+- **Values as stored, not as displayed.** Signed years (negative = BC), ISO dates,
+  and prices in the coin's own currency with **no FX conversion** — analytics
+  converts to a base because aggregates need one unit, but an export is a record of
+  fact. A derived read-only `title` column leads the file (coins have no name), and
+  a `collection` column makes it self-describing.
+- **Formula injection neutralized per column type.** The textbook rule — prefix any
+  field starting `= + - @` with `'` — is *wrong* here: a coin from 44 BC exports
+  `-44`, which that rule rewrites to `'-44`, corrupting a number into text on the
+  field that most distinguishes this domain. Typing the columns is what makes the
+  safe version possible: free text is guarded, numbers/dates/enums are not.
+- **Filenames are ASCII slugs** (`numisbook-ancient-coins-2026-07-16.csv`), which
+  keeps arbitrary collection names — quotes, newlines, `Münzen` — out of the
+  `Content-Disposition` header entirely.
+- **The read-only demo tenant can export.** An export is a read, so `assertWritable`
+  does not apply and DDR-007 must not hide it; pulling the demo collection into a
+  spreadsheet demonstrates the portability promise before sign-up.
+
+## Notes
+
+Buffered rather than streamed, deliberately (ADR-017 §8): realistic collections are
+single-digit MB, and streaming would have required batched reads over an ordering
+that is not a total order — surfacing a **pre-existing pagination defect** (#182,
+now in the technical backlog) rather than fixing it inside an export PR. Buffering
+also keeps errors honest: the query completes before any download header is set, so
+a failure returns JSON instead of a browser saving an error body as a `.csv`.
+
+Verified against the running app across three real tenants — BC years exported as
+`-215`/`-171`, native EUR/CHF/GBP preserved, a zero-coin tenant getting a valid
+header-only file with no leakage, and a cross-tenant request 404ing with no CSV.
+
+---
+
 # Current Architecture Snapshot
 
 Current stack:

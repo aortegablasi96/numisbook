@@ -86,6 +86,7 @@ export const zh: Partial<Messages> = {
   "action.clearAll": "全部清除",
   "action.close": "关闭",
   "action.download": "下载",
+  "action.exportCsv": "导出 CSV",
   "action.expand": "放大",
   "action.record": "记录",
   "status.loading": "加载中…",

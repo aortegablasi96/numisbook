@@ -10,6 +10,7 @@ import { useT } from "@/components/i18n/LocaleProvider";
 import { useIsDemo } from "@/components/demo/DemoProvider";
 import type { MessageKey } from "@/lib/i18n";
 import { CoinFilters, EMPTY_FACETS, type CoinFacets } from "./CoinFilters";
+import { ExportCsvLink } from "./ExportCsvLink";
 import {
   CoinTable,
   ColumnPicker,
@@ -178,6 +179,13 @@ export function CoinsManager({
       <div className="toolbar" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <CoinFilters filters={filters} facets={facets} onChange={setFilters} />
         <div className="row" style={{ gap: "0.5rem", flexShrink: 0 }}>
+          {/* Not gated on isDemo: an export is a read, so the demo tenant keeps it.
+              DDR-007 removes *mutation* affordances, and pulling the demo
+              collection into a spreadsheet is the portability promise in action. */}
+          <ExportCsvLink
+            href={`/api/collections/${collectionId}/coins/export`}
+            filters={filters}
+          />
           {/* Column visibility + drag-reorder are pointer affordances with no touch
               equivalent, and the phone card form makes column order meaningless —
               so the picker is desktop/tablet only (DDR-006). */}

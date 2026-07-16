@@ -54,7 +54,9 @@ Request
 - **Users / Auth** — accounts, ownership, sessions.
 - **Collections** — named groupings of coins owned by a user.
 - **Coins / Inventory** — individual coins and their attributes, with
-  search/filter/sort/pagination.
+  search/filter/sort/pagination, and **CSV export** of the filtered list from both
+  coin surfaces (one typed column contract in `src/lib/coin-export.ts`, which CSV
+  import will read back; see ADR-017).
 - **Coin images** — one or more images per coin (bytes in S3-compatible object
   storage behind `src/lib/storage`; metadata in Postgres; on-the-fly WebP
   thumbnails via `sharp`).
