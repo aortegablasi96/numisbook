@@ -44,7 +44,13 @@ export type RecentAcquisition = {
 export type CoinSortBy = "category" | "metal" | "denomination" | "year" | "createdAt";
 export type CoinSortDir = "asc" | "desc";
 
-export type CoinFilters = {
+/**
+ * What narrows and orders a coin query, with no opinion on paging. Split out from
+ * `CoinFilters` so the unpaginated export reads can compose the very same
+ * predicates and ordering as the paginated list — the filter semantics are
+ * defined once and cannot diverge between the two (ADR-015, ADR-017).
+ */
+export type CoinCriteria = {
   q?: string;
   metals?: string[];
   categories?: string[];
@@ -55,6 +61,10 @@ export type CoinFilters = {
   yearTo?: number;
   sortBy?: CoinSortBy;
   sortDir?: CoinSortDir;
+};
+
+/** Criteria plus a page window — what the paginated list surfaces need. */
+export type CoinFilters = CoinCriteria & {
   limit: number;
   offset: number;
 };
@@ -77,7 +87,7 @@ function ownedCollectionIds(userId: string) {
  * column never satisfies a positive filter (SQL's own semantics — a coin with no
  * metal is not matched by a metal filter).
  */
-function buildCoinConditions(filters: CoinFilters): SQL[] {
+function buildCoinConditions(filters: CoinCriteria): SQL[] {
   const conditions: SQL[] = [];
 
   // Free-text search spans every attribute that identifies a coin. Coins have no
@@ -125,7 +135,7 @@ function buildCoinConditions(filters: CoinFilters): SQL[] {
   return conditions;
 }
 
-function buildCoinOrderBy(filters: CoinFilters): SQL {
+function buildCoinOrderBy(filters: CoinCriteria): SQL {
   const dir = (filters.sortDir ?? "desc") === "asc" ? asc : desc;
   switch (filters.sortBy) {
     case "category":     return dir(coins.category);
@@ -233,6 +243,50 @@ export const coinRepository = {
       .where(where);
 
     return { coins: rows, total: counted?.total ?? 0 };
+  },
+
+  /**
+   * Every coin in a collection matching the criteria, **unpaginated** — the CSV
+   * export (ADR-017). Composes the same conditions and ordering as
+   * `searchInCollection`, so an export and the list it came from cannot disagree;
+   * it differs only in taking no page window and skipping the `count(*)`, which an
+   * export has no use for.
+   *
+   * Joins `collections` for the name so the file carries the owning collection
+   * (constant here, but the column set is the same on both surfaces).
+   */
+  async listForExportInCollection(
+    collectionId: string,
+    criteria: CoinCriteria,
+  ): Promise<CoinWithCollection[]> {
+    return db
+      .select({ ...getTableColumns(coins), collectionName: collections.name })
+      .from(coins)
+      .innerJoin(collections, eq(coins.collectionId, collections.id))
+      .where(
+        and(eq(coins.collectionId, collectionId), ...buildCoinConditions(criteria)),
+      )
+      .orderBy(buildCoinOrderBy(criteria));
+  },
+
+  /**
+   * Every coin the user owns, across every collection, matching the criteria and
+   * **unpaginated** — the `/coins` CSV export.
+   *
+   * Tenant isolation: scoped through `collections.user_id`, exactly as
+   * `searchForUser`. An export is still a data read, so it is scoped identically
+   * to the list it mirrors.
+   */
+  async listForExportForUser(
+    userId: string,
+    criteria: CoinCriteria,
+  ): Promise<CoinWithCollection[]> {
+    return db
+      .select({ ...getTableColumns(coins), collectionName: collections.name })
+      .from(coins)
+      .innerJoin(collections, eq(coins.collectionId, collections.id))
+      .where(and(eq(collections.userId, userId), ...buildCoinConditions(criteria)))
+      .orderBy(buildCoinOrderBy(criteria));
   },
 
   /**

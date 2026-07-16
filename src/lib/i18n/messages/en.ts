@@ -45,6 +45,7 @@ export const en = {
   "action.clearAll": "Clear all",
   "action.close": "Close",
   "action.download": "Download",
+  "action.exportCsv": "Export CSV",
   "action.expand": "Expand",
   "action.record": "Record",
   "status.loading": "loading…",

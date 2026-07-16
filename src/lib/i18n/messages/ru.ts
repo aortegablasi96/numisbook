@@ -94,6 +94,7 @@ export const ru: Partial<Messages> = {
   "action.clearAll": "Очистить всё",
   "action.close": "Закрыть",
   "action.download": "Скачать",
+  "action.exportCsv": "Экспорт CSV",
   "action.expand": "Увеличить",
   "action.record": "Записать",
   "status.loading": "загрузка…",

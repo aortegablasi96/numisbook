@@ -121,6 +121,22 @@ export function buildSearchParams(
   return sp;
 }
 
+/**
+ * The query string for a CSV export: the same filters as the list, without the
+ * page (ADR-017). An export is of the whole filtered list, not the page in view,
+ * and the server ignores `page` on the export routes regardless — omitting it
+ * here keeps the download URL honest about that.
+ *
+ * Built from `buildSearchParams` rather than beside it so the export and the list
+ * it came from cannot drift apart: add a filter to the contract and both pick it
+ * up.
+ */
+export function buildExportParams(filters: CoinFilterState): URLSearchParams {
+  const sp = buildSearchParams(filters, 1);
+  sp.delete("page");
+  return sp;
+}
+
 /** One active filter, as rendered in the removable-chip row. */
 export type ActiveFilter =
   | { kind: "q"; value: string }

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   EMPTY_FILTERS,
   activeFilters,
+  buildExportParams,
   buildSearchParams,
   filterFacetValues,
   isDefaultState,
@@ -16,6 +17,36 @@ import {
 const withFilters = (patch: Partial<CoinFilterState>): CoinFilterState => ({
   ...EMPTY_FILTERS,
   ...patch,
+});
+
+describe("buildExportParams", () => {
+  it("carries the same filters as the list query", () => {
+    // The export and the list must agree about what is in view (ADR-017).
+    const filters = withFilters({
+      metals: ["Silver", "Gold"],
+      grades: ["VF"],
+      q: "denarius",
+      yearFrom: "-100",
+    });
+    const sp = buildExportParams(filters);
+
+    expect(sp.getAll("metal")).toEqual(["Silver", "Gold"]);
+    expect(sp.getAll("grade")).toEqual(["VF"]);
+    expect(sp.get("q")).toBe("denarius");
+    expect(sp.get("yearFrom")).toBe("-100");
+  });
+
+  it("carries no page — an export is the whole filtered list", () => {
+    expect(buildExportParams(withFilters({ metals: ["Silver"] })).has("page")).toBe(
+      false,
+    );
+  });
+
+  it("keeps the sort, so the file matches the order on screen", () => {
+    const sp = buildExportParams(withFilters({ sortBy: "year", sortDir: "asc" }));
+    expect(sp.get("sortBy")).toBe("year");
+    expect(sp.get("sortDir")).toBe("asc");
+  });
 });
 
 describe("buildSearchParams", () => {

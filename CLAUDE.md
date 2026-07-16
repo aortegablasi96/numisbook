@@ -85,8 +85,9 @@ src/app  →  src/services  →  src/repositories  →  src/db  →  PostgreSQL
 * **API routes are thin** (`src/app/api/**/route.ts`): validate input → call a
   service → shape the response. No business logic, no DB access. Shared helpers
   live in `src/app/api/_lib.ts`: `currentUser()` (resolve session → domain user),
-  `unauthorized()`, and `errorResponse()` (maps `ZodError` → 400, `AppError` →
-  its status, anything else → 500).
+  `unauthorized()`, `errorResponse()` (maps `ZodError` → 400, `AppError` →
+  its status, anything else → 500), and `csvResponse()` (a CSV download's headers,
+  written once for the export routes).
 * **Business logic belongs in services** (`src/services`). Services are
   framework-agnostic (no `Request`/`Response`, no React) and access data only
   through repositories.
@@ -304,6 +305,26 @@ Coins have no `name` column (removed in the Data Model Reform, ADR-006). The
 display title is **derived** from attributes by `formatCoinTitle`
 (`src/lib/coin-format.ts`) — the single source of truth for a coin's title;
 search/sort operate on the underlying attributes, not a stored name.
+
+## Coin CSV export
+
+`Export CSV` on both coin surfaces downloads the coins matching the **current
+filter/search/sort** — not the page in view (ADR-017). Routes mirror `/facets`:
+`GET /api/coins/export` and `GET /api/collections/[id]/coins/export`; both parse
+`coinSearchParamsSchema` and ignore `page`.
+
+Invariants worth knowing before touching it:
+
+* The column contract is defined **once** in `src/lib/coin-export.ts` (CSV import
+  will read it back). A compile-time check in `coin-export.test.ts` **fails the
+  build** if a new `coins` column is neither exported nor listed in
+  `COIN_EXPORT_OMITTED` — decide deliberately, don't silence it.
+* Values are written **as stored**: signed years (negative = BC), ISO dates, prices
+  in the coin's own currency (**never** FX-converted). `title` is derived and
+  read-only.
+* Formula-injection escaping is applied **by column type** (text only). Do not
+  "fix" this into a blanket rule — it would rewrite `-44` (44 BC) to `'-44`.
+* Export is a **read**: no `assertWritable`, and the demo tenant keeps it.
 
 ## Home dashboard
 
@@ -762,6 +783,7 @@ Accepted architectural decisions are stored in `docs/decisions/`:
 * `ADR-014-internationalization` — Internationalization (custom no-dependency i18n; cookie + per-user `locale` preference, no URL routing; 7 locales; `zh` via system CJK fallback)
 * `ADR-015-coin-filter-rework` — Coin filter rework (multi-value filter contract — OR within a field, AND across fields; top-level `/api/coins` cross-collection resource, tenant-scoped via the user's collection ids; `pg_trgm` deferred)
 * `ADR-016-public-demo-account` — Public demo account (a second, non-Google way to obtain a session — an adapter-minted DB session; a shared read-only demo tenant enforced by `assertWritable` + a build-failing guard test; read-only assistant tool set; service-driven seed). **Departs from ADR-003.**
+* `ADR-017-data-portability-contract` — Data portability contract (CSV export, and the contract import will read: one typed column contract for both directions; stable English headers in every locale; values as stored — signed BC years, no FX conversion; per-column-type formula-injection escaping; buffered, not streamed)
 
 (`template.md` is the scaffold for new ADRs.)
 

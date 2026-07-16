@@ -73,7 +73,10 @@ demo tenant from the signed-out home page without a Google account, and see a re
 collection — 13 coins with museum photography, invoices, filters, portfolio
 analytics and the assistant — before deciding to sign up (see `history.md` Phase 19,
 ADR-016, DDR-007, and `docs/testing/public-demo-account-testing-report.md`). The
-active milestone is now **Collector Experience**.
+active milestone is now **Collector Experience**, whose first slice — **CSV
+export** — has shipped: a collector can download the coins in view from either
+coin surface, filters and all, and the file carries the column contract CSV import
+will read back (see `history.md` Phase 20 and ADR-017).
 
 Primary objective:
 
@@ -112,9 +115,19 @@ Improve collection management and portability.
 > User profile/account settings were pulled forward into the **Additional
 > Settings** milestone.
 
-- [ ] CSV export
-- [ ] CSV import
-- [ ] Collection backup and recovery
+The milestone is sequenced deliberately: **export leads**, because it defines the
+column contract import must consume (ADR-017). Shipping it first means import is
+designed against a contract that exists and has been exercised, rather than one
+invented alongside it.
+
+- [x] CSV export — shipped (see `history.md` Phase 20, ADR-017). Downloads the
+      coins in view from both surfaces, honouring the active filter/search/sort.
+- [ ] CSV import — reads the same column contract export writes; a round-trip
+      test (`parse(export(coin)) ≡ coin`) pins the two together
+- [ ] Collection backup and recovery — scoped as a **full-account archive with
+      restore**: everything CSV cannot carry (all collections, coins, valuations,
+      plus image and invoice bytes). Not scheduled server-side snapshots — Neon
+      already backs up the database, and that does not help a collector leave.
 
 ---
 
@@ -267,6 +280,29 @@ Product positioning and user segmentation remain incomplete.
 > the facet popovers (DDR-005 addendum), the `next lint` → ESLint CLI migration,
 > and the CI actions bump off deprecated Node 20 (both ADR-010 addendum) — have
 > shipped.
+
+---
+
+## Coins
+
+### Coin list ordering is not a total order (#182)
+
+**Problem**
+
+`buildCoinOrderBy` (`coin.repository`) orders by a single nullable column with no
+tiebreaker, so rows sharing a sort value have no defined relative order. Paging a
+list sorted by a repeated value (e.g. 25 coins all categorised "Romans", sorted by
+Category) can show a coin twice or skip it entirely — silently, since the total
+count stays right.
+
+Found while assessing whether CSV export could stream. Export **buffers**, so it
+is immune (one query, one snapshot) — but this becomes a hard blocker if export is
+ever changed to batched reads, which would drop rows from the file (ADR-017 §8).
+
+**Fix**
+
+- Give every coin ordering a unique final tiebreaker (`coins.id`)
+- Pin it with a test, so a future sort key cannot reintroduce a partial order
 
 ---
 

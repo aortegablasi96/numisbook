@@ -24,6 +24,25 @@ export function unauthorized(): NextResponse {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 
+/**
+ * A generated CSV as a download (ADR-017). Shared by the two coin export routes
+ * so the download headers — and the filename rule in particular — are written
+ * once and cannot drift apart.
+ *
+ * The filename arrives already folded to an ASCII slug by the service, which is
+ * what keeps arbitrary collection names out of this header.
+ */
+export function csvResponse(filename: string, csv: string): Response {
+  return new Response(csv, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      // A tenant's own inventory: never store it in a shared cache.
+      "Cache-Control": "private, no-cache",
+    },
+  });
+}
+
 /** Map thrown errors to a JSON response. Typed AppErrors carry their status. */
 export function errorResponse(error: unknown): NextResponse {
   if (error instanceof ZodError) {

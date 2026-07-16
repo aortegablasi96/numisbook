@@ -95,6 +95,7 @@ export const fr: Partial<Messages> = {
   "action.clearAll": "Tout effacer",
   "action.close": "Fermer",
   "action.download": "Télécharger",
+  "action.exportCsv": "Exporter en CSV",
   "action.expand": "Agrandir",
   "action.record": "Enregistrer",
   "status.loading": "chargement…",
