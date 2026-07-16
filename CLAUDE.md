@@ -435,9 +435,13 @@ object-storage bytes. UI: `src/components/settings/` (`ProfileForm`,
 
 ### Service tests (primary target)
 
-Mock all repositories with `vi.mock()`; test business logic in isolation.
-`describe` / `it` / `expect` are global (Vitest `globals: true`). Tests are
+Mock all repositories with `vi.mock()`; test business logic in isolation. Tests are
 colocated next to their source as `*.test.ts`.
+
+**Import `describe` / `it` / `expect` from `vitest` in every test file.** Vitest
+runs with `globals: true`, so they resolve at runtime — but `tsconfig.json` does not
+pull in `vitest/globals`, so omitting the import passes `npm test` and then fails
+`npm run typecheck`, which is a CI gate. Every test file imports them.
 
 There is **no DOM environment** — `vitest.config.ts` runs `environment: "node"`,
 so components are not rendered in tests (no `@testing-library/react`). Test
