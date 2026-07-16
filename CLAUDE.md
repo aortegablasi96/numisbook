@@ -33,7 +33,7 @@ npm install            # install dependencies
 npm run dev            # start the dev server (http://localhost:3000)
 npm run build          # production build
 npm start              # run the production build
-npm run lint           # eslint (next/core-web-vitals) — note: `next lint` is removed in Next 16; see roadmap backlog "Migrate off deprecated next lint"
+npm run lint           # eslint CLI, flat config (eslint.config.mjs → next/core-web-vitals)
 npm run typecheck      # tsc --noEmit (no build output) — same check CI runs
 npm test               # run unit tests once (Vitest)
 npm run test:watch     # tests in watch mode
