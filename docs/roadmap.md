@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — active milestone: Hosted Error Monitoring & Accessibility Checks in CI**
+Current maturity: **Live in production — active milestone: Collector Experience**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -73,16 +73,15 @@ demo tenant from the signed-out home page without a Google account, and see a re
 collection — 13 coins with museum photography, invoices, filters, portfolio
 analytics and the assistant — before deciding to sign up (see `history.md` Phase 19,
 ADR-016, DDR-007, and `docs/testing/public-demo-account-testing-report.md`). The
-active milestone is now **Hosted Error Monitoring & Accessibility Checks in CI**.
+active milestone is now **Collector Experience**.
 
 Primary objective:
 
-**Close the gap between a defect existing and anyone finding out.** The case keeps
-strengthening: the demo milestone shipped one defect straight through lint,
-type-check and 297 unit tests (a control rendered for a demo session that the
-server would have refused), and it was caught only by driving the page in a
-browser. Two of the three defects the mobile milestone fixed were the same shape.
-CI still renders no page.
+**Let a collector get their data in and out.** Everything the platform holds is
+currently trapped in it: a collection can only be built by typing coins in one at
+a time, and there is no way to take it elsewhere or recover it. Import and export
+lower the cost of adopting NumisBook and the cost of leaving it — the second is
+what makes the first credible.
 
 Current priorities:
 
@@ -92,21 +91,58 @@ Current priorities:
 - Rework filters — ✅ complete
 - Mobile-responsive UI — ✅ complete
 - Public demo account — ✅ complete
-- Hosted error monitoring & accessibility checks in CI (active)
-- (then) valuation-based analytics
+- Collector experience (active)
+- (then) assistant hardening
+- (then) hosted error monitoring & accessibility checks in CI
 
 ---
 
-# Active Milestone — Hosted Error Monitoring & Accessibility Checks in CI
+# Active Milestone — Collector Experience
+
+Goal:
+
+Improve collection management and portability.
+
+## Features
+
+> Multi-currency portfolio support and base-currency preferences were pulled
+> forward into the **Portfolio Analytics Upgrade** milestone — analytics figures
+> are only meaningful once all values share a single currency.
+>
+> User profile/account settings were pulled forward into the **Additional
+> Settings** milestone.
+
+- [ ] CSV export
+- [ ] CSV import
+- [ ] Collection backup and recovery
+
+---
+
+# Future Milestone — Assistant Hardening
+
+Goal:
+
+Make the collection assistant production-grade once the platform is deployed.
+
+## Features
+
+- [ ] Streaming responses
+- [ ] Rate limiting
+- [ ] Cost controls
+- [ ] Conversation limits
+
+---
+
+# Future Milestone — Hosted Error Monitoring & Accessibility Checks in CI
 
 Goal:
 
 Close the two gaps between a defect existing and anyone finding out: production
 errors that nobody is alerted to, and UI defects that no gate can see.
 
-> Previously deferred behind the Mobile-Responsive UI and Public Demo Account
-> milestones; both have now shipped, so the a11y gate can be written once against
-> the breakpoints DDR-006 settled and the demo surfaces DDR-007 added.
+> Was the active milestone; deferred behind **Collector Experience** and
+> **Assistant Hardening**. Deferred, not reconsidered — the case below stands,
+> and each milestone taken ahead of it is one more shipped without the gate.
 
 ## Hosted error monitoring
 
@@ -174,27 +210,6 @@ mature.
 
 ---
 
-# Future Milestone — Collector Experience
-
-Goal:
-
-Improve collection management and portability.
-
-## Features
-
-> Multi-currency portfolio support and base-currency preferences were pulled
-> forward into the **Portfolio Analytics Upgrade** milestone — analytics figures
-> are only meaningful once all values share a single currency.
->
-> User profile/account settings were pulled forward into the **Additional
-> Settings** milestone.
-
-- [ ] CSV export
-- [ ] CSV import
-- [ ] Collection backup and recovery
-
----
-
 # Future Milestone — Market Intelligence
 
 Goal:
@@ -208,21 +223,6 @@ Help collectors understand market value and opportunities.
 - [ ] Market price tracking
 - [ ] Market trend analysis
 - [ ] Watchlists
-
----
-
-# Future Milestone — Assistant Hardening
-
-Goal:
-
-Make the collection assistant production-grade once the platform is deployed.
-
-## Features
-
-- [ ] Streaming responses
-- [ ] Rate limiting
-- [ ] Cost controls
-- [ ] Conversation limits
 
 ---
 
@@ -283,6 +283,22 @@ Facet lists are unbounded on `/coins` — fine at 6 mints, unpleasant at 60
 **Fix**
 
 - Migrate to the ESLint CLI
+
+### Bump CI actions off deprecated Node 20
+
+**Problem**
+
+`actions/checkout@v4` and `actions/setup-node@v4` target Node 20, which GitHub
+Actions has deprecated; runners force them onto Node 24 and annotate every run.
+A warning today, a failure once the fallback is dropped. Unrelated to the Node 20
+pin in `.nvmrc`, which is the app's own runtime.
+
+**Fix**
+
+- Bump both actions to `@v5` in `.github/workflows/ci.yml` (both jobs), checking
+  each one's breaking changes against a real CI run.
+- Good candidate to bundle with the `next lint` migration — same file, same class
+  of chore.
 
 ---
 
