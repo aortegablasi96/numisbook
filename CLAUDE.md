@@ -214,7 +214,8 @@ a provider.
 
 **Every mutating API route and Server Action must call `assertWritable(user)`**
 (`src/lib/demo.ts`, re-exported from `api/_lib.ts`); `src/app/api/write-guard.test.ts`
-fails the build if a mutating route omits it. Seed with `npm run db:seed-demo`.
+fails the build if a mutating route omits it. Seed with `npm run db:seed-demo`;
+the seed/fixture tooling lives in `scripts/`.
 
 ## Collection Assistant
 
@@ -372,10 +373,13 @@ a reusable `<dialog>`-based confirmation prompt. Use it for deletes instead of
 `src/components/ui/icons.tsx` (`IconPencil`, `IconPlus`, `IconCheck`, `IconX`,
 `IconExpand`, `IconTrash`); reuse them before hand-rolling a new `<svg>`.
 
-**UI state persistence**: client-side preferences use `localStorage`. Current
-key: `numisbook:coin-columns-v4` stores column visibility + order as
-`ColState[]` for the coin list table. Use a versioned key whenever the shape
-changes.
+**UI state persistence**: client-side preferences use `localStorage`. Both
+current keys store column visibility + order as `ColState[]` for a coin table
+(`CoinTable.tsx`): `numisbook:coin-columns-v4` for the per-collection list,
+`numisbook:all-coin-columns-v1` for the cross-collection `/coins` list. The two
+surfaces keep **separate** keys — their column sets differ, so sharing one would
+let each corrupt the other's layout (DDR-005). Use a versioned key whenever the
+shape changes.
 
 ## Internationalization
 
@@ -608,6 +612,8 @@ Defines:
 
 Produced by: Testing
 
+Lands in: `docs/testing/<milestone>-testing-report.md`
+
 Defines:
 
 - executed tests
@@ -703,6 +709,7 @@ and `area:*` label sets). Do not invent new labels or issue structures.
 * Roadmap (planned work): `docs/roadmap.md`
 * History (completed milestones, by phase): `docs/history.md`
 * GitHub issue conventions (types, labels, titles): `docs/github-issues.md`
+* Testing reports (one per milestone, produced by the Testing skill): `docs/testing/`
 * Architecture decisions (ADRs): `docs/decisions/`
 * Design decisions (DDRs): `docs/design-decisions/`
 
