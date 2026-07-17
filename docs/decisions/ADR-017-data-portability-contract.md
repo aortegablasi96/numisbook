@@ -456,6 +456,146 @@ Risks:
   loses its *un*escaping too, landing `'=SUM(A1)` in the database with a stray
   quote. The inverse pair (`escapeCell` / `unescapeCell`) must be tested as a pair.
 
+## Addendum — full-account archive + restore (slice 3 of 3)
+
+Status: Accepted
+
+Date: 2026-07-17
+
+This ADR is scoped to the whole Collector Experience milestone, and its Context
+reserves this: "import and archive append to it rather than adding ADRs that would
+inevitably disagree." This addendum records the decisions the **archive** slice
+settled. It adds to the decisions above and reverses none of them; §§1–20 stand as
+accepted, and the numbering continues from them.
+
+### Context
+
+CSV carries coin attributes only (§1): a flat row cannot hold a coin's one-to-many
+**valuation history**, and cells cannot hold image or invoice **bytes**. §1 reserved
+all three for this slice, and the milestone's own success criteria and Consequences
+say plainly that CSV alone does not fulfil the promise — "a collector's photography,
+invoices, and value history stay in the platform until the archive slice lands." This
+slice lands it: a collector can download a **complete** copy of their account and
+restore it.
+
+Where the CSV contract is a **lossy, human-facing** interchange (open it in Excel,
+edit it, bring it back), the archive is a **lossless, machine-facing** one (get
+everything out; put it back exactly). That difference is what drives most of the
+decisions below.
+
+### Decisions
+
+21. **The archive is a STORE zip of a JSON manifest plus the raw blobs — a distinct,
+    versioned format, not an extension of the CSV contract.**
+
+    A `manifest.json` describes the whole graph (collections, coins, valuations,
+    and image/invoice metadata) and links to `images/<id>` and `invoices/<id>` zip
+    entries holding the bytes. It is **not** built on `coin-export.ts`: that contract
+    is deliberately lossy (no ids, no valuations, no `createdAt`) and reusing it would
+    force the archive to be lossy too. It is **not** validated by `createCoinSchema`
+    either — that is the coin *form's* opinion and strips `createdAt` and identity,
+    which the archive must preserve to reproduce the graph. So the archive gets its
+    own contract module (`src/lib/archive.ts`, a Zod manifest schema) and its own zip
+    mechanics (`src/lib/zip.ts`), mirroring the `coin-export.ts` / `csv.ts` split one
+    layer over: the *format* module knows the container, the *contract* module knows
+    the meaning.
+
+22. **The zip is written and read dependency-free, STORE (no compression).** The
+    same ethos as §11/§13: a strict, known dialect we both write and read does not
+    earn a library. STORE specifically, not DEFLATE, because the payload is already
+    compressed (WebP/JPEG/PNG images, PDF invoices) so compression would buy almost
+    nothing — and because STORE has **no decompression step**, it has no
+    decompression-amplification, which removes the zip-bomb class entirely rather
+    than mitigating it. The one genuinely fiddly part (CRC-32, the central directory)
+    is pinned by a round-trip test over binary payloads and adversarial input, as
+    §13's parser is.
+
+23. **Restore is additive — fresh ids, nothing overwritten.** The mirror of §14 for
+    the whole graph: every collection, coin, valuation, image and invoice is
+    recreated with a new id in the acting user's account, wired to each other but to
+    nothing pre-existing. This serves both use cases the milestone names — **recovery**
+    (restore into a fresh, empty account) and **migration** (move an account's data to
+    another account) — with one semantic. Its cost is the same as import's: restoring
+    an archive twice duplicates it. As with import (§14), the platform's answer is
+    **disclosure, not prevention** — the response reports the counts it created.
+
+    Considered and rejected: *restore-into-empty-only* (refuse unless the account has
+    no collections) removes the duplicate hazard but cannot migrate or merge, and
+    *replace-account* (wipe, then restore) is exact recovery but destroys current data
+    on a mistaken restore. Additive is the superset that is also non-destructive.
+
+24. **Restore is single-step, diverging from §16's preview+commit — deliberately.**
+    §16 gave CSV import two phases because import is *additive into an existing
+    collection*: the hazard is silently doubling coins the collector already has, and
+    a preview is what makes that visible before the write. Additive restore has no
+    such hazard — it creates **new** collections, touching nothing already present —
+    so the "disclose before write" case is far weaker, and re-uploading a multi-MB
+    archive (bytes and all) twice to preview then commit is wasteful in a way a small
+    CSV is not. So restore is one POST, guarded by a `<ConfirmButton>` that states it
+    *adds* (never replaces), with the result summary reporting what was created.
+
+25. **Export is a read (demo keeps it); restore is a write (demo is refused).** The
+    exact split of §10/§17, restated: the whole-account read carries no
+    `assertWritable`, so the read-only demo tenant can pull its seeded collection —
+    photography, invoices and all — out of the platform, which is the most persuasive
+    possible demonstration of the portability promise. Restore mutates, so ADR-016
+    applies in full: `assertWritable`, enforced by the build-failing write-guard test,
+    and DDR-007 withholds the affordance rather than disabling it. Both live under a
+    new `/api/account/` namespace, as whole-account operations distinct from the
+    per-coin and per-collection surfaces.
+
+26. **Buffered with a ceiling, and validated whole before any write.** Like §8, the
+    archive builds/reads in memory rather than streaming; the restore upload is
+    bounded by an explicit byte limit (`MAX_RESTORE_BYTES`) rather than by the
+    tenant's data. Because STORE carries no amplification, that byte count is also the
+    real uncompressed size, so there is no zip-bomb to guard beyond the limit itself.
+    Restore validates the whole file up front — manifest shape (Zod), then referential
+    integrity (every foreign key resolves within the manifest) and blob presence
+    (every referenced entry exists in the zip) — **before writing a single row or
+    byte**, so a malformed archive is rejected whole (the mirror of §20) rather than
+    discovered mid-restore.
+
+    Atomicity: the relational graph is inserted in **one DB transaction**, and the
+    blobs are put to object storage **before** it opens, so a storage failure aborts
+    with no DB write and a transaction failure rolls the DB back with a best-effort
+    blob cleanup. The outcome is all-or-nothing for the database, with at worst some
+    orphaned objects — the exact tolerance `deleteAccount` already accepts (ADR-013),
+    since object storage and Postgres cannot share a transaction.
+
+### Consequences
+
+Positive:
+
+* The milestone's objective is now **fully** true: a collector can obtain a complete
+  copy of everything the platform holds — collections, coins, valuations, images and
+  invoices — and restore it, into a new account if they are migrating or recovering.
+* The demo tenant gains a complete, genuinely persuasive "take it all with you"
+  capability at no cost, and with no new write surface (export is a read).
+* The portability contract stays in one ADR across all three slices, as its Context
+  intended; the archive appended to it rather than contradicting it.
+
+Negative:
+
+* **Re-restoring an archive duplicates the account** (23), the direct analogue of
+  CSV re-import. Disclosed by the summary, not prevented.
+* The archive format is now a second long-lived external interface (after the CSV
+  columns), frozen once collectors hold files — hence the explicit `version` field,
+  so it can evolve by rejecting unknown versions rather than silently mis-reading.
+* Buffered whole, it inherits export's memory ceiling and adds a restore upload
+  ceiling; large accounts will eventually need streaming, the same "four figures"
+  trigger §8 already names.
+
+Risks:
+
+* **Zip parser correctness is load-bearing for data integrity**, the same shape of
+  risk as §13's CSV parser: a bad offset or CRC handling corrupts bytes silently
+  rather than throwing. Paid for with the round-trip test over binary and adversarial
+  input, not with a dependency.
+* **A partial restore is possible in principle** if the process dies between the blob
+  puts and the DB transaction, leaving orphaned objects (never orphaned rows). This is
+  the accepted ADR-013 tolerance; the orphans are logged and re-sweepable, and no
+  live row ever points at a missing blob.
+
 ## Related Documents
 
 * docs/decisions/ADR-015-coin-filter-rework.md

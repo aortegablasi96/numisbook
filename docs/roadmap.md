@@ -77,8 +77,12 @@ active milestone is now **Collector Experience**, whose first two slices have
 shipped: **CSV export** — a collector can download the coins in view from either
 coin surface, filters and all (see `history.md` Phase 20 and ADR-017) — and **CSV
 import**, which reads that same contract back, previewing what it will add before
-it writes anything (see `history.md` Phase 21 and the ADR-017 addendum). Only the
-full-account archive remains.
+it writes anything (see `history.md` Phase 21 and the ADR-017 addendum) — and the
+**full-account archive with restore**, which carries everything CSV cannot (all
+collections, coins, valuations, plus image and invoice bytes) as a dependency-free
+zip, restoring additively into any account (see `history.md` Phase 22 and the
+ADR-017 archive addendum). With that, the **Collector Experience** milestone is
+complete: a collector can get their data fully in and out.
 
 Primary objective:
 
@@ -96,8 +100,8 @@ Current priorities:
 - Rework filters — ✅ complete
 - Mobile-responsive UI — ✅ complete
 - Public demo account — ✅ complete
-- Collector experience (active)
-- (then) assistant hardening
+- Collector experience — ✅ complete (CSV export + import, full-account archive)
+- Assistant hardening (next active)
 - (then) hosted error monitoring & accessibility checks in CI
 
 ---
@@ -129,10 +133,13 @@ invented alongside it.
       write; the round-trip test (`parse(export(coin)) ≡ coin`) pins the two
       together. **Additive**: the contract carries no coin id, so re-importing an
       export duplicates it — disclosed by the preview, not prevented.
-- [ ] Collection backup and recovery — scoped as a **full-account archive with
-      restore**: everything CSV cannot carry (all collections, coins, valuations,
-      plus image and invoice bytes). Not scheduled server-side snapshots — Neon
-      already backs up the database, and that does not help a collector leave.
+- [x] Collection backup and recovery — shipped (see `history.md` Phase 22, ADR-017
+      addendum §§21–26). A **full-account archive with restore**: a STORE zip of a
+      JSON manifest plus every image and invoice byte, carrying everything CSV cannot
+      (all collections, coins, valuations, and blobs). Download is a read (the demo
+      keeps it); restore is an **additive** write (new ids, nothing overwritten;
+      demo refused). Not scheduled server-side snapshots — Neon already backs up the
+      database, and that does not help a collector leave.
 
 ---
 

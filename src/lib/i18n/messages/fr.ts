@@ -78,6 +78,22 @@ export const fr: Partial<Messages> = {
   "settings.danger.confirm":
     "Supprimer votre compte et toutes les données associées ? Cette action est irréversible.",
 
+  // Portabilité des données (archive + restauration)
+  "settings.data.heading": "Vos données",
+  "settings.data.body":
+    "Téléchargez une archive complète de votre compte — toutes les collections, pièces, estimations, images et factures — ou restaurez-en une enregistrée précédemment.",
+  "settings.data.download": "Télécharger l’archive",
+  "settings.data.downloading": "Préparation…",
+  "settings.data.restore.label": "Restaurer à partir d’une archive",
+  "settings.data.restore.help":
+    "La restauration ajoute les collections de l’archive à votre compte ; elle ne remplace ni n’écrase jamais ce qui existe déjà.",
+  "settings.data.restore.button": "Restaurer l’archive",
+  "settings.data.restoring": "Restauration…",
+  "settings.data.restore.confirm":
+    "Restaurer cette archive ? Ses collections, pièces, estimations, images et factures seront ajoutées à votre compte.",
+  "settings.data.restore.success":
+    "{collections} collections, {coins} pièces, {valuations} estimations, {images} images et {invoices} factures restaurées.",
+
   "notFound.title": "Page introuvable",
   "notFound.body":
     "Nous n’avons pas trouvé la page que vous cherchiez. Elle a peut-être été déplacée ou n’existe plus.",
