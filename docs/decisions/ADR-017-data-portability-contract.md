@@ -276,6 +276,186 @@ Risks:
 * Excel's regional list separator (`;` in some locales) is not addressed; RFC 4180
   commas are assumed. Accepted for now — revisit if collectors report friction.
 
+## Addendum — CSV import (slice 2 of 3)
+
+Status: Accepted
+
+Date: 2026-07-17
+
+This ADR is scoped to the whole Collector Experience milestone, and its Context
+reserves this: "import and archive append to it rather than adding ADRs that would
+inevitably disagree." This addendum records the decisions the **import** slice
+settled. It adds to the decisions above and reverses none of them; §§1–12 stand as
+accepted, and the numbering continues from them.
+
+### Context
+
+Export shipped (Phase 20) and defined the column contract. Writing import against
+it surfaced two facts about that contract that §§1–12 did not state, both
+consequences of decisions taken there deliberately, and one question §11 explicitly
+deferred to this slice. Recording them here keeps the portability contract in one
+place, which is the point of scoping this ADR to the milestone.
+
+### Decisions
+
+13. **The parser is dependency-free, answering the question §11 deferred.**
+
+    §11 left this open: "a library earns its place only if import's *parsing*
+    proves genuinely hard — a decision for that slice, on its own evidence." The
+    evidence:
+
+    - The dialect is a **strict, known subset** — comma, CRLF, `"`-quoting with
+      doubled inner quotes, BOM — because `csv.ts` writes it and Excel round-trips
+      it unchanged. Decision 20 below means a file of unknown shape is rejected
+      before parsing, so we never face an arbitrary third-party CSV.
+    - What a library sells — delimiter sniffing, encoding detection, streaming,
+      type inference, ragged-row recovery — is dead weight against a
+      contract-checked file of a known dialect.
+    - Exactly one thing is genuinely hard: a **quoted field containing a newline**,
+      which is real here (`observations` and `pedigree` are 4000-char free text)
+      and which defeats naive line-splitting. That is an argument against the naive
+      parser, not for a library. The answer is a two-state character scanner, the
+      same order of size as the writer it inverts.
+
+    So the parser is a `parseCsv` beside `toCsv` in `src/lib/csv.ts`,
+    domain-agnostic like its inverse. This is conditional on it being a character
+    state machine — a line-split implementation is a defect, not a style choice —
+    and on the round-trip property test §3 already mandates covering the
+    adversarial cases.
+
+    **Revisit trigger:** accepting foreign spreadsheets of unknown dialect (i.e.
+    if column-mapping ever ships). Not before.
+
+14. **Import is additive. It creates coins; it never updates them.**
+
+    `COIN_EXPORT_OMITTED` excludes `id` (§ the contract module), and this ADR
+    defends that: letting a collector edit surrogate identity in a spreadsheet
+    would mean editing NumisBook's bookkeeping. The consequence, unstated until
+    now: **import has no way to recognise a row it has already seen.** Exporting a
+    collection and importing the file back yields a second copy of every coin.
+
+    This is accepted rather than engineered around. For the use case that
+    motivates the slice — "bring my spreadsheet in" — insert is the correct and
+    only sensible semantic. Upsert would require an identity column this ADR
+    deliberately omitted, plus a merge UI, to serve a case (re-importing your own
+    export) that no collector has asked for.
+
+    Note what this means for §3's round-trip assertion: `parse(export(coin)) ≡
+    coin` pins **field fidelity, not idempotency**, and passes while the
+    duplication above is true. It is not a guard against it.
+
+    The mitigation is disclosure, not prevention: the import preview states the
+    count before anything is written, and the commit control is labelled with it
+    ("Add 37 coins"). If duplicate-on-re-import is reported in practice, the
+    remedy is an `id` column — and this ADR's Consequences already note that
+    **adding** a column is the safe direction of change.
+
+15. **Import targets one collection, chosen by the collector. The `collection`
+    column is advisory and is ignored.**
+
+    A comment in the contract module assumed import "can route on it". The schema
+    does not support that: `collections.name` is `text NOT NULL` with only a
+    `user_id` index — **no unique constraint** — so one user may own two
+    collections named "Roman", and routing a row by name is ambiguous by
+    construction. Every available tie-break (first, newest, error) is a guess at
+    intent.
+
+    This also follows from a product rule that predates the milestone: `/coins` is
+    read-only and coins are created inside a collection (ADR-015, DDR-005). Import
+    creates coins, so it lives on the collection surface and nowhere else. A file
+    exported from `/coins` spanning three collections imports into the one
+    collection the collector chose; its `collection` column becomes text that
+    describes where the coins came from, exactly as `title` is text that describes
+    the coin (§6).
+
+    Multi-collection restore is the **archive** slice's job, where collection
+    identity travels properly instead of being inferred from a display name.
+
+    The stale comment in the contract module is corrected as part of this slice.
+
+16. **Import is exposed as one route with a `commit` flag, not a preview route and
+    a commit route.**
+
+    Two routes would each parse, header-check, and validate identically, differing
+    only in the final insert — 95% duplication of the one code path whose
+    divergence this ADR names as the milestone's highest-severity risk. One path,
+    one flag at the end. `commit` defaults to false, so a request that omits it
+    previews rather than writes.
+
+    The client therefore uploads the file twice: once to preview, once to commit.
+    The alternative is server-side parse state behind a token, with a cache, an
+    expiry, and a new way to be wrong. Re-validating on commit is correct rather
+    than wasteful — a preview token is a claim about the past that the commit would
+    have to trust.
+
+17. **Import is a mutation, and the demo tenant does not get it.**
+
+    The mirror of §10. Export carries no `assertWritable` because it is a read, and
+    the read-only demo tenant keeps it deliberately. Import writes, so ADR-016
+    applies in full: `assertWritable`, enforced mechanically by the
+    build-failing write-guard test, and DDR-007 removes the affordance rather than
+    disabling it.
+
+18. **Validation is the coin form's, not import's own.**
+
+    Rows validate through the existing `createCoinSchema`, and map to storage
+    through the existing private `toCoinRow`, which encodes the price-partition
+    rule (finalPrice = hammer+premium+shipping+tax when any component is present —
+    ADR-009). Import must not acquire a second opinion about what a valid coin is,
+    or about what a coin's `finalPrice` is, decided by which door the coin entered
+    through.
+
+    A consequence worth stating: a hand-edited file whose `finalPrice` disagrees
+    with its components will have `finalPrice` **silently recomputed** from the
+    components. That is the existing rule winning, correctly — but it means import
+    is not a pure round-trip of the file's bytes, and it must be an explicit test
+    rather than a discovery.
+
+19. **No new domain, no new service** — the same call as §12, for the same reason,
+    reinforced: `toCoinRow` is private to the coins service, and reaching it from a
+    separate import service would mean exporting the price rule to any caller.
+    Import is a coin use case and stays with the coins aggregate.
+
+20. **A file whose header row does not match the contract is rejected whole.**
+
+    Not partially imported, not silently ignored: the response names the
+    unrecognised and missing headers. A collector's spreadsheet carrying a `value`
+    column they expect to be read is better refused than half-imported. Headers are
+    matched as the stable English identifiers §4 fixed them as, in every locale.
+
+### Consequences
+
+Positive:
+
+* The milestone's objective — "let a collector get their data in and out" — is
+  true in both directions for coin attributes, with one contract and one parser
+  pair proving it.
+* §11's deferral paid off: the parser call was made against a known dialect and a
+  known rejection rule, rather than guessed at while export was being designed.
+* The round-trip test §3 anticipated now exists and gates CI, closing the drift
+  risk this ADR named as highest-severity — structurally, not by review.
+
+Negative:
+
+* **Re-importing an export duplicates a collection** (13). The platform's answer is
+  a preview and a counted button, which makes it visible but not impossible.
+* CSV import cannot restore a multi-collection export as it was. The archive slice
+  remains load-bearing for the milestone's promise, exactly as §1 and this ADR's
+  Consequences already said.
+* Import inherits export's buffering ceiling and adds a request-body ceiling of its
+  own; both are bounded by an explicit row/byte limit rather than streamed.
+
+Risks:
+
+* **Parser correctness is now load-bearing for data integrity.** A quote-handling
+  bug does not throw — it shifts cells one column left and writes a mint into
+  `metal`. This is the cost of decision 13, taken knowingly, and paid for with the
+  round-trip property test and adversarial fixtures rather than with a dependency.
+* **The typed-escaping risk this ADR already named now cuts both ways.** §7's
+  mitigation depends on columns being correctly typed; a mistyped free-text column
+  loses its *un*escaping too, landing `'=SUM(A1)` in the database with a stray
+  quote. The inverse pair (`escapeCell` / `unescapeCell`) must be tested as a pair.
+
 ## Related Documents
 
 * docs/decisions/ADR-015-coin-filter-rework.md

@@ -13,6 +13,7 @@ import {
   listRecentAcquisitions,
   exportCoins,
   exportAllCoins,
+  importCoins,
   slugForFilename,
   buildExportFilename,
   COINS_PAGE_SIZE,
@@ -27,6 +28,9 @@ import {
 import { collectionRepository } from "@/repositories/collection.repository";
 import { buildConverter, type Converter } from "@/services/fx.service";
 import { NotFoundError, ValidationError } from "@/lib/errors";
+import { toCsv } from "@/lib/csv";
+import { coinExportHeaders, coinExportRow, escapeCell } from "@/lib/coin-export";
+import { COIN_IMPORT_MAX_ROWS, COIN_IMPORT_MAX_REPORTED_ERRORS } from "@/lib/csv-import";
 
 vi.mock("@/repositories/coin.repository", () => ({
   coinRepository: {
@@ -40,6 +44,7 @@ vi.mock("@/repositories/coin.repository", () => ({
     listRecentAcquisitionsForUser: vi.fn(),
     findByIdForUser: vi.fn(),
     create: vi.fn(),
+    createManyInCollection: vi.fn(),
     updateForUser: vi.fn(),
     deleteForUser: vi.fn(),
   },
@@ -645,6 +650,286 @@ describe("coin.service", () => {
       expect(userId).toBe("user-1");
       expect(criteria).toMatchObject({ metals: ["Gold"] });
       expect(criteria).not.toHaveProperty("limit");
+    });
+  });
+
+  // ---- CSV import (ADR-017 addendum) ---------------------------------------
+
+  describe("importCoins", () => {
+    // Build a file through the real contract, so these tests exercise the same
+    // round-trip a collector's own export takes rather than a hand-typed header
+    // row that could drift from it.
+    const headers = coinExportHeaders();
+    const at = (header: string) => headers.indexOf(header);
+
+    const rowFor = (values: Partial<Record<string, string>> = {}): string[] => {
+      const cells = headers.map(() => "");
+      for (const [header, value] of Object.entries(values)) {
+        cells[at(header)] = value ?? "";
+      }
+      return cells;
+    };
+
+    const fileOf = (...rows: string[][]) => toCsv(headers, rows);
+
+    beforeEach(() => {
+      collections.findByIdForUser.mockResolvedValue(ownedCollection);
+      coins.createManyInCollection.mockResolvedValue(0);
+    });
+
+    it("rejects a collection the user does not own, without reading the file", async () => {
+      collections.findByIdForUser.mockResolvedValue(null);
+      await expect(
+        importCoins("user-2", "col-1", fileOf(rowFor({ category: "Romans" })), true),
+      ).rejects.toBeInstanceOf(NotFoundError);
+      expect(coins.createManyInCollection).not.toHaveBeenCalled();
+    });
+
+    it("previews without writing anything", async () => {
+      const report = await importCoins(
+        "user-1",
+        "col-1",
+        fileOf(rowFor({ category: "Romans" }), rowFor({ category: "Greeks" })),
+        false,
+      );
+      expect(report).toMatchObject({ rowsRead: 2, toAdd: 2, added: 0, invalidRows: 0 });
+      expect(coins.createManyInCollection).not.toHaveBeenCalled();
+    });
+
+    it("inserts the valid rows on commit", async () => {
+      coins.createManyInCollection.mockResolvedValue(2);
+      const report = await importCoins(
+        "user-1",
+        "col-1",
+        fileOf(rowFor({ category: "Romans" }), rowFor({ category: "Greeks" })),
+        true,
+      );
+      expect(report.added).toBe(2);
+      const [collectionId, rows] = coins.createManyInCollection.mock.calls[0];
+      expect(collectionId).toBe("col-1");
+      expect(rows).toHaveLength(2);
+      expect(rows[0]).toMatchObject({ category: "Romans" });
+    });
+
+    it("never takes the collection from the file", async () => {
+      // The `collection` column is advisory: collections.name is not unique, so
+      // routing on it is ambiguous (addendum §15). The chosen collection wins.
+      await importCoins(
+        "user-1",
+        "col-1",
+        fileOf(rowFor({ category: "Romans", collection: "Somebody Else's Collection" })),
+        true,
+      );
+      const [collectionId, rows] = coins.createManyInCollection.mock.calls[0];
+      expect(collectionId).toBe("col-1");
+      expect(rows[0]).not.toHaveProperty("collectionName");
+    });
+
+    it("ignores the derived title column", async () => {
+      await importCoins(
+        "user-1",
+        "col-1",
+        fileOf(rowFor({ category: "Romans", title: "Whatever The Collector Typed" })),
+        true,
+      );
+      const [, rows] = coins.createManyInCollection.mock.calls[0];
+      expect(rows[0]).not.toHaveProperty("title");
+    });
+
+    it("reports an invalid row by line, column and reason, and imports the rest", async () => {
+      const report = await importCoins(
+        "user-1",
+        "col-1",
+        fileOf(
+          rowFor({ category: "Romans" }),
+          rowFor({ category: "Greeks", grade: "Mint State" }),
+          rowFor({ category: "Celts" }),
+        ),
+        true,
+      );
+
+      expect(report.rowsRead).toBe(3);
+      expect(report.toAdd).toBe(2);
+      expect(report.invalidRows).toBe(1);
+      expect(report.errors).toHaveLength(1);
+      // Row 3: the header is row 1, so the second coin is the third line — what a
+      // collector sees in their spreadsheet.
+      expect(report.errors[0]).toMatchObject({ row: 3, column: "grade" });
+      expect(coins.createManyInCollection.mock.calls[0][1]).toHaveLength(2);
+    });
+
+    it("reports a bad number against its column rather than throwing", async () => {
+      const report = await importCoins(
+        "user-1",
+        "col-1",
+        fileOf(rowFor({ category: "Romans", weight: "heavy" })),
+        false,
+      );
+      expect(report.errors[0]).toMatchObject({ row: 2, column: "weight" });
+      expect(report.toAdd).toBe(0);
+    });
+
+    it("rejects a file that is not a coin CSV, without listing all 27 columns", async () => {
+      // A file sharing nothing with the contract is not a near-miss to be
+      // corrected column by column — saying so beats burying it in a wall of
+      // every header it lacks.
+      const bogus = toCsv(["name", "price"], [["Denarius", "10"]]);
+      await expect(importCoins("user-1", "col-1", bogus, false)).rejects.toThrow(
+        /does not look like a NumisBook coin export/,
+      );
+      expect(coins.createManyInCollection).not.toHaveBeenCalled();
+    });
+
+    it("names the specific columns when a file is nearly right", async () => {
+      // The actionable case: the collector added a column, or dropped one.
+      const nearly = toCsv([...headers.filter((h) => h !== "mint"), "value"], []);
+      await expect(importCoins("user-1", "col-1", nearly, false)).rejects.toThrow(
+        /unexpected: value; missing: mint/,
+      );
+    });
+
+    it("rejects an empty file", async () => {
+      await expect(importCoins("user-1", "col-1", "", false)).rejects.toBeInstanceOf(
+        ValidationError,
+      );
+    });
+
+    it("accepts a header-only file as zero coins", async () => {
+      // Export produces exactly this for an over-narrow filter, so import must
+      // accept its own output.
+      const report = await importCoins("user-1", "col-1", fileOf(), false);
+      expect(report).toMatchObject({ rowsRead: 0, toAdd: 0, invalidRows: 0 });
+    });
+
+    it("refuses a file over the row limit rather than failing at the database", async () => {
+      const many = Array.from({ length: COIN_IMPORT_MAX_ROWS + 1 }, () =>
+        rowFor({ category: "Romans" }),
+      );
+      await expect(
+        importCoins("user-1", "col-1", fileOf(...many), true),
+      ).rejects.toBeInstanceOf(ValidationError);
+      expect(coins.createManyInCollection).not.toHaveBeenCalled();
+    });
+
+    it("caps the itemised errors but keeps the counts exact", async () => {
+      const bad = Array.from({ length: COIN_IMPORT_MAX_REPORTED_ERRORS + 10 }, () =>
+        rowFor({ grade: "Mint State" }),
+      );
+      const report = await importCoins("user-1", "col-1", fileOf(...bad), false);
+      expect(report.invalidRows).toBe(COIN_IMPORT_MAX_REPORTED_ERRORS + 10);
+      expect(report.errors).toHaveLength(COIN_IMPORT_MAX_REPORTED_ERRORS);
+    });
+
+    // ---- The behaviours the addendum said to test, not discover -------------
+
+    it("round-trips a BC year as a negative number", async () => {
+      await importCoins(
+        "user-1",
+        "col-1",
+        fileOf(rowFor({ category: "Romans", yearFrom: "-44", yearTo: "-44" })),
+        true,
+      );
+      const [, rows] = coins.createManyInCollection.mock.calls[0];
+      expect(rows[0]).toMatchObject({ yearFrom: -44, yearTo: -44 });
+    });
+
+    it("imports a price in its own currency, unconverted", async () => {
+      await importCoins(
+        "user-1",
+        "col-1",
+        fileOf(rowFor({ finalPrice: "1250.00", priceCurrency: "USD" })),
+        true,
+      );
+      const [, rows] = coins.createManyInCollection.mock.calls[0];
+      expect(rows[0]).toMatchObject({ finalPrice: "1250.00", priceCurrency: "USD" });
+      expect(buildConverter).not.toHaveBeenCalled();
+    });
+
+    it("recomputes finalPrice from the components when any are present", async () => {
+      // The existing ADR-009 price-paid rule wins — import holds no second
+      // opinion. A hand-edited finalPrice that disagrees is overwritten.
+      await importCoins(
+        "user-1",
+        "col-1",
+        fileOf(
+          rowFor({
+            hammerPrice: "1000.00",
+            auctionPremium: "200.00",
+            shippingCost: "30.00",
+            taxCost: "20.00",
+            finalPrice: "999999.00", // a lie, and it must not survive
+          }),
+        ),
+        true,
+      );
+      const [, rows] = coins.createManyInCollection.mock.calls[0];
+      expect(rows[0]).toMatchObject({ finalPrice: "1250.00" });
+    });
+
+    it("keeps a directly-set finalPrice when no components are present", async () => {
+      await importCoins(
+        "user-1",
+        "col-1",
+        fileOf(rowFor({ finalPrice: "500.00" })),
+        true,
+      );
+      const [, rows] = coins.createManyInCollection.mock.calls[0];
+      expect(rows[0]).toMatchObject({ finalPrice: "500.00" });
+    });
+
+    it("un-escapes a formula guard in free text", async () => {
+      const escaped = escapeCell("=1+1", "text");
+      await importCoins("user-1", "col-1", fileOf(rowFor({ observations: escaped })), true);
+      const [, rows] = coins.createManyInCollection.mock.calls[0];
+      expect(rows[0]).toMatchObject({ observations: "=1+1" });
+    });
+
+    it("reads free text containing commas, quotes and newlines as one field", async () => {
+      const observations = 'Ex "Smith", 1998\nEx Jones, 2004';
+      await importCoins("user-1", "col-1", fileOf(rowFor({ observations })), true);
+      const [, rows] = coins.createManyInCollection.mock.calls[0];
+      expect(rows[0]).toMatchObject({ observations });
+    });
+
+    it("imports a real export of a real coin, end to end", async () => {
+      // The round-trip ADR-017 §3 mandates, at the service boundary: what export
+      // wrote is what import reads back.
+      const exported: CoinWithCollection = {
+        ...fakeCoin,
+        collectionName: "Ancient Rome",
+        category: "Romans",
+        issuingAuthority: "Augustus",
+        yearFrom: -27,
+        yearTo: 14,
+        denomination: "Denarius",
+        mint: "Lugdunum",
+        metal: "Silver",
+        grade: "EF",
+        weight: "3.90",
+        observations: 'Ex "Smith", 1998',
+        auctionDate: "2024-03-15",
+        finalPrice: "1250.00",
+        priceCurrency: "EUR",
+      };
+      const csv = toCsv(coinExportHeaders(), [coinExportRow(exported)]);
+
+      await importCoins("user-1", "col-1", csv, true);
+      const [, rows] = coins.createManyInCollection.mock.calls[0];
+      expect(rows[0]).toMatchObject({
+        category: "Romans",
+        issuingAuthority: "Augustus",
+        yearFrom: -27,
+        yearTo: 14,
+        denomination: "Denarius",
+        mint: "Lugdunum",
+        metal: "Silver",
+        grade: "EF",
+        weight: "3.90",
+        observations: 'Ex "Smith", 1998',
+        auctionDate: "2024-03-15",
+        finalPrice: "1250.00",
+        priceCurrency: "EUR",
+      });
     });
   });
 });

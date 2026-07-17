@@ -1115,6 +1115,79 @@ Current stack:
 
 ---
 
+# Phase 21 — Collector Experience: CSV Import
+
+Goal: let a collector get their data **in**. A collection could only be built by
+typing coins in one at a time, which was the single largest cost of adopting
+NumisBook. Export (Phase 20) lowered the cost of leaving; this lowers the cost of
+arriving, and the milestone's objective needs both.
+
+Second slice of the Collector Experience milestone (Epic #180, story #185).
+Decision: the **CSV import addendum to `ADR-017`** (§§13–20) — the ADR is scoped to
+the whole milestone and reserved the space, so import appended to it rather than
+adding an ADR that would inevitably disagree.
+
+## What shipped
+
+- **Import on a collection page**: choose a `.csv` → read a **preview** → confirm.
+  The preview reports rows read, coins that will be added, and every row that
+  cannot be imported with its line, column and reason. Nothing is written until
+  the collector commits.
+- **The contract read back through the same module that writes it**
+  (`src/lib/coin-export.ts`, which now serves both directions). Two compile-time
+  checks now guard it: a column that is exported but never read back fails the
+  build, as does a coin column that is neither exported nor deliberately omitted.
+- **A dependency-free RFC 4180 reader** (`parseCsv`), answering the question
+  ADR-017 §11 deferred to this slice. The dialect is a strict subset we write
+  ourselves and a header check rejects anything foreign before parsing, so
+  delimiter sniffing, encoding detection and streaming — everything a library
+  sells — would have been dead weight. It is a **character state machine**: a
+  quoted field may contain a newline, and `observations`/`pedigree` are 4000-char
+  free text, so a line-splitting parser would silently tear one coin into two
+  malformed rows.
+- **Validation is the coin form's.** Rows go through the same `createCoinSchema`
+  and `toCoinRow` the form posts through, so import holds no second opinion about
+  what a valid coin is — or about the price partition (`finalPrice` is recomputed
+  from its components when any are present, ADR-009).
+- **Partial import**: valid rows land, invalid rows are reported and skipped. A
+  file is never half-understood — a header row that is not the contract is rejected
+  whole, naming the unexpected and missing columns.
+- **One route, two phases** (`commit` defaults to false, so a request that omits it
+  previews). Two routes would have duplicated the parse/validate path whose
+  divergence is this milestone's named risk.
+- **Import writes, so the demo tenant does not get it** — the mirror of export's
+  §10. `assertWritable`, enforced by the build-failing write-guard test, and the
+  affordance removed rather than disabled (DDR-007).
+
+## Notes
+
+Two facts about the shipped contract surfaced during planning and shaped the scope:
+
+- **Import cannot be an update.** `COIN_EXPORT_OMITTED` excludes `id` by design, so
+  import has no way to recognise a row it has already seen: every import inserts,
+  and re-importing your own export duplicates the collection. Note the round-trip
+  test ADR-017 mandated pins *field fidelity, not idempotency*, so it passes while
+  this is true. Accepted and disclosed rather than engineered around — the commit
+  button is labelled with its count ("Add 37 coins") and names the receiving
+  collection. An `id` column is the remedy if it is ever reported; adding a column
+  is the safe direction of change.
+- **The `collection` column cannot route.** A code comment claimed import would
+  route on it; `collections.name` has no unique constraint, so one user may own two
+  collections named "Roman" and routing by name is ambiguous by construction. The
+  column is now advisory, like `title`, and the stale comment was corrected.
+  Multi-collection restore belongs to the archive slice.
+
+Implementation also found that **`escapeCell` is not injective**: `=1+1` and the
+literal text `'=1+1` both export as `'=1+1`, so no inverse can distinguish them.
+`unescapeCell` therefore strips a leading `'` only when what follows would itself
+have been escaped — which keeps ordinary text like `'tis` intact, at the cost of
+one vanishingly rare case that is now pinned by a test rather than lurking. Fixing
+it properly would mean changing the escaping and altering the meaning of every file
+already on a collector's disk, which is exactly what ADR-017 froze the format
+against.
+
+---
+
 # Historical Notes
 
 This document intentionally records completed work only.

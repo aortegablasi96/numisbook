@@ -18,8 +18,14 @@ import {
   updateCoinSchema,
   type CreateCoinInput,
 } from "@/lib/validation/coin";
-import { toCsv } from "@/lib/csv";
-import { coinExportHeaders, coinExportRow } from "@/lib/coin-export";
+import { toCsv, parseCsv } from "@/lib/csv";
+import {
+  coinExportHeaders,
+  coinExportRow,
+  parseRow,
+  validateHeaders,
+} from "@/lib/coin-export";
+import { COIN_IMPORT_MAX_ROWS, COIN_IMPORT_MAX_REPORTED_ERRORS } from "@/lib/csv-import";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 
 export const COINS_PAGE_SIZE = 20;
@@ -216,6 +222,154 @@ export async function exportAllCoins(
 ): Promise<CoinExport> {
   const coins = await coinRepository.listForExportForUser(userId, toCriteria(search));
   return toCoinExport(coins, "coins");
+}
+
+// ---- CSV import (ADR-017 addendum) ------------------------------------------
+
+/** One row of the file that could not become a coin. */
+export type ImportRowError = {
+  /**
+   * The line as the collector sees it in a spreadsheet: the header is row 1, so
+   * the first coin is row 2. Reporting the array index would be reporting our
+   * bookkeeping, not their file.
+   */
+  row: number;
+  /** The contract column at fault, or null when the whole row is the problem. */
+  column: string | null;
+  message: string;
+};
+
+/**
+ * What an import did — or, when previewing, what it would do.
+ *
+ * The counts are always exact. `errors` is capped
+ * (`COIN_IMPORT_MAX_REPORTED_ERRORS`), so read `invalidRows` for the true number
+ * of rows that failed rather than `errors.length`.
+ */
+export type ImportReport = {
+  rowsRead: number;
+  toAdd: number;
+  /** 0 on a preview — nothing is written unless `commit` is true. */
+  added: number;
+  invalidRows: number;
+  errors: ImportRowError[];
+};
+
+/** At most this many column names per list before the message summarises. */
+const HEADER_NAMES_SHOWN = 4;
+
+const nameList = (names: string[]): string =>
+  names.length <= HEADER_NAMES_SHOWN
+    ? names.join(", ")
+    : `${names.slice(0, HEADER_NAMES_SHOWN).join(", ")} and ${names.length - HEADER_NAMES_SHOWN} more`;
+
+/**
+ * Say what is wrong with a header row in a sentence a collector can act on.
+ *
+ * Two shapes, because two situations. A file that shares nothing with the
+ * contract is not a coin CSV at all, and listing all 27 missing columns would
+ * bury that fact in a wall of text — so it gets told plainly. A file that is
+ * *nearly* right gets the specific columns, which is the actionable case.
+ */
+function describeHeaderMismatch(
+  unexpected: string[],
+  missing: string[],
+  recognised: number,
+): string {
+  if (recognised === 0) {
+    return "This file does not look like a NumisBook coin export. Export a collection to see the columns it expects.";
+  }
+  const parts: string[] = [];
+  if (unexpected.length > 0) parts.push(`unexpected: ${nameList(unexpected)}`);
+  if (missing.length > 0) parts.push(`missing: ${nameList(missing)}`);
+  return `This file's columns do not match a NumisBook export (${parts.join("; ")})`;
+}
+
+/**
+ * Create coins in a collection from a CSV, reading the column contract export
+ * writes (`@/lib/coin-export`).
+ *
+ * **Additive.** The contract carries no coin id by design, so import cannot
+ * recognise a row it has already seen: every call inserts. Re-importing an export
+ * duplicates it, which the UI discloses by stating the count before committing
+ * (ADR-017 addendum §14).
+ *
+ * **Two-phase.** With `commit: false` this parses, validates and reports, writing
+ * nothing — the preview the panel renders. With `commit: true` it does the same
+ * work again and inserts the valid rows. Re-validating rather than trusting a
+ * preview token is deliberate: a token is a claim about the past.
+ *
+ * **Tenant isolation.** Ownership is checked once, up front, and `collectionId`
+ * is passed to the repository from that checked argument — never read from the
+ * file, which is why the contract omits it. The same shape as the assistant's
+ * server-side `userId` injection: untrusted input cannot name its own tenant.
+ *
+ * Rows are validated by `createCoinSchema` and mapped by `toCoinRow` — the very
+ * ones the coin form posts through — so import holds no second opinion about what
+ * a valid coin is, or about what a `finalPrice` is (addendum §18).
+ */
+export async function importCoins(
+  userId: string,
+  collectionId: string,
+  text: string,
+  commit: boolean,
+): Promise<ImportReport> {
+  await assertOwnsCollection(userId, collectionId);
+
+  const rows = parseCsv(text);
+  if (rows.length === 0) {
+    throw new ValidationError("This file is empty");
+  }
+
+  const [headers, ...dataRows] = rows;
+  const check = validateHeaders(headers);
+  if (!check.ok) {
+    const recognised = headers.length - check.unexpected.length;
+    throw new ValidationError(
+      describeHeaderMismatch(check.unexpected, check.missing, recognised),
+    );
+  }
+
+  if (dataRows.length > COIN_IMPORT_MAX_ROWS) {
+    throw new ValidationError(
+      `This file has ${dataRows.length} rows; the limit is ${COIN_IMPORT_MAX_ROWS} per import`,
+    );
+  }
+
+  const valid: CoinPatch[] = [];
+  const errors: ImportRowError[] = [];
+  let invalidRows = 0;
+
+  dataRows.forEach((cells, i) => {
+    const result = createCoinSchema.safeParse(parseRow(cells, check.index));
+    if (result.success) {
+      valid.push(toCoinRow(result.data));
+      return;
+    }
+
+    invalidRows += 1;
+    for (const issue of result.error.issues) {
+      if (errors.length >= COIN_IMPORT_MAX_REPORTED_ERRORS) break;
+      errors.push({
+        row: i + 2, // the header occupies row 1
+        column: issue.path.length > 0 ? String(issue.path[0]) : null,
+        message: issue.message,
+      });
+    }
+  });
+
+  const report: ImportReport = {
+    rowsRead: dataRows.length,
+    toAdd: valid.length,
+    added: 0,
+    invalidRows,
+    errors,
+  };
+
+  if (!commit) return report;
+
+  report.added = await coinRepository.createManyInCollection(collectionId, valid);
+  return report;
 }
 
 export async function getCoinFacets(

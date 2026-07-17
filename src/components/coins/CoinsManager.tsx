@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
-import { IconPencil, IconTrash } from "@/components/ui/icons";
+import { IconPencil, IconTrash, IconUpload } from "@/components/ui/icons";
 import { COIN_GRADES } from "@/lib/validation/coin";
 import { formatCoinTitle } from "@/lib/coin-format";
 import { readError, NETWORK_ERROR } from "@/lib/http";
@@ -11,6 +11,7 @@ import { useIsDemo } from "@/components/demo/DemoProvider";
 import type { MessageKey } from "@/lib/i18n";
 import { CoinFilters, EMPTY_FACETS, type CoinFacets } from "./CoinFilters";
 import { ExportCsvLink } from "./ExportCsvLink";
+import { ImportCsvPanel } from "./ImportCsvPanel";
 import {
   CoinTable,
   ColumnPicker,
@@ -95,6 +96,10 @@ export function CoinsManager({
   const [facets, setFacets] = useState<CoinFacets>(EMPTY_FACETS);
 
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  // Focus returns here when the import panel closes: the panel is an inline
+  // region, not a <dialog>, so nothing restores it for us.
+  const importTriggerRef = useRef<HTMLButtonElement>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +139,7 @@ export function CoinsManager({
   function resetForm() { setForm(EMPTY_FORM); setEditingId(null); setShowForm(false); }
 
   function startEdit(coin: CoinView) {
+    setShowImport(false);
     setForm(toForm(coin)); setEditingId(coin.id); setShowForm(true); setError(null);
   }
 
@@ -182,6 +188,24 @@ export function CoinsManager({
           {/* Not gated on isDemo: an export is a read, so the demo tenant keeps it.
               DDR-007 removes *mutation* affordances, and pulling the demo
               collection into a spreadsheet is the portability promise in action. */}
+          {/* Import writes, so unlike export it is withheld from the read-only
+              demo tenant — removed rather than disabled (DDR-007). */}
+          {!isDemo && (
+            <button
+              type="button"
+              ref={importTriggerRef}
+              className="btn-sm"
+              onClick={() => {
+                if (showImport) { setShowImport(false); return; }
+                resetForm();
+                setError(null);
+                setShowImport(true);
+              }}
+            >
+              <IconUpload />
+              {t("import.action")}
+            </button>
+          )}
           <ExportCsvLink
             href={`/api/collections/${collectionId}/coins/export`}
             filters={filters}
@@ -196,13 +220,30 @@ export function CoinsManager({
             <button type="button" className="btn-primary btn-sm"
               onClick={() => {
                 if (showForm && !editingId) { resetForm(); }
-                else { setForm(EMPTY_FORM); setEditingId(null); setShowForm(true); setError(null); }
+                else { setShowImport(false); setForm(EMPTY_FORM); setEditingId(null); setShowForm(true); setError(null); }
               }}>
               {showForm && !editingId ? t("action.cancel") : t("coins.add")}
             </button>
           )}
         </div>
       </div>
+
+      {showImport && (
+        <ImportCsvPanel
+          collectionId={collectionId}
+          collectionName={collectionName}
+          onClose={() => {
+            setShowImport(false);
+            importTriggerRef.current?.focus();
+          }}
+          onImported={async () => {
+            // Page 1: the coins just added are what the collector wants to see.
+            // Facets too: an import can introduce metals and categories the
+            // filter dropdowns must now offer.
+            await Promise.all([load(1, filters), fetchFacets()]);
+          }}
+        />
+      )}
 
       {/* Add / edit form */}
       {showForm && (
