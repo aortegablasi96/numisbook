@@ -23,7 +23,7 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — active milestone: Collector Experience**
+Current maturity: **Live in production — active milestone: Assistant Hardening**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -82,7 +82,10 @@ it writes anything (see `history.md` Phase 21 and the ADR-017 addendum) — and 
 collections, coins, valuations, plus image and invoice bytes) as a dependency-free
 zip, restoring additively into any account (see `history.md` Phase 22 and the
 ADR-017 archive addendum). With that, the **Collector Experience** milestone is
-complete: a collector can get their data fully in and out.
+complete: a collector can get their data fully in and out. The active milestone
+is now **Assistant Hardening** — making the collection assistant production-grade
+(streaming responses, rate limiting, cost controls, and conversation limits) now
+that the platform is deployed.
 
 Primary objective:
 
@@ -101,12 +104,16 @@ Current priorities:
 - Mobile-responsive UI — ✅ complete
 - Public demo account — ✅ complete
 - Collector experience — ✅ complete (CSV export + import, full-account archive)
-- Assistant hardening (next active)
+- Assistant hardening — active
 - (then) hosted error monitoring & accessibility checks in CI
 
 ---
 
-# Active Milestone — Collector Experience
+# Completed Milestone — Collector Experience
+
+✅ Complete — all three features shipped (see `history.md` Phases 20–22, ADR-017
+and its addenda). Retained here for the design rationale; the next active
+milestone follows below.
 
 Goal:
 
@@ -143,11 +150,11 @@ invented alongside it.
 
 ---
 
-# Future Milestone — Assistant Hardening
+# Active Milestone — Assistant Hardening
 
 Goal:
 
-Make the collection assistant production-grade once the platform is deployed.
+Make the collection assistant production-grade now that the platform is deployed.
 
 ## Features
 
