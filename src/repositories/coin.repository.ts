@@ -354,6 +354,35 @@ export const coinRepository = {
     return row;
   },
 
+  /**
+   * Insert many coins into one collection — the CSV import path (ADR-017).
+   *
+   * One statement, not a loop over `create`: N round trips would also mean N ways
+   * to half-succeed, whereas a single multi-row INSERT is atomic on its own, so
+   * either every row of an import lands or none does, with no transaction to
+   * manage.
+   *
+   * `collectionId` is stamped here from the argument and can never come from a
+   * row — the CSV contract omits it precisely so an uploaded file cannot name its
+   * own tenant. Callers must have established ownership first; this method does
+   * not check, exactly as `create` does not.
+   *
+   * Callers must also bound `rows`: Postgres caps bound parameters per statement
+   * at 65535, which with ~26 columns lands near 2500 rows. `COIN_IMPORT_MAX_ROWS`
+   * (src/lib/csv-import.ts) sits below that, and the service enforces it.
+   */
+  async createManyInCollection(
+    collectionId: string,
+    rows: readonly CoinPatch[],
+  ): Promise<number> {
+    if (rows.length === 0) return 0;
+    const inserted = await db
+      .insert(coins)
+      .values(rows.map((row) => ({ ...row, collectionId })))
+      .returning({ id: coins.id });
+    return inserted.length;
+  },
+
   /** Update a coin only if it lives in one of the user's collections. */
   async updateForUser(
     id: string,

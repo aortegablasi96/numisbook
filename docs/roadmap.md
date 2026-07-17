@@ -73,10 +73,12 @@ demo tenant from the signed-out home page without a Google account, and see a re
 collection — 13 coins with museum photography, invoices, filters, portfolio
 analytics and the assistant — before deciding to sign up (see `history.md` Phase 19,
 ADR-016, DDR-007, and `docs/testing/public-demo-account-testing-report.md`). The
-active milestone is now **Collector Experience**, whose first slice — **CSV
-export** — has shipped: a collector can download the coins in view from either
-coin surface, filters and all, and the file carries the column contract CSV import
-will read back (see `history.md` Phase 20 and ADR-017).
+active milestone is now **Collector Experience**, whose first two slices have
+shipped: **CSV export** — a collector can download the coins in view from either
+coin surface, filters and all (see `history.md` Phase 20 and ADR-017) — and **CSV
+import**, which reads that same contract back, previewing what it will add before
+it writes anything (see `history.md` Phase 21 and the ADR-017 addendum). Only the
+full-account archive remains.
 
 Primary objective:
 
@@ -122,8 +124,11 @@ invented alongside it.
 
 - [x] CSV export — shipped (see `history.md` Phase 20, ADR-017). Downloads the
       coins in view from both surfaces, honouring the active filter/search/sort.
-- [ ] CSV import — reads the same column contract export writes; a round-trip
-      test (`parse(export(coin)) ≡ coin`) pins the two together
+- [x] CSV import — shipped (see `history.md` Phase 21, ADR-017 addendum §§13–20).
+      Reads the same column contract export writes, with a preview before any
+      write; the round-trip test (`parse(export(coin)) ≡ coin`) pins the two
+      together. **Additive**: the contract carries no coin id, so re-importing an
+      export duplicates it — disclosed by the preview, not prevented.
 - [ ] Collection backup and recovery — scoped as a **full-account archive with
       restore**: everything CSV cannot carry (all collections, coins, valuations,
       plus image and invoice bytes). Not scheduled server-side snapshots — Neon

@@ -3,20 +3,12 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { ALLOWED_INVOICE_TYPES } from "@/lib/invoices";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
-import { IconTrash } from "@/components/ui/icons";
+import { IconTrash, IconUpload } from "@/components/ui/icons";
 import { readError, NETWORK_ERROR } from "@/lib/http";
 import { useT } from "@/components/i18n/LocaleProvider";
 import { useIsDemo } from "@/components/demo/DemoProvider";
 
 type Invoice = { id: string; filename: string | null; sizeBytes: number; createdAt: string };
-
-function IconUpload() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
-    </svg>
-  );
-}
 
 function IconPdf() {
   return (

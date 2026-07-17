@@ -273,25 +273,47 @@ display title is **derived** from attributes by `formatCoinTitle`
 (`src/lib/coin-format.ts`) — the single source of truth for a coin's title;
 search/sort operate on the underlying attributes, not a stored name.
 
-## Coin CSV export
+## Coin CSV import / export
 
-`Export CSV` on both coin surfaces downloads the coins matching the **current
-filter/search/sort** — not the page in view (ADR-017). Routes mirror `/facets`:
+One CSV column contract, two directions (ADR-017 + its CSV import addendum).
+
+**Export.** `Export CSV` on both coin surfaces downloads the coins matching the
+**current filter/search/sort** — not the page in view. Routes mirror `/facets`:
 `GET /api/coins/export` and `GET /api/collections/[id]/coins/export`; both parse
 `coinSearchParamsSchema` and ignore `page`.
 
-Invariants worth knowing before touching it:
+**Import.** `POST /api/collections/[id]/coins/import` (multipart: `file`, plus
+`commit` — **defaults to false**, so a request that omits it previews). One route,
+two phases: preview reports counts + per-row errors and writes nothing; commit
+re-validates and inserts. On the collection surface only — `/coins` is read-only.
 
-* The column contract is defined **once** in `src/lib/coin-export.ts` (CSV import
-  will read it back). A compile-time check in `coin-export.test.ts` **fails the
-  build** if a new `coins` column is neither exported nor listed in
-  `COIN_EXPORT_OMITTED` — decide deliberately, don't silence it.
+Invariants worth knowing before touching either:
+
+* The column contract is defined **once** in `src/lib/coin-export.ts`, which
+  serves **both** directions despite the name — export writes through it, import
+  reads back through it. **Never add a `coin-import.ts` with its own column list**;
+  drift between the two sides silently corrupts data on re-import, which ADR-017
+  calls the milestone's highest-severity risk. Two compile-time checks in
+  `coin-export.test.ts` **fail the build** if a new `coins` column is neither
+  exported nor in `COIN_EXPORT_OMITTED`, or is exported but never read back.
 * Values are written **as stored**: signed years (negative = BC), ISO dates,
-  prices in the coin's own currency (**never** FX-converted). `title` is derived
-  and read-only.
+  prices in the coin's own currency (**never** FX-converted, in either direction).
 * Formula-injection escaping is applied **by column type** (text only). Do not
   "fix" this into a blanket rule — it would rewrite `-44` (44 BC) to `'-44`.
-* Export is a **read**: no `assertWritable`, and the demo tenant keeps it.
+  `escapeCell`/`unescapeCell` are an inverse pair: change one, change both.
+* **Import is additive.** The contract carries no coin id by design, so import
+  cannot recognise a row it has seen: re-importing an export duplicates it. The
+  preview's counted button ("Add 37 coins") discloses this; it cannot prevent it.
+* The `collection` and `title` columns are **advisory** — import ignores both.
+  `collections.name` has no unique constraint, so it cannot route.
+* Import reuses `createCoinSchema` and `toCoinRow`, so it holds no second opinion
+  on what a valid coin is, or on the price partition (`finalPrice` is recomputed
+  from its components when any are present — ADR-009).
+* Export is a **read** (no `assertWritable`; the demo tenant keeps it). Import
+  **writes**, so it calls `assertWritable` and the demo tenant does not get it.
+* `parseCsv` (`src/lib/csv.ts`) is a character state machine. **Never rewrite it
+  as a line split** — a quoted field may contain a newline, and a split silently
+  tears one coin into two malformed rows.
 
 ## Home dashboard
 
