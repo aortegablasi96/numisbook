@@ -71,6 +71,21 @@ export const zh: Partial<Messages> = {
   "settings.danger.deleting": "正在删除…",
   "settings.danger.confirm": "删除你的账户及所有相关数据？此操作无法撤销。",
 
+  // 数据可迁移性（存档 + 恢复）
+  "settings.data.heading": "你的数据",
+  "settings.data.body":
+    "下载账户的完整存档——包括所有收藏、钱币、估值、图片和发票——或恢复此前保存的存档。",
+  "settings.data.download": "下载存档",
+  "settings.data.downloading": "准备中…",
+  "settings.data.restore.label": "从存档恢复",
+  "settings.data.restore.help": "恢复会将存档中的收藏添加到你的账户；绝不会替换或覆盖已有内容。",
+  "settings.data.restore.button": "恢复存档",
+  "settings.data.restoring": "恢复中…",
+  "settings.data.restore.confirm":
+    "恢复此存档？其中的收藏、钱币、估值、图片和发票将被添加到你的账户。",
+  "settings.data.restore.success":
+    "已恢复 {collections} 个收藏、{coins} 枚钱币、{valuations} 条估值、{images} 张图片和 {invoices} 份发票。",
+
   "notFound.title": "未找到页面",
   "notFound.body": "我们找不到你要查看的页面。它可能已被移动或不再存在。",
 

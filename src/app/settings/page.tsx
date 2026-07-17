@@ -24,6 +24,7 @@ import { getRequestTheme } from "@/lib/theme/server";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
+import { AccountDataSection } from "@/components/settings/AccountDataSection";
 
 export const metadata = { title: "Settings · NumisBook" };
 
@@ -223,6 +224,9 @@ export default async function SettingsPage() {
         baseCurrency={user.baseCurrency}
         isDemo={user.isDemo}
       />
+      {/* Download is a read the demo keeps (ADR-017 §10); restore writes, so it is
+          withheld from the demo tenant (canRestore=false). */}
+      <AccountDataSection canRestore={!user.isDemo} />
       {!user.isDemo && <DeleteAccountSection />}
     </main>
   );

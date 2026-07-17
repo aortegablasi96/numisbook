@@ -76,6 +76,22 @@ export const it: Partial<Messages> = {
   "settings.danger.confirm":
     "Eliminare il tuo account e tutti i dati associati? L’operazione non può essere annullata.",
 
+  // Portabilità dei dati (archivio + ripristino)
+  "settings.data.heading": "I tuoi dati",
+  "settings.data.body":
+    "Scarica un archivio completo del tuo account — tutte le collezioni, monete, valutazioni, immagini e fatture — o ripristinane uno salvato in precedenza.",
+  "settings.data.download": "Scarica archivio",
+  "settings.data.downloading": "Preparazione…",
+  "settings.data.restore.label": "Ripristina da un archivio",
+  "settings.data.restore.help":
+    "Il ripristino aggiunge le collezioni dell’archivio al tuo account; non sostituisce né sovrascrive mai ciò che è già presente.",
+  "settings.data.restore.button": "Ripristina archivio",
+  "settings.data.restoring": "Ripristino…",
+  "settings.data.restore.confirm":
+    "Ripristinare questo archivio? Le sue collezioni, monete, valutazioni, immagini e fatture verranno aggiunte al tuo account.",
+  "settings.data.restore.success":
+    "Ripristinati {collections} collezioni, {coins} monete, {valuations} valutazioni, {images} immagini e {invoices} fatture.",
+
   "notFound.title": "Pagina non trovata",
   "notFound.body":
     "Non abbiamo trovato la pagina che cercavi. Potrebbe essere stata spostata o non esistere più.",

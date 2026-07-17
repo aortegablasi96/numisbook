@@ -1188,6 +1188,80 @@ against.
 
 ---
 
+# Phase 22 — Collector Experience: Full-Account Archive + Restore
+
+Goal: let a collector get **everything** out and back. CSV carries coin attributes
+only (ADR-017 §1) — it cannot hold a coin's one-to-many valuation history, nor its
+image and invoice bytes. Until those travel too, "get your data out" was only half
+true. This is the third and final slice, and it completes the **Collector
+Experience** milestone.
+
+Third slice of the milestone (Epic #180). Decision: the **archive addendum to
+`ADR-017`** (§§21–26) — the ADR is scoped to the whole milestone and reserved the
+space, so archive appended to it rather than adding an ADR that would disagree.
+
+## What shipped
+
+- **Download a full-account archive** from `/settings` → a STORE zip named
+  `numisbook-archive-YYYY-MM-DD.zip`, containing a `manifest.json` describing the
+  whole graph (every collection, coin, valuation, and image/invoice metadata) plus
+  the raw image and invoice bytes under `images/` and `invoices/`. Values are
+  recorded **as stored** (signed BC years, prices in their own currency, no FX —
+  ADR-017 §5) and `createdAt` is preserved, so a restore reproduces acquisition
+  order.
+- **Restore an archive**, **additively**: every collection, coin, valuation, image
+  and invoice is recreated with a **fresh id** in the acting account, wired to each
+  other but to nothing pre-existing. This serves both **recovery** (restore into a
+  fresh account) and **migration** (move data to another account) with one semantic.
+  Re-restoring duplicates — disclosed by a result summary, not prevented (the mirror
+  of CSV import's additive stance, ADR-017 §14/§23).
+- **A dependency-free STORE zip** (`src/lib/zip.ts`), mirroring the dependency-free
+  CSV decision. STORE (no compression) because the payload is already compressed
+  (WebP/JPEG/PNG, PDF) so compression buys almost nothing — and because STORE has no
+  decompression step, it carries no zip-bomb amplification. CRC-32 and central
+  directory are pinned by a round-trip test over binary and adversarial input.
+- **Its own contract module** (`src/lib/archive.ts`, a versioned Zod manifest
+  schema) — distinct from the lossy CSV column contract and from `createCoinSchema`,
+  because the archive must preserve identity and `createdAt` that both of those
+  drop. The `zip.ts` / `archive.ts` split mirrors `csv.ts` / `coin-export.ts`.
+- **Validated whole before any write**: manifest shape (Zod), then referential
+  integrity (every foreign key resolves within the manifest) and blob presence
+  (every referenced entry exists in the zip). A malformed archive is rejected whole
+  (the mirror of ADR-017 §20), never half-restored.
+- **Atomic for the database**: the relational graph inserts in one transaction, with
+  the blobs put to storage *before* it opens — so a storage failure writes nothing
+  and a transaction failure rolls back with a best-effort blob cleanup, the exact
+  ADR-013 tolerance (Postgres and object storage cannot share a transaction).
+- **Download is a read; restore is a write.** Export carries no `assertWritable`, so
+  the read-only demo tenant can pull its seeded collection — photography and invoices
+  included — out (ADR-017 §10/§25). Restore mutates, so `assertWritable` refuses the
+  demo (enforced by the build-failing write-guard test) and the affordance is
+  withheld, not merely disabled (DDR-007). Both sit under a new `/api/account/`
+  namespace.
+
+## Notes
+
+- **Restore is single-step, not preview+commit** — a deliberate divergence from CSV
+  import (ADR-017 §16/§23). Additive restore is non-destructive, so there is no
+  duplicate-into-an-existing-collection hazard to preview, and re-uploading a
+  multi-MB archive twice would be wasteful. A `<ConfirmButton>` stating that it
+  *adds* is the safeguard.
+- **Buffered with a ceiling**, like export (ADR-017 §8): the archive builds and
+  reads in memory, and the restore upload is bounded by an explicit byte limit rather
+  than by the tenant's data. Large accounts will eventually want streaming — the same
+  "four figures" trigger export already names.
+
+With this, the milestone's objective — *let a collector get their data in and out* —
+is fully met: attributes round-trip through CSV, and the complete account (blobs and
+value history included) round-trips through the archive.
+
+Verified in `docs/testing/collector-experience-archive-testing-report.md`: all three
+CI gates green (505 tests), an end-to-end export→restore→re-export round-trip with
+byte-for-byte blob fidelity and fresh (additive) ids, and a browser pass confirming
+the demo tenant can download but not restore (403 at the server).
+
+---
+
 # Historical Notes
 
 This document intentionally records completed work only.

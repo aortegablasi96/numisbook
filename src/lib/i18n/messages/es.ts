@@ -76,6 +76,22 @@ export const es: Partial<Messages> = {
   "settings.danger.confirm":
     "¿Eliminar tu cuenta y todos los datos asociados? Esto no se puede deshacer.",
 
+  // Portabilidad de datos (archivo + restauración)
+  "settings.data.heading": "Tus datos",
+  "settings.data.body":
+    "Descarga un archivo completo de tu cuenta —todas las colecciones, monedas, valoraciones, imágenes y facturas— o restaura uno que guardaste antes.",
+  "settings.data.download": "Descargar archivo",
+  "settings.data.downloading": "Preparando…",
+  "settings.data.restore.label": "Restaurar desde un archivo",
+  "settings.data.restore.help":
+    "Restaurar añade las colecciones del archivo a tu cuenta; nunca reemplaza ni sobrescribe lo que ya está aquí.",
+  "settings.data.restore.button": "Restaurar archivo",
+  "settings.data.restoring": "Restaurando…",
+  "settings.data.restore.confirm":
+    "¿Restaurar este archivo? Sus colecciones, monedas, valoraciones, imágenes y facturas se añadirán a tu cuenta.",
+  "settings.data.restore.success":
+    "Se restauraron {collections} colecciones, {coins} monedas, {valuations} valoraciones, {images} imágenes y {invoices} facturas.",
+
   "notFound.title": "Página no encontrada",
   "notFound.body":
     "No pudimos encontrar la página que buscabas. Puede que se haya movido o que ya no exista.",

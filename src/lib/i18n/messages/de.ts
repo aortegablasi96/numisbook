@@ -78,6 +78,22 @@ export const de: Partial<Messages> = {
   "settings.danger.confirm":
     "Dein Konto und alle zugehörigen Daten löschen? Dies kann nicht rückgängig gemacht werden.",
 
+  // Datenportabilität (Archiv + Wiederherstellung)
+  "settings.data.heading": "Deine Daten",
+  "settings.data.body":
+    "Lade ein vollständiges Archiv deines Kontos herunter — alle Sammlungen, Münzen, Bewertungen, Bilder und Rechnungen — oder stelle ein zuvor gespeichertes wieder her.",
+  "settings.data.download": "Archiv herunterladen",
+  "settings.data.downloading": "Wird vorbereitet…",
+  "settings.data.restore.label": "Aus einem Archiv wiederherstellen",
+  "settings.data.restore.help":
+    "Beim Wiederherstellen werden die Sammlungen des Archivs zu deinem Konto hinzugefügt; Vorhandenes wird nie ersetzt oder überschrieben.",
+  "settings.data.restore.button": "Archiv wiederherstellen",
+  "settings.data.restoring": "Wird wiederhergestellt…",
+  "settings.data.restore.confirm":
+    "Dieses Archiv wiederherstellen? Seine Sammlungen, Münzen, Bewertungen, Bilder und Rechnungen werden deinem Konto hinzugefügt.",
+  "settings.data.restore.success":
+    "{collections} Sammlungen, {coins} Münzen, {valuations} Bewertungen, {images} Bilder und {invoices} Rechnungen wiederhergestellt.",
+
   "notFound.title": "Seite nicht gefunden",
   "notFound.body":
     "Wir konnten die gesuchte Seite nicht finden. Sie wurde möglicherweise verschoben oder existiert nicht mehr.",

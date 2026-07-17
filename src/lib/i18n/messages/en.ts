@@ -335,6 +335,22 @@ export const en = {
   "settings.danger.confirm":
     "Delete your account and all associated data? This cannot be undone.",
 
+  // Data portability (archive + restore)
+  "settings.data.heading": "Your data",
+  "settings.data.body":
+    "Download a complete archive of your account — every collection, coin, valuation, image and invoice — or restore one you saved earlier.",
+  "settings.data.download": "Download archive",
+  "settings.data.downloading": "Preparing…",
+  "settings.data.restore.label": "Restore from an archive",
+  "settings.data.restore.help":
+    "Restoring adds the archive’s collections to your account; it never replaces or overwrites what is already here.",
+  "settings.data.restore.button": "Restore archive",
+  "settings.data.restoring": "Restoring…",
+  "settings.data.restore.confirm":
+    "Restore this archive? Its collections, coins, valuations, images and invoices will be added to your account.",
+  "settings.data.restore.success":
+    "Restored {collections} collections, {coins} coins, {valuations} valuations, {images} images and {invoices} invoices.",
+
   // Not found (404)
   "notFound.title": "Page not found",
   "notFound.body":
