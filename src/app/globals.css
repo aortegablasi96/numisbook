@@ -2406,6 +2406,19 @@ button:disabled {
   flex-shrink: 0;
 }
 
+/* Conversation length limit reached — the input bar below is disabled. */
+.chat-limit-notice {
+  margin: 0 0.85rem 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--accent-weak);
+  color: var(--accent);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
 /* Input bar */
 .chat-input-bar {
   display: flex;

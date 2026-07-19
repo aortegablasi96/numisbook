@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { assistantRequestSchema } from "@/lib/validation/assistant";
 import { chat } from "@/services/assistant.service";
-import { DEMO_MAX_ASSISTANT_MESSAGES } from "@/lib/demo";
+import { conversationLimitReached } from "@/lib/assistant-conversation";
 import { ValidationError } from "@/lib/errors";
 import { currentUser, errorResponse, unauthorized } from "../_lib";
 
@@ -24,11 +24,15 @@ export async function POST(request: Request) {
 
     const { messages, attachedImage } = assistantRequestSchema.parse(await request.json());
 
-    // The demo is reachable without signing in, so it is the one surface where an
-    // anonymous stranger spends our OpenAI budget. Bound a single conversation.
-    if (user.isDemo && messages.length > DEMO_MAX_ASSISTANT_MESSAGES) {
+    // Every turn resends the whole history, so cost per turn rises with length.
+    // One rule, two bounds: the demo keeps a tighter one because it is reachable
+    // without signing in (ADR-018 §1). The widget enforces the same rule for a
+    // clean experience; this is the guarantee.
+    if (conversationLimitReached(messages.length, user.isDemo)) {
       throw new ValidationError(
-        "This demo conversation has reached its limit. Sign in with Google to keep chatting.",
+        user.isDemo
+          ? "This demo conversation has reached its limit. Sign in with Google to keep chatting."
+          : "This conversation has reached its limit. Clear it to start a new one.",
       );
     }
 

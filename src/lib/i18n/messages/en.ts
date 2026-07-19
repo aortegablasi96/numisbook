@@ -238,6 +238,10 @@ export const en = {
   "assistant.clearAria": "Clear conversation",
   "assistant.welcome":
     "Hi! I can help you manage your coin collection. What would you like to do?",
+  "assistant.limitReached":
+    "This conversation has reached its length limit. Clear it to start a new one.",
+  "assistant.limitReachedDemo":
+    "This demo conversation has reached its limit. Sign in with Google to keep chatting.",
   "assistant.errorGeneric": "Something went wrong",
   "assistant.errorImage": "Could not load image. Please try a different file.",
   "assistant.attachedAlt": "Attached coin",

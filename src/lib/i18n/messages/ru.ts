@@ -289,6 +289,10 @@ export const ru: Partial<Messages> = {
   "assistant.clearAria": "Очистить переписку",
   "assistant.welcome":
     "Привет! Я помогу управлять вашей коллекцией монет. Что бы вы хотели сделать?",
+  "assistant.limitReached":
+    "Этот разговор достиг предела длины. Очистите его, чтобы начать новый.",
+  "assistant.limitReachedDemo":
+    "Этот демонстрационный разговор достиг предела. Войдите через Google, чтобы продолжить общение.",
   "assistant.errorGeneric": "Что-то пошло не так",
   "assistant.errorImage":
     "Не удалось загрузить изображение. Попробуйте другой файл.",

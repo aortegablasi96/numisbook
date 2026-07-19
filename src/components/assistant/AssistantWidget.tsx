@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useT } from "@/components/i18n/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n";
+import { canSendAnotherMessage } from "@/lib/assistant-conversation";
 
 // Example prompts shown on the empty state. Translated so the model receives the
 // question in the user's language (and answers in kind — ADR-014).
@@ -101,7 +102,17 @@ function IconAttach() {
   );
 }
 
-export function AssistantWidget() {
+/**
+ * Count the messages a conversation would send — the same filter `send` applies
+ * when building `history`, so the widget and the route agree on what "length"
+ * means. Pure and exported for testing (`environment: "node"`, so the component
+ * itself is never rendered).
+ */
+export function sentMessageCount(turns: { text: string }[]): number {
+  return turns.filter((turn) => turn.text.trim() !== "").length;
+}
+
+export function AssistantWidget({ isDemo = false }: { isDemo?: boolean }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -117,9 +128,13 @@ export function AssistantWidget() {
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Same rule the route enforces (`@/lib/assistant-conversation`), applied here
+  // so the limit is explained before a send fails rather than after.
+  const limitReached = !canSendAnotherMessage(sentMessageCount(turns), isDemo);
+
   async function send(text: string) {
     const trimmed = text.trim();
-    if ((!trimmed && !pendingImage) || busy) return;
+    if ((!trimmed && !pendingImage) || busy || limitReached) return;
     setError(null);
     setBusy(true);
 
@@ -281,6 +296,11 @@ export function AssistantWidget() {
             </div>
           )}
 
+          {limitReached && (
+            <p className="chat-limit-notice" role="status">
+              {t(isDemo ? "assistant.limitReachedDemo" : "assistant.limitReached")}
+            </p>
+          )}
           <form
             onSubmit={(e) => { e.preventDefault(); void send(input); }}
             className="chat-input-bar"
@@ -296,7 +316,7 @@ export function AssistantWidget() {
               type="button"
               className="chat-attach-btn"
               onClick={() => fileRef.current?.click()}
-              disabled={busy}
+              disabled={busy || limitReached}
               aria-label={t("assistant.attachAria")}
               title={t("assistant.attachTitle")}
             >
@@ -308,13 +328,13 @@ export function AssistantWidget() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={t("assistant.inputPlaceholder")}
               aria-label={t("assistant.messageAria")}
-              disabled={busy}
+              disabled={busy || limitReached}
               autoFocus
             />
             <button
               type="submit"
               className="chat-send-btn"
-              disabled={busy || (input.trim() === "" && !pendingImage)}
+              disabled={busy || limitReached || (input.trim() === "" && !pendingImage)}
               aria-label={t("assistant.sendAria")}
             >
               <IconSend />
