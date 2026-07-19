@@ -22,6 +22,7 @@ file for the decision and its rationale. Use `template.md` to start a new one.
 | ADR-015 | Coin filter rework |
 | ADR-016 | Public demo account |
 | ADR-017 | Data portability contract |
+| ADR-018 | Assistant hardening |
 
 ## Supersessions and amendments
 
@@ -33,6 +34,11 @@ What you **cannot** see from the filenames:
   without a provider.
 * **ADR-017** has a **CSV import addendum** — the column contract serves both
   export and import.
+* **ADR-018** (assistant hardening) **extends ADR-016 and ADR-013**. The demo's
+  assistant stays read-only, but its message cap becomes one case of a general
+  mechanism rather than a special case; and ADR-013's account deletion gains an
+  explicit purge of `assistant_usage` rows, because that table has no foreign key
+  for the database cascade to follow.
 
 Design-side supersessions live in [`../design-decisions/README.md`](../design-decisions/README.md).
 
