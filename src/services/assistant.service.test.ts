@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { buildHandlers } from "./assistant.service";
+import { buildHandlers, chat, MAX_REQUEST_TOKENS } from "./assistant.service";
+import { recordUsage } from "@/services/assistant-limits.service";
 import * as collectionService from "@/services/collection.service";
 import * as coinService from "@/services/coin.service";
 import * as valuationService from "@/services/valuation.service";
@@ -30,11 +31,20 @@ vi.mock("@/services/coinImage.service", () => ({
 vi.mock("@/repositories/user.repository", () => ({
   userRepository: { findById: vi.fn() },
 }));
+// assistant.service now records usage through this service, which reaches the
+// database — mock it so importing the module under test does not touch @/db.
+vi.mock("@/services/assistant-limits.service", () => ({ recordUsage: vi.fn() }));
+
 
 const collections = vi.mocked(collectionService);
 const coins = vi.mocked(coinService);
 const valuations = vi.mocked(valuationService);
 const analytics = vi.mocked(analyticsService);
+const usageRecorded = vi.mocked(recordUsage);
+// The OpenAI client is injected (see ChatOptions.client), so no module mocking
+// is needed — this spy stands in for `chat.completions.create`.
+const openAiCreate = vi.fn();
+const fakeClient = { chat: { completions: { create: openAiCreate } } } as never;
 
 const USER = "user-1";
 
@@ -192,5 +202,168 @@ describe("assistant handlers — tenant scoping", () => {
       'Created collection "Rome"',
       'Added coin "Romans"',
     ]);
+  });
+});
+
+// --- Cost accounting (#195, ADR-018 §2) -------------------------------------
+
+describe("chat — token accounting and the request ceiling", () => {
+  beforeEach(() => {
+    openAiCreate.mockReset();
+    usageRecorded.mockReset();
+    usageRecorded.mockResolvedValue(undefined);
+  });
+
+  /** A completion with no tool calls — ends the loop. */
+  function finalReply(text: string, prompt = 10, completion = 5) {
+    return {
+      choices: [{ message: { content: text, tool_calls: [] } }],
+      usage: { prompt_tokens: prompt, completion_tokens: completion },
+    };
+  }
+
+  /** A completion asking for one `list_collections` call — continues the loop. */
+  function toolCall(prompt = 10, completion = 5) {
+    return {
+      choices: [
+        {
+          message: {
+            content: null,
+            tool_calls: [
+              {
+                id: "call-1",
+                type: "function",
+                function: { name: "list_collections", arguments: "{}" },
+              },
+            ],
+          },
+        },
+      ],
+      usage: { prompt_tokens: prompt, completion_tokens: completion },
+    };
+  }
+
+  it("records one usage row per request, summed across iterations", async () => {
+    collections.listCollections.mockResolvedValue([]);
+    openAiCreate
+      .mockResolvedValueOnce(toolCall(100, 20))
+      .mockResolvedValueOnce(finalReply("done", 200, 30));
+
+    const result = await chat(USER, [{ role: "user", content: "hi" }], null, {
+      subjectKey: "user:u1",
+      client: fakeClient,
+    });
+
+    expect(result.reply).toBe("done");
+    // Each iteration resends the conversation, so the cost is the sum.
+    expect(usageRecorded).toHaveBeenCalledTimes(1);
+    expect(usageRecorded).toHaveBeenCalledWith({
+      subjectKey: "user:u1",
+      promptTokens: 300,
+      completionTokens: 50,
+      outcome: "completed",
+    });
+  });
+
+  it("stops once the request ceiling is passed, and says so honestly", async () => {
+    collections.listCollections.mockResolvedValue([]);
+    openAiCreate.mockResolvedValue(toolCall(MAX_REQUEST_TOKENS, 1));
+
+    const result = await chat(USER, [{ role: "user", content: "hi" }], null, {
+      subjectKey: "user:u1",
+      client: fakeClient,
+    });
+
+    expect(result.reply).toMatch(/stopped partway/i);
+    // Cut short well before the 12-iteration cap — the ceiling, not the counter.
+    expect(openAiCreate).toHaveBeenCalledTimes(1);
+    expect(usageRecorded).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: "limit_exceeded" }),
+    );
+  });
+
+  // "Never leaves a partial mutation misreported as complete": whatever the
+  // model already did must still reach the user when the ceiling cuts in.
+  it("still reports the mutations it already performed when cut short", async () => {
+    collections.createCollection.mockResolvedValue({
+      id: "c1",
+      userId: USER,
+      name: "Rome",
+      createdAt: new Date(),
+    });
+    openAiCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: null,
+            tool_calls: [
+              {
+                id: "call-1",
+                type: "function",
+                function: {
+                  name: "create_collection",
+                  arguments: JSON.stringify({ name: "Rome" }),
+                },
+              },
+            ],
+          },
+        },
+      ],
+      usage: { prompt_tokens: MAX_REQUEST_TOKENS, completion_tokens: 0 },
+    });
+
+    const result = await chat(USER, [{ role: "user", content: "add Rome" }], null, {
+      subjectKey: "user:u1",
+      client: fakeClient,
+    });
+
+    expect(result.actions).toContain('Created collection "Rome"');
+  });
+
+  it("records usage even when the request fails mid-loop", async () => {
+    openAiCreate.mockRejectedValue(new Error("openai down"));
+
+    await expect(
+      chat(USER, [{ role: "user", content: "hi" }], null, { subjectKey: "user:u1", client: fakeClient }),
+    ).rejects.toThrow("openai down");
+
+    expect(usageRecorded).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: "error" }),
+    );
+  });
+
+  // Aborting must not become a way to spend tokens for free.
+  it("records usage when the caller aborts mid-loop", async () => {
+    const controller = new AbortController();
+    collections.listCollections.mockResolvedValue([]);
+    openAiCreate.mockImplementation(async () => {
+      controller.abort();
+      return toolCall(50, 10);
+    });
+
+    const result = await chat(USER, [{ role: "user", content: "hi" }], null, {
+      subjectKey: "user:u1",
+      signal: controller.signal,
+      client: fakeClient,
+    });
+
+    expect(result.reply).toBe("");
+    expect(usageRecorded).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: "aborted", promptTokens: 50 }),
+    );
+  });
+
+  // The reply is already earned and the tokens already spent; an accounting
+  // failure must not turn a good response into an error for the user.
+  it("does not fail the request when the usage write fails", async () => {
+    usageRecorded.mockRejectedValue(new Error("db down"));
+    openAiCreate.mockResolvedValueOnce(finalReply("done"));
+
+    const result = await chat(USER, [{ role: "user", content: "hi" }], null, {
+      subjectKey: "user:u1",
+      client: fakeClient,
+    });
+
+    expect(result.reply).toBe("done");
   });
 });

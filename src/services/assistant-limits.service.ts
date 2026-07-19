@@ -1,8 +1,17 @@
-import { createHash } from "node:crypto";
 import {
   assistantUsageRepository,
   type AssistantUsageOutcome,
 } from "@/repositories/assistantUsage.repository";
+import { subjectKeyForUser } from "@/lib/assistant-subject";
+
+// The subject-key rule itself lives in `@/lib/assistant-subject` — pure, and
+// free of any database import, so callers that only need to *derive* a key
+// (the route) do not pull `@/db` in behind it. Re-exported here so the usage
+// story still reads as one thing.
+export {
+  subjectKeyForUser,
+  subjectKeyForDemoSession,
+} from "@/lib/assistant-subject";
 
 // Usage accounting for the collection assistant (ADR-018).
 //
@@ -14,33 +23,6 @@ import {
 // reads a cookie. The route resolves the caller and hands in a plain string —
 // that boundary is what keeps the rules testable without a request.
 
-/**
- * The metered subject.
- *
- * Prefixed, and the prefix is load-bearing: without it a user uuid and a session
- * hash share one namespace, so a collision would merge two subjects' budgets and
- * the account-deletion purge could not target rows exactly.
- */
-export function subjectKeyForUser(userId: string): string {
-  return `user:${userId}`;
-}
-
-/**
- * Demo visitors all share one tenant id (ADR-016), so metering them by user id
- * would make every visitor compete for a single budget — on a sales surface.
- * Each visitor is metered by their own session instead.
- *
- * The token is **hashed, never stored raw**: it is a live credential, and a
- * leaked backup of `assistant_usage` must not be a set of usable sessions.
- *
- * Weaker than the signed-in key — clearing cookies buys a fresh budget — and
- * that is accepted knowingly (ADR-018 §3): the demo tenant is read-only and its
- * conversation cap bounds each session. This is a spend guard, not a security
- * boundary.
- */
-export function subjectKeyForDemoSession(sessionToken: string): string {
-  return `demo:${createHash("sha256").update(sessionToken).digest("hex")}`;
-}
 
 /** Start of a rolling window `windowMs` back from now. */
 function windowStart(windowMs: number): Date {

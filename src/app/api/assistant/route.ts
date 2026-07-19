@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { assistantRequestSchema } from "@/lib/validation/assistant";
 import { chat } from "@/services/assistant.service";
+import {
+  subjectKeyForUser,
+  subjectKeyForDemoSession,
+} from "@/lib/assistant-subject";
 import { conversationLimitReached } from "@/lib/assistant-conversation";
+import { SESSION_COOKIE_NAME } from "@/auth";
 import { ValidationError } from "@/lib/errors";
 import { currentUser, errorResponse, unauthorized } from "../_lib";
 
@@ -9,6 +15,23 @@ import { currentUser, errorResponse, unauthorized } from "../_lib";
 // exempt in write-guard.test.ts): it stays open to demo visitors and enforces the
 // read-only rule by handing the model a read-only tool set, so it never reaches a
 // mutating service (ADR-016).
+
+/**
+ * Who to meter this request against (ADR-018 §3).
+ *
+ * Demo visitors all share one tenant id, so they are metered per session
+ * instead — otherwise one visitor could exhaust the budget for every other, on
+ * a sales surface. Reading the cookie belongs here: the route is the
+ * Next-specific layer, and the service only ever sees an opaque string.
+ *
+ * If the demo cookie is somehow absent, fall back to the shared tenant key
+ * rather than leaving the request unmetered — a coarse budget beats none.
+ */
+async function resolveSubjectKey(userId: string, isDemo: boolean): Promise<string> {
+  if (!isDemo) return subjectKeyForUser(userId);
+  const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  return token ? subjectKeyForDemoSession(token) : subjectKeyForUser(userId);
+}
 
 export async function POST(request: Request) {
   try {
@@ -38,6 +61,8 @@ export async function POST(request: Request) {
 
     const result = await chat(user.id, messages, attachedImage, {
       readOnly: user.isDemo,
+      subjectKey: await resolveSubjectKey(user.id, user.isDemo),
+      signal: request.signal,
     });
     return NextResponse.json(result);
   } catch (error) {

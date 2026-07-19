@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
-  subjectKeyForUser,
-  subjectKeyForDemoSession,
   countRequestsInWindow,
   sumTokensInWindow,
   recordUsage,
   forgetUserUsage,
 } from "./assistant-limits.service";
+import {
+  subjectKeyForUser,
+  subjectKeyForDemoSession,
+} from "@/lib/assistant-subject";
 import { assistantUsageRepository } from "@/repositories/assistantUsage.repository";
 
 vi.mock("@/repositories/assistantUsage.repository", () => ({

@@ -2,9 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the auth boundary (used by currentUser in ../_lib) and the assistant
 // service — no OpenAI client is ever constructed in these tests.
-vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("@/auth", () => ({
+  auth: vi.fn(),
+  SESSION_COOKIE_NAME: "numisbook.session-token",
+}));
 vi.mock("@/services/auth.service", () => ({ resolveCurrentUser: vi.fn() }));
 vi.mock("@/services/assistant.service", () => ({ chat: vi.fn() }));
+// The route reads the session cookie to meter demo visitors per session.
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(async () => ({ get: () => ({ value: "demo-session-token" }) })),
+}));
 
 import { auth } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
@@ -96,8 +103,26 @@ describe("POST /api/assistant — conversation limits", () => {
       "u1",
       expect.any(Array),
       undefined,
-      { readOnly: true },
+      expect.objectContaining({ readOnly: true }),
     );
+  });
+
+  // Demo visitors share one tenant id, so they must be metered per session —
+  // otherwise one visitor could exhaust every other visitor's budget.
+  it("meters a demo visitor by their hashed session, not the shared tenant id", async () => {
+    signedIn(true);
+    await POST(post(conversation(2)));
+    const options = vi.mocked(chat).mock.calls[0][3] as { subjectKey: string };
+    expect(options.subjectKey).toMatch(/^demo:[0-9a-f]{64}$/);
+    expect(options.subjectKey).not.toContain("u1");
+    expect(options.subjectKey).not.toContain("demo-session-token");
+  });
+
+  it("meters a signed-in collector by their user id", async () => {
+    signedIn();
+    await POST(post(conversation(2)));
+    const options = vi.mocked(chat).mock.calls[0][3] as { subjectKey: string };
+    expect(options.subjectKey).toBe("user:u1");
   });
 
   it("401s when unauthenticated", async () => {

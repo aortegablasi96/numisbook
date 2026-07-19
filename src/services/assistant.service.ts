@@ -5,6 +5,8 @@ import * as valuationService from "@/services/valuation.service";
 import { getPortfolioSummary } from "@/services/analytics.service";
 import { setCoinImage } from "@/services/coinImage.service";
 import { userRepository } from "@/repositories/user.repository";
+import type { AssistantUsageOutcome } from "@/repositories/assistantUsage.repository";
+import { recordUsage } from "@/services/assistant-limits.service";
 import { formatCoinTitle } from "@/lib/coin-format";
 import { logger } from "@/lib/logger";
 
@@ -17,8 +19,51 @@ import { logger } from "@/lib/logger";
 const MODEL = "gpt-4o-mini";
 const MAX_TOOL_ITERATIONS = 12;
 
+/**
+ * Tokens one request may consume before the loop is cut short (ADR-018 §2).
+ *
+ * Complementary to `MAX_TOOL_ITERATIONS`, not a duplicate of it: iterations
+ * bound *steps*, this bounds *spend*. Twelve steps can be cheap or expensive
+ * depending on how much history and how many tool results each one carries, so
+ * neither limit implies the other.
+ *
+ * Deliberately generous. This is a runaway guard — the point where a request has
+ * clearly gone wrong — not a budget. The actual per-user budget is #196's job,
+ * and its numbers come from what the usage rows written here actually show.
+ */
+export const MAX_REQUEST_TOKENS = 100_000;
+
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 export type ChatResult = { reply: string; actions: string[] };
+
+/** The slice of the OpenAI client this service actually uses. */
+type CompletionsClient = {
+  chat: {
+    completions: {
+      create: (
+        body: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
+        options?: { signal?: AbortSignal },
+      ) => Promise<OpenAI.Chat.Completions.ChatCompletion>;
+    };
+  };
+};
+
+/** What the caller knows about who is spending, and when to stop. */
+export type ChatOptions = {
+  readOnly?: boolean;
+  /** Metered subject (`assistant-limits.service`). Omitted only in tests. */
+  subjectKey?: string;
+  /** The request's abort signal — a closed widget must stop the loop. */
+  signal?: AbortSignal;
+  /**
+   * Test seam: supply the OpenAI client instead of constructing one.
+   *
+   * Production never passes this. It exists because mocking the `openai` module
+   * fights Vitest's `vi.mock` hoisting, and a narrow injection point is easier
+   * to read than the workaround.
+   */
+  client?: CompletionsClient;
+};
 
 const SYSTEM_PROMPT = `You are NumisBook's collection assistant. You help a single signed-in coin collector manage their own collection using the provided tools.
 
@@ -399,9 +444,9 @@ export async function chat(
   userId: string,
   messages: ChatMessage[],
   imageDataUrl?: string | null,
-  options: { readOnly?: boolean } = {},
+  options: ChatOptions = {},
 ): Promise<ChatResult> {
-  const client = new OpenAI();
+  const client: CompletionsClient = options.client ?? new OpenAI();
   const actions: string[] = [];
   const { tools, handlers, systemPrompt } = selectToolset(
     userId,
@@ -415,45 +460,130 @@ export async function chat(
     ...messages.map((m) => ({ role: m.role, content: m.content })),
   ];
 
-  for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
-    const completion = await client.chat.completions.create({
-      model: MODEL,
-      messages: convo,
-      tools,
-    });
+  // Accumulated across every iteration, because each one resends the whole
+  // conversation — the cost of a request is the sum, not the last call.
+  let promptTokens = 0;
+  let completionTokens = 0;
+  let outcome: AssistantUsageOutcome = "error";
 
-    const message = completion.choices[0]?.message;
-    if (!message) break;
-
-    if (!message.tool_calls || message.tool_calls.length === 0) {
-      return { reply: (message.content ?? "").trim(), actions };
-    }
-
-    // Preserve the assistant turn (carrying the tool_calls) before answering them.
-    convo.push(message);
-
-    for (const call of message.tool_calls) {
-      if (call.type !== "function") continue;
-      const handler = handlers[call.function.name];
-      let content: string;
-      try {
-        const args = call.function.arguments
-          ? (JSON.parse(call.function.arguments) as Record<string, unknown>)
-          : {};
-        const result = handler
-          ? await handler(args)
-          : `Error: unknown tool ${call.function.name}`;
-        content = typeof result === "string" ? result : JSON.stringify(result);
-      } catch (error) {
-        content = `Error: ${error instanceof Error ? error.message : String(error)}`;
+  try {
+    for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+      // A closed widget must stop the loop; otherwise we keep billing for a
+      // reply nobody will read.
+      if (options.signal?.aborted) {
+        outcome = "aborted";
+        return { reply: "", actions };
       }
-      convo.push({ role: "tool", tool_call_id: call.id, content });
-    }
-  }
 
-  return {
-    reply:
-      "I wasn't able to finish that in a reasonable number of steps. Please try rephrasing or breaking it into smaller requests.",
-    actions,
-  };
+      const completion = await client.chat.completions.create(
+        { model: MODEL, messages: convo, tools },
+        options.signal ? { signal: options.signal } : undefined,
+      );
+
+      promptTokens += completion.usage?.prompt_tokens ?? 0;
+      completionTokens += completion.usage?.completion_tokens ?? 0;
+
+      const message = completion.choices[0]?.message;
+      if (!message) break;
+
+      if (!message.tool_calls || message.tool_calls.length === 0) {
+        outcome = "completed";
+        return { reply: (message.content ?? "").trim(), actions };
+      }
+
+      // Preserve the assistant turn (carrying the tool_calls) before answering them.
+      convo.push(message);
+
+      for (const call of message.tool_calls) {
+        if (call.type !== "function") continue;
+        const handler = handlers[call.function.name];
+        let content: string;
+        try {
+          const args = call.function.arguments
+            ? (JSON.parse(call.function.arguments) as Record<string, unknown>)
+            : {};
+          const result = handler
+            ? await handler(args)
+            : `Error: unknown tool ${call.function.name}`;
+          content = typeof result === "string" ? result : JSON.stringify(result);
+        } catch (error) {
+          content = `Error: ${error instanceof Error ? error.message : String(error)}`;
+        }
+        convo.push({ role: "tool", tool_call_id: call.id, content });
+      }
+
+      // Checked *after* the tool results are recorded, so the work already paid
+      // for is not thrown away — and `actions` still names every mutation that
+      // happened, which is what keeps the message below honest.
+      if (promptTokens + completionTokens >= MAX_REQUEST_TOKENS) {
+        outcome = "limit_exceeded";
+        return {
+          reply:
+            "This request grew too large to finish safely, so I stopped partway. Anything I already did is listed below — please try a smaller request.",
+          actions,
+        };
+      }
+    }
+
+    outcome = "limit_exceeded";
+    return {
+      reply:
+        "I wasn't able to finish that in a reasonable number of steps. Please try rephrasing or breaking it into smaller requests.",
+      actions,
+    };
+  } catch (error) {
+    // An aborted request surfaces as an OpenAI abort error; it is not a fault.
+    if (options.signal?.aborted) {
+      outcome = "aborted";
+      return { reply: "", actions };
+    }
+    throw error;
+  } finally {
+    // In `finally` so a thrown error, an abort, or a limit still gets accounted
+    // for: tokens spent are spent, and a request that consumed budget without
+    // leaving a row would let the guard under-count.
+    await recordChatUsage(options.subjectKey, {
+      promptTokens,
+      completionTokens,
+      outcome,
+      userId,
+    });
+  }
+}
+
+/**
+ * Persist what a request consumed.
+ *
+ * **Never throws.** The tokens are already spent and the caller's reply is
+ * already earned, so failing the response here would punish the user for an
+ * accounting problem. The hole this leaves — an under-counted window — is closed
+ * on the *next* request, whose pre-flight check fails closed when the usage
+ * store is unreachable (ADR-018 §6). So a lost write cannot become a way in.
+ */
+async function recordChatUsage(
+  subjectKey: string | undefined,
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    outcome: AssistantUsageOutcome;
+    userId: string;
+  },
+): Promise<void> {
+  const { userId, ...rest } = usage;
+  logger.info("assistant request finished", {
+    userId,
+    outcome: rest.outcome,
+    promptTokens: rest.promptTokens,
+    completionTokens: rest.completionTokens,
+  });
+
+  if (!subjectKey) return;
+  try {
+    await recordUsage({ subjectKey, ...rest });
+  } catch (error) {
+    logger.error("assistant usage not recorded", {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
