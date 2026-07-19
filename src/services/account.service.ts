@@ -2,6 +2,7 @@ import { userRepository } from "@/repositories/user.repository";
 import { coinImageRepository } from "@/repositories/coinImage.repository";
 import { coinInvoiceRepository } from "@/repositories/coinInvoice.repository";
 import { objectStorage } from "@/lib/storage";
+import { forgetUserUsage } from "@/services/assistant-limits.service";
 import { logger } from "@/lib/logger";
 
 // Account lifecycle business logic. Framework-agnostic; data access goes through
@@ -18,6 +19,15 @@ import { logger } from "@/lib/logger";
  * accounts/sessions), then (3) best-effort purge the storage blobs a DB cascade
  * can't reach. A purge failure is logged (leaving a re-sweepable orphan) rather
  * than surfaced, mirroring the per-row delete pattern in the media repositories.
+ *
+ * Step (4) forgets the user's assistant usage. `assistant_usage` has no foreign
+ * key — its subject key is polymorphic (ADR-018 §4) — so the cascade cannot
+ * reach it, and rows left behind would still carry the deleted user's id.
+ *
+ * Unlike the storage purge above it, **a failed usage purge propagates**: an
+ * orphaned blob is invisible and re-sweepable, whereas an orphaned usage row is
+ * the privacy defect this step exists to prevent. Do not "make it consistent"
+ * with the best-effort purge beside it.
  */
 export async function deleteAccount(userId: string): Promise<void> {
   const keys = [
@@ -38,4 +48,6 @@ export async function deleteAccount(userId: string): Promise<void> {
       total: keys.length,
     });
   }
+
+  await forgetUserUsage(userId);
 }

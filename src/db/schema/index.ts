@@ -6,3 +6,4 @@ export * from "./coin-images";
 export * from "./coin-invoices";
 export * from "./valuations";
 export * from "./fx-rates";
+export * from "./assistant-usage";

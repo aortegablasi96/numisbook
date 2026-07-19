@@ -80,8 +80,11 @@ invariant to protect above all others:
   — because `coins` has no `userId` column.
 * **Facet queries are scoped identically.** An unscoped `SELECT DISTINCT` leaks
   another tenant's data through a filter dropdown.
-* Exception: `fx_rates` / `fxRateRepository` are global reference data,
-  intentionally **not** tenant-scoped.
+* Two exceptions, both **intentionally not** tenant-scoped: `fx_rates` /
+  `fxRateRepository` (global reference data), and `assistant_usage` /
+  `assistantUsageRepository` (operational spend accounting, scoped by an opaque
+  `subjectKey` instead — polymorphic, so it carries no `userId` FK, which is why
+  account deletion purges it explicitly; ADR-018).
 
 ## Errors and observability
 
