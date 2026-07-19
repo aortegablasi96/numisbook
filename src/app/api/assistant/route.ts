@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { assistantRequestSchema } from "@/lib/validation/assistant";
 import { chat } from "@/services/assistant.service";
+import { assertWithinLimits } from "@/services/assistant-limits.service";
 import {
   subjectKeyForUser,
   subjectKeyForDemoSession,
 } from "@/lib/assistant-subject";
 import { conversationLimitReached } from "@/lib/assistant-conversation";
 import { SESSION_COOKIE_NAME } from "@/auth";
-import { ValidationError } from "@/lib/errors";
+import { RateLimitError, ValidationError } from "@/lib/errors";
 import { currentUser, errorResponse, unauthorized } from "../_lib";
 
 // This route handles POST without `assertWritable` deliberately (it is listed as
@@ -59,13 +60,31 @@ export async function POST(request: Request) {
       );
     }
 
+    const subjectKey = await resolveSubjectKey(user.id, user.isDemo);
+
+    // Checked before the model is called: the point is not to spend, so this
+    // must run ahead of the OpenAI request, not alongside it.
+    await assertWithinLimits(subjectKey, user.isDemo);
+
     const result = await chat(user.id, messages, attachedImage, {
       readOnly: user.isDemo,
-      subjectKey: await resolveSubjectKey(user.id, user.isDemo),
+      subjectKey,
       signal: request.signal,
     });
     return NextResponse.json(result);
   } catch (error) {
+    // A rate-limited caller gets the standard header plus the exact moment in
+    // the body, so the widget can say *when* rather than just refusing.
+    if (error instanceof RateLimitError) {
+      const seconds = Math.max(
+        1,
+        Math.ceil((error.retryAfter.getTime() - Date.now()) / 1000),
+      );
+      return NextResponse.json(
+        { error: error.message, retryAfter: error.retryAfter.toISOString() },
+        { status: 429, headers: { "Retry-After": String(seconds) } },
+      );
+    }
     return errorResponse(error);
   }
 }

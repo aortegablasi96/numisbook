@@ -242,6 +242,10 @@ export const en = {
     "This conversation has reached its length limit. Clear it to start a new one.",
   "assistant.limitReachedDemo":
     "This demo conversation has reached its limit. Sign in with Google to keep chatting.",
+  "assistant.rateLimited":
+    "You've reached the assistant's usage limit. Please try again in {minutes} min.",
+  "assistant.rateLimitedSoon":
+    "You've reached the assistant's usage limit. Please try again shortly.",
   "assistant.errorGeneric": "Something went wrong",
   "assistant.errorImage": "Could not load image. Please try a different file.",
   "assistant.attachedAlt": "Attached coin",

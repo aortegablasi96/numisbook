@@ -297,6 +297,10 @@ export const fr: Partial<Messages> = {
     "Cette conversation a atteint sa limite de longueur. Effacez-la pour en commencer une nouvelle.",
   "assistant.limitReachedDemo":
     "Cette conversation de démonstration a atteint sa limite. Connectez-vous avec Google pour continuer à discuter.",
+  "assistant.rateLimited":
+    "Vous avez atteint la limite d’utilisation de l’assistant. Réessayez dans {minutes} min.",
+  "assistant.rateLimitedSoon":
+    "Vous avez atteint la limite d’utilisation de l’assistant. Réessayez dans un instant.",
   "assistant.errorGeneric": "Une erreur s’est produite",
   "assistant.errorImage":
     "Impossible de charger l’image. Essayez un autre fichier.",

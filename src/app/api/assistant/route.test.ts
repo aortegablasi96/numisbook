@@ -8,6 +8,9 @@ vi.mock("@/auth", () => ({
 }));
 vi.mock("@/services/auth.service", () => ({ resolveCurrentUser: vi.fn() }));
 vi.mock("@/services/assistant.service", () => ({ chat: vi.fn() }));
+vi.mock("@/services/assistant-limits.service", () => ({
+  assertWithinLimits: vi.fn(),
+}));
 // The route reads the session cookie to meter demo visitors per session.
 vi.mock("next/headers", () => ({
   cookies: vi.fn(async () => ({ get: () => ({ value: "demo-session-token" }) })),
@@ -16,6 +19,8 @@ vi.mock("next/headers", () => ({
 import { auth } from "@/auth";
 import { resolveCurrentUser } from "@/services/auth.service";
 import { chat } from "@/services/assistant.service";
+import { assertWithinLimits } from "@/services/assistant-limits.service";
+import { RateLimitError } from "@/lib/errors";
 import {
   MAX_ASSISTANT_MESSAGES,
   DEMO_MAX_ASSISTANT_MESSAGES,
@@ -60,6 +65,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   process.env.OPENAI_API_KEY = "test-key";
   vi.mocked(chat).mockResolvedValue({ reply: "hi", actions: [] });
+  vi.mocked(assertWithinLimits).mockResolvedValue(undefined);
 });
 
 describe("POST /api/assistant — conversation limits", () => {
@@ -137,5 +143,42 @@ describe("POST /api/assistant — conversation limits", () => {
     delete process.env.OPENAI_API_KEY;
     const res = await POST(post(conversation(2)));
     expect(res.status).toBe(503);
+  });
+});
+
+describe("POST /api/assistant — rate limiting", () => {
+  it("checks the limit before spending anything on OpenAI", async () => {
+    signedIn();
+    await POST(post(conversation(2)));
+    expect(assertWithinLimits).toHaveBeenCalledWith("user:u1", false);
+    // Order matters: a guard that runs after the model call saves nothing.
+    const limitOrder = vi.mocked(assertWithinLimits).mock.invocationCallOrder[0];
+    const chatOrder = vi.mocked(chat).mock.invocationCallOrder[0];
+    expect(limitOrder).toBeLessThan(chatOrder);
+  });
+
+  it("returns 429 with a Retry-After header and the exact moment", async () => {
+    signedIn();
+    const retryAfter = new Date(Date.now() + 5 * 60_000);
+    vi.mocked(assertWithinLimits).mockRejectedValue(
+      new RateLimitError("slow down", retryAfter),
+    );
+
+    const res = await POST(post(conversation(2)));
+
+    expect(res.status).toBe(429);
+    expect(Number(res.headers.get("Retry-After"))).toBeGreaterThan(0);
+    const body = (await res.json()) as { error: string; retryAfter: string };
+    expect(body.retryAfter).toBe(retryAfter.toISOString());
+    expect(chat).not.toHaveBeenCalled();
+  });
+
+  it("passes the demo flag so the tighter budget applies", async () => {
+    signedIn(true);
+    await POST(post(conversation(2)));
+    expect(assertWithinLimits).toHaveBeenCalledWith(
+      expect.stringMatching(/^demo:/),
+      true,
+    );
   });
 });

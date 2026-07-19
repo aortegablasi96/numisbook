@@ -278,6 +278,8 @@ export const zh: Partial<Messages> = {
   "assistant.welcome": "你好！我可以帮你管理你的硬币收藏。你想做什么？",
   "assistant.limitReached": "此对话已达到长度上限。清除后可开始新的对话。",
   "assistant.limitReachedDemo": "此演示对话已达到上限。使用 Google 登录即可继续聊天。",
+  "assistant.rateLimited": "您已达到助手的使用上限。请在 {minutes} 分钟后重试。",
+  "assistant.rateLimitedSoon": "您已达到助手的使用上限。请稍后重试。",
   "assistant.errorGeneric": "出现了一些问题",
   "assistant.errorImage": "无法加载图片。请尝试其他文件。",
   "assistant.attachedAlt": "已附加的硬币",

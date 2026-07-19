@@ -31,6 +31,17 @@ async function readError(response: Response, fallback: string): Promise<string> 
   }
 }
 
+/**
+ * Whole minutes until `iso`, at least 1.
+ *
+ * Rounded **up**: telling someone to retry in "0 minutes" when the window has
+ * not actually elapsed invites an immediate second refusal.
+ */
+export function minutesUntil(iso: string, now = Date.now()): number {
+  const ms = new Date(iso).getTime() - now;
+  return Math.max(1, Math.ceil(ms / 60_000));
+}
+
 // Resize an image file to at most maxDim px on the longest side, JPEG 85%.
 function resizeImage(file: File, maxDim = 800): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -159,6 +170,21 @@ export function AssistantWidget({ isDemo = false }: { isDemo?: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: history, attachedImage: imageToSend }),
       });
+      // The server's rate-limit message is English (like every API error here),
+      // so the widget renders its own localized one from the exact retry time.
+      if (response.status === 429) {
+        const body = (await response.json().catch(() => ({}))) as {
+          retryAfter?: string;
+        };
+        setError(
+          body.retryAfter
+            ? t("assistant.rateLimited", {
+                minutes: minutesUntil(body.retryAfter),
+              })
+            : t("assistant.rateLimitedSoon"),
+        );
+        return;
+      }
       if (!response.ok) {
         setError(await readError(response, t("assistant.errorGeneric")));
         return;

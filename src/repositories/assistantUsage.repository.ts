@@ -1,4 +1,4 @@
-import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { assistantUsage } from "@/db/schema";
 
@@ -59,6 +59,29 @@ export const assistantUsageRepository = {
         ),
       );
     return row?.tokens ?? 0;
+  },
+
+  /**
+   * When this subject's earliest request in the window happened, or null if
+   * there is none.
+   *
+   * Drives the exact retry time: once that request ages out of the window, the
+   * subject has room again. `asc` + `limit 1` reads a single row off the same
+   * `(subject_key, created_at)` index the window queries use.
+   */
+  async oldestSince(subjectKey: string, since: Date): Promise<Date | null> {
+    const [row] = await db
+      .select({ createdAt: assistantUsage.createdAt })
+      .from(assistantUsage)
+      .where(
+        and(
+          eq(assistantUsage.subjectKey, subjectKey),
+          gte(assistantUsage.createdAt, since),
+        ),
+      )
+      .orderBy(asc(assistantUsage.createdAt))
+      .limit(1);
+    return row?.createdAt ?? null;
   },
 
   /**

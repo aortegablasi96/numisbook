@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+  assertWithinLimits,
+  LIMITS,
   countRequestsInWindow,
   sumTokensInWindow,
   recordUsage,
@@ -10,6 +12,7 @@ import {
   subjectKeyForDemoSession,
 } from "@/lib/assistant-subject";
 import { assistantUsageRepository } from "@/repositories/assistantUsage.repository";
+import { RateLimitError } from "@/lib/errors";
 
 vi.mock("@/repositories/assistantUsage.repository", () => ({
   assistantUsageRepository: {
@@ -17,6 +20,7 @@ vi.mock("@/repositories/assistantUsage.repository", () => ({
     countSince: vi.fn(),
     sumTokensSince: vi.fn(),
     deleteBySubject: vi.fn(),
+    oldestSince: vi.fn(),
     deleteOlderThan: vi.fn(),
   },
 }));
@@ -123,5 +127,82 @@ describe("forgetUserUsage", () => {
   it("purges using exactly the prefixed key the writes used", async () => {
     await forgetUserUsage("u1");
     expect(repo.deleteBySubject).toHaveBeenCalledWith("user:u1");
+  });
+});
+
+// --- Rate limiting (#196, ADR-018 §§2,6,7) ----------------------------------
+
+describe("assertWithinLimits", () => {
+  beforeEach(() => {
+    repo.oldestSince.mockResolvedValue(new Date("2026-07-19T12:00:00.000Z"));
+  });
+
+  it("allows a subject inside both budgets", async () => {
+    repo.countSince.mockResolvedValue(1);
+    repo.sumTokensSince.mockResolvedValue(100);
+    await expect(assertWithinLimits("user:u1", false)).resolves.toBeUndefined();
+  });
+
+  it("refuses once the request budget is spent", async () => {
+    repo.countSince.mockResolvedValue(LIMITS.user.requests.max);
+    repo.sumTokensSince.mockResolvedValue(0);
+    await expect(assertWithinLimits("user:u1", false)).rejects.toBeInstanceOf(
+      RateLimitError,
+    );
+  });
+
+  // Two dimensions catch different abuse: a slow drip of very expensive
+  // requests never trips a request count.
+  it("refuses once the token budget is spent, even with few requests", async () => {
+    repo.countSince.mockResolvedValue(1);
+    repo.sumTokensSince.mockResolvedValue(LIMITS.user.tokens.max);
+    await expect(assertWithinLimits("user:u1", false)).rejects.toBeInstanceOf(
+      RateLimitError,
+    );
+  });
+
+  it("holds the demo to a tighter budget than a signed-in collector", async () => {
+    expect(LIMITS.demo.requests.max).toBeLessThan(LIMITS.user.requests.max);
+    expect(LIMITS.demo.tokens.max).toBeLessThan(LIMITS.user.tokens.max);
+
+    // A load legal for a signed-in user is refused for the demo.
+    repo.countSince.mockResolvedValue(LIMITS.demo.requests.max);
+    repo.sumTokensSince.mockResolvedValue(0);
+    await expect(assertWithinLimits("demo:abc", true)).rejects.toBeInstanceOf(
+      RateLimitError,
+    );
+    await expect(assertWithinLimits("user:u1", false)).resolves.toBeUndefined();
+  });
+
+  // ADR-018 §6. A spend guard that opens when the store is unreachable is not a
+  // guard — and this is what closes the hole left by a failed usage write.
+  it("fails closed when the usage store cannot be read", async () => {
+    repo.countSince.mockRejectedValue(new Error("db down"));
+    repo.sumTokensSince.mockRejectedValue(new Error("db down"));
+    await expect(assertWithinLimits("user:u1", false)).rejects.toBeInstanceOf(
+      RateLimitError,
+    );
+  });
+
+  it("reports the moment the oldest request ages out of the window", async () => {
+    const oldest = new Date("2026-07-19T12:00:00.000Z");
+    repo.countSince.mockResolvedValue(LIMITS.user.requests.max);
+    repo.sumTokensSince.mockResolvedValue(0);
+    repo.oldestSince.mockResolvedValue(oldest);
+
+    const error = await assertWithinLimits("user:u1", false).catch((e) => e);
+    expect(error).toBeInstanceOf(RateLimitError);
+    expect((error as RateLimitError).retryAfter).toEqual(
+      new Date(oldest.getTime() + LIMITS.user.requests.windowMs),
+    );
+  });
+
+  // The guard must run before any spend, so it never calls OpenAI to find out.
+  it("decides from stored usage alone", async () => {
+    repo.countSince.mockResolvedValue(0);
+    repo.sumTokensSince.mockResolvedValue(0);
+    await assertWithinLimits("user:u1", false);
+    expect(repo.countSince).toHaveBeenCalledWith("user:u1", expect.any(Date));
+    expect(repo.sumTokensSince).toHaveBeenCalledWith("user:u1", expect.any(Date));
   });
 });

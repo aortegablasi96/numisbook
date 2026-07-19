@@ -295,6 +295,10 @@ export const it: Partial<Messages> = {
     "Questa conversazione ha raggiunto il limite di lunghezza. Cancellala per iniziarne una nuova.",
   "assistant.limitReachedDemo":
     "Questa conversazione dimostrativa ha raggiunto il limite. Accedi con Google per continuare a chattare.",
+  "assistant.rateLimited":
+    "Hai raggiunto il limite di utilizzo dell’assistente. Riprova tra {minutes} min.",
+  "assistant.rateLimitedSoon":
+    "Hai raggiunto il limite di utilizzo dell’assistente. Riprova tra poco.",
   "assistant.errorGeneric": "Qualcosa è andato storto",
   "assistant.errorImage":
     "Impossibile caricare l’immagine. Prova con un altro file.",
