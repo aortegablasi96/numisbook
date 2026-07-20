@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useT } from "@/components/i18n/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n";
 import { canSendAnotherMessage } from "@/lib/assistant-conversation";
+import { MarkdownText } from "./MarkdownText";
 
 // Example prompts shown on the empty state. Translated so the model receives the
 // question in the user's language (and answers in kind — ADR-014).
@@ -362,7 +363,14 @@ export function AssistantWidget({ isDemo = false }: { isDemo?: boolean }) {
                         className="chat-msg-image"
                       />
                     )}
-                    {turn.text}
+                    {/* Only the assistant writes Markdown. A collector's own
+                        message renders literally, so typing `*` or `_` shows
+                        exactly what they typed. */}
+                    {turn.role === "assistant" ? (
+                      <MarkdownText text={turn.text} />
+                    ) : (
+                      turn.text
+                    )}
                     {turn.actions && turn.actions.length > 0 && (
                       <ul className="actions">
                         {turn.actions.map((action, j) => (
