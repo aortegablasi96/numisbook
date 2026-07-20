@@ -1262,6 +1262,89 @@ the demo tenant can download but not restore (403 at the server).
 
 ---
 
+# Phase 23 — Assistant Hardening
+
+Goal: make the collection assistant production-grade now that the platform is
+deployed. The assistant is **the only feature that spends money per request** —
+every other surface reads and writes our own Postgres, while this one calls a
+third-party API, in a loop, for anyone who can reach it, including anonymous
+visitors via the public demo (ADR-016). Nothing bounded that spend, and nothing
+recorded it.
+
+Milestone epic #192, five slices (#193–#197). Decision: **ADR-018**.
+
+## What shipped
+
+- **Usage accounting** (#193) — a new `assistant_usage` table, repository, and
+  `assistant-limits` service: one home for "how much has this subject spent, and
+  may they spend more?". Prompt and completion tokens are stored in **separate
+  columns**, never one total, because `gpt-4o-mini` prices input and output
+  differently — a single total would make a row's *cost* unrecoverable, which is
+  the question the table exists to answer.
+- **Conversation limits** (#194) — a signed-in conversation is now bounded (40
+  messages) as the demo already was (20). Enforced in the route and mirrored in
+  the widget, which disables the composer and explains why. **Stateless**: the
+  client sends the whole history each turn, so the length is already in hand —
+  persisting a count would store a value we are handed anyway.
+- **Cost controls** (#195) — a per-request token ceiling checked *inside* the
+  agentic loop, complementary to `MAX_TOOL_ITERATIONS` (iterations bound steps,
+  tokens bound spend). Every request writes one usage row — including on abort
+  and on crash, via `finally`, because tokens spent are spent and a request that
+  consumed budget without leaving a row would let the guard under-count.
+- **Rate limiting** (#196) — a rolling-window guard on `/api/assistant` over
+  **two dimensions**: requests (stops a burst) and tokens (stops a slow drip of
+  very expensive calls that would never trip a request count). Returns 429 with a
+  `Retry-After` header and the exact moment the oldest request ages out, which the
+  widget renders as a localized "try again in N min".
+- **Streaming responses** (#197) — `chatStream` is an async generator yielding
+  plain events; the route adapts them to Server-Sent Events, so the service stays
+  framework-agnostic and the route remains the only layer that knows transport.
+  `chat()` survives as a thin drain of that generator, so there is exactly **one**
+  loop rather than two free to drift.
+
+## Notes
+
+- **The metered subject is polymorphic.** Signed-in collectors are keyed on
+  `user:<uuid>`; demo visitors on `demo:<sha256 of session token>`, because they
+  all share one tenant id and metering them together would let one visitor starve
+  every other on a sales surface. The token is hashed, never stored — a leaked
+  backup must not be a set of usable sessions. The `user:`/`demo:` prefix is
+  load-bearing: without it the two namespaces could collide and merge budgets.
+- **`assistant_usage` has no foreign key**, so it sits outside the tenant
+  ownership model alongside `fx_rates` — and unlike `fx_rates` it *does* reference
+  a user, just not referentially. That is exactly why **account deletion purges it
+  explicitly** (ADR-018 §5); the database cascade has no key to follow. A failed
+  usage purge **propagates**, unlike the best-effort blob purge beside it: an
+  orphaned blob is invisible and re-sweepable, an orphaned usage row is a privacy
+  defect.
+- **The guards fail closed** (§6). If usage state cannot be read, the request is
+  refused. This is also what closes the hole left by the usage write never
+  throwing: a lost write cannot become a way in, because the next request's
+  pre-flight check refuses.
+- **Enforcement is approximate under concurrency, knowingly** (§7). Two
+  simultaneous requests can both see room and both proceed. Locking every request
+  to prevent an occasional off-by-one is a poor trade for a spend guard.
+- **Actions stream as they happen**, not batched at the end — so if the ceiling
+  cuts a turn short after three coins were added, the user has already seen those
+  three confirmed. That is what makes the "stopped partway" message honest rather
+  than reconstructed.
+- **Retention is deferred deliberately** (§8), not overlooked: ~400 MB/year at
+  10k requests/day, and the window queries never scan beyond their range. A tested
+  `deleteOlderThan` exists for when real growth is known.
+
+All three CI gates green (572 tests). The usage table, its CHECK constraints,
+index, and every repository method were exercised against a real PostgreSQL
+instance — including the `SUM()`-over-empty-window case, which returns NULL in
+Postgres and would have made the cost guard silently never trip.
+
+**Not yet verified:** no request has run against a real OpenAI stream or a real
+deployment. Chunk shapes are written against the documented format, and Vercel
+response buffering — ADR-018's top recorded risk, which can look like success
+while delivering none of the benefit — remains open until confirmed on a preview
+deployment.
+
+---
+
 # Historical Notes
 
 This document intentionally records completed work only.

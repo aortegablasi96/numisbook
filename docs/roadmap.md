@@ -84,16 +84,25 @@ zip, restoring additively into any account (see `history.md` Phase 22 and the
 ADR-017 archive addendum). With that, the **Collector Experience** milestone is
 complete: a collector can get their data fully in and out. The active milestone
 is now **Assistant Hardening** — making the collection assistant production-grade
-(streaming responses, rate limiting, cost controls, and conversation limits) now
-that the platform is deployed.
+now that the platform is deployed. Its four hardening features have shipped: the
+assistant streams its replies over SSE, and the platform's one per-request money
+cost is now bounded on every surface — rate limits and a token budget per metered
+subject, a per-request ceiling, bounded conversations, and a usage row behind all
+of them that makes the feature's real spend answerable (see `history.md` Phase 23
+and ADR-018). One item remains: **Markdown-formatted answers**, so replies render
+as formatted text rather than raw `**` and `-` characters.
 
 Primary objective:
 
-**Let a collector get their data in and out.** Everything the platform holds is
-currently trapped in it: a collection can only be built by typing coins in one at
-a time, and there is no way to take it elsewhere or recover it. Import and export
-lower the cost of adopting NumisBook and the cost of leaving it — the second is
-what makes the first credible.
+**Make the assistant safe to leave switched on.** It is the only feature that
+spends money per request, and the public demo exposes it to anyone without a
+sign-in — so until its cost was bounded and recorded, the platform carried one
+uncapped liability that nobody could even measure. Guarding it is what lets the
+assistant stay a first-class feature rather than a risk to ration.
+
+> The previous objective — *let a collector get their data in and out* — was met
+> by the **Collector Experience** milestone (CSV export/import and the
+> full-account archive; `history.md` Phases 20–22).
 
 Current priorities:
 
@@ -104,7 +113,8 @@ Current priorities:
 - Mobile-responsive UI — ✅ complete
 - Public demo account — ✅ complete
 - Collector experience — ✅ complete (CSV export + import, full-account archive)
-- Assistant hardening — active
+- Assistant hardening — active (streaming, rate limiting, cost controls and
+  conversation limits ✅; Markdown-formatted answers remaining)
 - (then) hosted error monitoring & accessibility checks in CI
 
 ---
@@ -156,12 +166,41 @@ Goal:
 
 Make the collection assistant production-grade now that the platform is deployed.
 
+The four hardening features have shipped (see `history.md` Phase 23 and
+`docs/decisions/ADR-018-assistant-hardening.md`); one presentation item remains.
+
 ## Features
 
-- [ ] Streaming responses
-- [ ] Rate limiting
-- [ ] Cost controls
-- [ ] Conversation limits
+- [x] Streaming responses — shipped (#197). `chatStream` yields plain events and
+      the route adapts them to SSE, so the service never learns about transport;
+      `chat()` remains a drain of the same generator, so there is only one loop.
+      Actions stream as they happen, and an explicit `done` terminator makes a
+      truncated reply distinguishable from a finished one.
+- [x] Rate limiting — shipped (#196). A rolling window over **two** dimensions
+      (requests and tokens), keyed on the session-derived subject; 429 carries
+      `Retry-After` and the exact moment room returns. The demo is metered
+      per-session, not per shared tenant id.
+- [x] Cost controls — shipped (#195). A per-request token ceiling inside the
+      agentic loop, plus one usage row per request — written even on abort or
+      crash, so spend is never unaccounted.
+- [x] Conversation limits — shipped (#194). Signed-in conversations are bounded
+      as the demo already was, enforced at the route and mirrored in the widget.
+- [ ] **Markdown-formatted answers.** The assistant already writes Markdown, but
+      the widget renders it literally, so collectors see `**bold**` and `- item`
+      as raw characters. Steer the system prompt to a known subset and render it.
+
+      **Renderer: written in-house, not a dependency.** The design system is
+      dependency-free by decision (DDR-001) and CLAUDE.md requires justification
+      for any new package; `csv.ts` and `zip.ts` are the precedent for writing the
+      small thing rather than importing the general one. Support only what the
+      assistant actually emits — bold, italic, inline code, lists, links,
+      paragraphs — and reject the rest.
+
+      Worth deciding at planning time: assistant output is **model-generated text
+      rendered as markup**, so escaping is a security boundary, not a detail. It
+      must escape HTML before formatting, and links need constraining (no
+      `javascript:`). This also interacts with streaming — a delta can split a
+      `**` mid-token, so the renderer runs over accumulated text, not per chunk.
 
 ---
 
