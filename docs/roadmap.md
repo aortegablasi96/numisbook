@@ -23,7 +23,8 @@ The MVP focuses on collection management and valuation tracking before introduci
 
 # Current Status
 
-Current maturity: **Live in production — active milestone: Assistant Hardening**
+Current maturity: **Live in production — active milestone: Hosted Error
+Monitoring & Accessibility Checks in CI**
 
 The core collection-management platform is functionally complete, the coin and
 valuation data models have been reformed (see `history.md` Phase 5), the
@@ -82,18 +83,29 @@ it writes anything (see `history.md` Phase 21 and the ADR-017 addendum) — and 
 collections, coins, valuations, plus image and invoice bytes) as a dependency-free
 zip, restoring additively into any account (see `history.md` Phase 22 and the
 ADR-017 archive addendum). With that, the **Collector Experience** milestone is
-complete: a collector can get their data fully in and out. The active milestone
-is now **Assistant Hardening** — making the collection assistant production-grade
-(streaming responses, rate limiting, cost controls, and conversation limits) now
-that the platform is deployed.
+complete: a collector can get their data fully in and out. And **Assistant
+Hardening** has shipped: the assistant streams its replies over SSE and renders
+them as formatted Markdown, and the platform's one per-request money cost is
+bounded on every surface — rate limits and a token budget per metered subject, a
+per-request ceiling, bounded conversations, and a usage row behind all of them
+that makes the feature's real spend answerable (see `history.md` Phase 23 and
+ADR-018).
+
+The active milestone is now **Hosted Error Monitoring & Accessibility Checks in
+CI** — deferred twice behind the two above, and the gap they both widened: CI
+gates on lint, type-check and unit tests, **none of which render a page**.
 
 Primary objective:
 
-**Let a collector get their data in and out.** Everything the platform holds is
-currently trapped in it: a collection can only be built by typing coins in one at
-a time, and there is no way to take it elsewhere or recover it. Import and export
-lower the cost of adopting NumisBook and the cost of leaving it — the second is
-what makes the first credible.
+**Close the gap between a defect existing and anyone finding out.** Production
+errors are only discoverable by grepping runtime logs, and no gate renders a
+page — so UI defects reach users unless someone happens to look. Four have now
+shipped that way (a WCAG contrast failure, a stacked facet popover, a 146px
+overflow, and a control offered to the read-only demo), each caught by hand.
+
+> Objectives met by the two preceding milestones: *let a collector get their data
+> in and out* (**Collector Experience**, `history.md` Phases 20–22) and *make the
+> assistant safe to leave switched on* (**Assistant Hardening**, Phase 23).
 
 Current priorities:
 
@@ -104,68 +116,13 @@ Current priorities:
 - Mobile-responsive UI — ✅ complete
 - Public demo account — ✅ complete
 - Collector experience — ✅ complete (CSV export + import, full-account archive)
-- Assistant hardening — active
-- (then) hosted error monitoring & accessibility checks in CI
+- Assistant hardening — ✅ complete (streaming, rate limiting, cost controls,
+  conversation limits, Markdown-formatted answers)
+- Hosted error monitoring & accessibility checks in CI — active
 
 ---
 
-# Completed Milestone — Collector Experience
-
-✅ Complete — all three features shipped (see `history.md` Phases 20–22, ADR-017
-and its addenda). Retained here for the design rationale; the next active
-milestone follows below.
-
-Goal:
-
-Improve collection management and portability.
-
-## Features
-
-> Multi-currency portfolio support and base-currency preferences were pulled
-> forward into the **Portfolio Analytics Upgrade** milestone — analytics figures
-> are only meaningful once all values share a single currency.
->
-> User profile/account settings were pulled forward into the **Additional
-> Settings** milestone.
-
-The milestone is sequenced deliberately: **export leads**, because it defines the
-column contract import must consume (ADR-017). Shipping it first means import is
-designed against a contract that exists and has been exercised, rather than one
-invented alongside it.
-
-- [x] CSV export — shipped (see `history.md` Phase 20, ADR-017). Downloads the
-      coins in view from both surfaces, honouring the active filter/search/sort.
-- [x] CSV import — shipped (see `history.md` Phase 21, ADR-017 addendum §§13–20).
-      Reads the same column contract export writes, with a preview before any
-      write; the round-trip test (`parse(export(coin)) ≡ coin`) pins the two
-      together. **Additive**: the contract carries no coin id, so re-importing an
-      export duplicates it — disclosed by the preview, not prevented.
-- [x] Collection backup and recovery — shipped (see `history.md` Phase 22, ADR-017
-      addendum §§21–26). A **full-account archive with restore**: a STORE zip of a
-      JSON manifest plus every image and invoice byte, carrying everything CSV cannot
-      (all collections, coins, valuations, and blobs). Download is a read (the demo
-      keeps it); restore is an **additive** write (new ids, nothing overwritten;
-      demo refused). Not scheduled server-side snapshots — Neon already backs up the
-      database, and that does not help a collector leave.
-
----
-
-# Active Milestone — Assistant Hardening
-
-Goal:
-
-Make the collection assistant production-grade now that the platform is deployed.
-
-## Features
-
-- [ ] Streaming responses
-- [ ] Rate limiting
-- [ ] Cost controls
-- [ ] Conversation limits
-
----
-
-# Future Milestone — Hosted Error Monitoring & Accessibility Checks in CI
+# Active Milestone — Hosted Error Monitoring & Accessibility Checks in CI
 
 Goal:
 
@@ -173,8 +130,9 @@ Close the two gaps between a defect existing and anyone finding out: production
 errors that nobody is alerted to, and UI defects that no gate can see.
 
 > Was the active milestone; deferred behind **Collector Experience** and
-> **Assistant Hardening**. Deferred, not reconsidered — the case below stands,
-> and each milestone taken ahead of it is one more shipped without the gate.
+> **Assistant Hardening**, both now complete. Deferred, not reconsidered — the
+> case below stands, and each milestone taken ahead of it is one more shipped
+> without the gate. It is now active.
 
 ## Hosted error monitoring
 

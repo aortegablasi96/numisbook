@@ -293,6 +293,16 @@ export const de: Partial<Messages> = {
   "assistant.clearAria": "Unterhaltung löschen",
   "assistant.welcome":
     "Hallo! Ich helfe dir, deine Münzsammlung zu verwalten. Was möchtest du tun?",
+  "assistant.limitReached":
+    "Diese Unterhaltung hat ihre Längenbegrenzung erreicht. Leeren Sie sie, um eine neue zu beginnen.",
+  "assistant.limitReachedDemo":
+    "Diese Demo-Unterhaltung hat ihr Limit erreicht. Melden Sie sich mit Google an, um weiterzuchatten.",
+  "assistant.rateLimited":
+    "Sie haben das Nutzungslimit des Assistenten erreicht. Bitte versuchen Sie es in {minutes} Min. erneut.",
+  "assistant.rateLimitedSoon":
+    "Sie haben das Nutzungslimit des Assistenten erreicht. Bitte versuchen Sie es in Kürze erneut.",
+  "assistant.errorTruncated":
+    "Die Antwort wurde abgeschnitten. Bitte versuchen Sie es erneut.",
   "assistant.errorGeneric": "Etwas ist schiefgelaufen",
   "assistant.errorImage":
     "Bild konnte nicht geladen werden. Bitte versuche eine andere Datei.",

@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { useT } from "@/components/i18n/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n";
+import { canSendAnotherMessage } from "@/lib/assistant-conversation";
+import { MarkdownText } from "./MarkdownText";
 
 // Example prompts shown on the empty state. Translated so the model receives the
 // question in the user's language (and answers in kind — ADR-014).
@@ -28,6 +30,54 @@ async function readError(response: Response, fallback: string): Promise<string> 
   } catch {
     return fallback;
   }
+}
+
+/** One event from the assistant stream (mirrors the service's `ChatEvent`). */
+export type StreamEvent =
+  | { type: "text"; delta: string }
+  | { type: "action"; action: string }
+  | { type: "error"; message: string }
+  | { type: "done" };
+
+/**
+ * Split an SSE buffer into complete events, returning the unconsumed remainder.
+ *
+ * A network chunk can split an event anywhere — mid-JSON, mid-delimiter — so
+ * only whole `data: …\n\n` records are parsed and the tail is carried forward.
+ * Pure and exported because the widget itself is never rendered under
+ * `environment: "node"`.
+ */
+export function parseSseBuffer(buffer: string): {
+  events: StreamEvent[];
+  rest: string;
+} {
+  const events: StreamEvent[] = [];
+  const parts = buffer.split("\n\n");
+  // The final part is whatever came after the last delimiter: possibly a
+  // partial event, so it stays in the buffer.
+  const rest = parts.pop() ?? "";
+
+  for (const part of parts) {
+    const line = part.trim();
+    if (!line.startsWith("data:")) continue;
+    try {
+      events.push(JSON.parse(line.slice(5).trim()) as StreamEvent);
+    } catch {
+      // A malformed record is skipped rather than killing the stream.
+    }
+  }
+  return { events, rest };
+}
+
+/**
+ * Whole minutes until `iso`, at least 1.
+ *
+ * Rounded **up**: telling someone to retry in "0 minutes" when the window has
+ * not actually elapsed invites an immediate second refusal.
+ */
+export function minutesUntil(iso: string, now = Date.now()): number {
+  const ms = new Date(iso).getTime() - now;
+  return Math.max(1, Math.ceil(ms / 60_000));
 }
 
 // Resize an image file to at most maxDim px on the longest side, JPEG 85%.
@@ -101,7 +151,17 @@ function IconAttach() {
   );
 }
 
-export function AssistantWidget() {
+/**
+ * Count the messages a conversation would send — the same filter `send` applies
+ * when building `history`, so the widget and the route agree on what "length"
+ * means. Pure and exported for testing (`environment: "node"`, so the component
+ * itself is never rendered).
+ */
+export function sentMessageCount(turns: { text: string }[]): number {
+  return turns.filter((turn) => turn.text.trim() !== "").length;
+}
+
+export function AssistantWidget({ isDemo = false }: { isDemo?: boolean }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -117,9 +177,13 @@ export function AssistantWidget() {
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Same rule the route enforces (`@/lib/assistant-conversation`), applied here
+  // so the limit is explained before a send fails rather than after.
+  const limitReached = !canSendAnotherMessage(sentMessageCount(turns), isDemo);
+
   async function send(text: string) {
     const trimmed = text.trim();
-    if ((!trimmed && !pendingImage) || busy) return;
+    if ((!trimmed && !pendingImage) || busy || limitReached) return;
     setError(null);
     setBusy(true);
 
@@ -144,17 +208,76 @@ export function AssistantWidget() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: history, attachedImage: imageToSend }),
       });
-      if (!response.ok) {
+      // The server's rate-limit message is English (like every API error here),
+      // so the widget renders its own localized one from the exact retry time.
+      if (response.status === 429) {
+        const body = (await response.json().catch(() => ({}))) as {
+          retryAfter?: string;
+        };
+        setError(
+          body.retryAfter
+            ? t("assistant.rateLimited", {
+                minutes: minutesUntil(body.retryAfter),
+              })
+            : t("assistant.rateLimitedSoon"),
+        );
+        return;
+      }
+      if (!response.ok || !response.body) {
         setError(await readError(response, t("assistant.errorGeneric")));
         return;
       }
-      const { reply, actions } = (await response.json()) as {
-        reply: string;
-        actions: string[];
-      };
-      // Once the assistant confirms the photo was saved, stop re-sending it.
-      if (actions.includes("Saved coin photo")) setHeldImage(null);
-      setTurns((prev) => [...prev, { role: "assistant", text: reply, actions }]);
+
+      // The assistant turn is appended empty and then grown in place as deltas
+      // arrive, so the reply appears as it is written.
+      let index = -1;
+      setTurns((prev) => {
+        index = prev.length;
+        return [...prev, { role: "assistant", text: "", actions: [] }];
+      });
+
+      const update = (fn: (turn: Turn) => Turn) =>
+        setTurns((prev) =>
+          prev.map((turn, i) => (i === index ? fn(turn) : turn)),
+        );
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finished = false;
+      let failed = false;
+
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const { events, rest } = parseSseBuffer(buffer);
+        buffer = rest;
+
+        for (const event of events) {
+          if (event.type === "text") {
+            update((turn) => ({ ...turn, text: turn.text + event.delta }));
+          } else if (event.type === "action") {
+            // Once the assistant confirms the photo was saved, stop re-sending it.
+            if (event.action === "Saved coin photo") setHeldImage(null);
+            update((turn) => ({
+              ...turn,
+              actions: [...(turn.actions ?? []), event.action],
+            }));
+          } else if (event.type === "error") {
+            failed = true;
+            setError(t("assistant.errorGeneric"));
+          } else if (event.type === "done") {
+            finished = true;
+          }
+        }
+      }
+
+      // No terminator means the connection died mid-reply. Say so, rather than
+      // leaving a truncated answer looking like a complete one.
+      if (!finished && !failed) setError(t("assistant.errorTruncated"));
+
       setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } finally {
       setBusy(false);
@@ -240,7 +363,14 @@ export function AssistantWidget() {
                         className="chat-msg-image"
                       />
                     )}
-                    {turn.text}
+                    {/* Only the assistant writes Markdown. A collector's own
+                        message renders literally, so typing `*` or `_` shows
+                        exactly what they typed. */}
+                    {turn.role === "assistant" ? (
+                      <MarkdownText text={turn.text} />
+                    ) : (
+                      turn.text
+                    )}
                     {turn.actions && turn.actions.length > 0 && (
                       <ul className="actions">
                         {turn.actions.map((action, j) => (
@@ -281,6 +411,11 @@ export function AssistantWidget() {
             </div>
           )}
 
+          {limitReached && (
+            <p className="chat-limit-notice" role="status">
+              {t(isDemo ? "assistant.limitReachedDemo" : "assistant.limitReached")}
+            </p>
+          )}
           <form
             onSubmit={(e) => { e.preventDefault(); void send(input); }}
             className="chat-input-bar"
@@ -296,7 +431,7 @@ export function AssistantWidget() {
               type="button"
               className="chat-attach-btn"
               onClick={() => fileRef.current?.click()}
-              disabled={busy}
+              disabled={busy || limitReached}
               aria-label={t("assistant.attachAria")}
               title={t("assistant.attachTitle")}
             >
@@ -308,13 +443,13 @@ export function AssistantWidget() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={t("assistant.inputPlaceholder")}
               aria-label={t("assistant.messageAria")}
-              disabled={busy}
+              disabled={busy || limitReached}
               autoFocus
             />
             <button
               type="submit"
               className="chat-send-btn"
-              disabled={busy || (input.trim() === "" && !pendingImage)}
+              disabled={busy || limitReached || (input.trim() === "" && !pendingImage)}
               aria-label={t("assistant.sendAria")}
             >
               <IconSend />

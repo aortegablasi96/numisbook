@@ -289,6 +289,15 @@ export const es: Partial<Messages> = {
   "assistant.clearAria": "Borrar conversación",
   "assistant.welcome":
     "¡Hola! Puedo ayudarte a gestionar tu colección de monedas. ¿Qué te gustaría hacer?",
+  "assistant.limitReached":
+    "Esta conversación ha alcanzado su límite. Bórrala para empezar una nueva.",
+  "assistant.limitReachedDemo":
+    "Esta conversación de demostración ha alcanzado su límite. Inicia sesión con Google para seguir chateando.",
+  "assistant.rateLimited":
+    "Has alcanzado el límite de uso del asistente. Inténtalo de nuevo en {minutes} min.",
+  "assistant.rateLimitedSoon":
+    "Has alcanzado el límite de uso del asistente. Inténtalo de nuevo en unos momentos.",
+  "assistant.errorTruncated": "La respuesta se interrumpió. Inténtalo de nuevo.",
   "assistant.errorGeneric": "Algo salió mal",
   "assistant.errorImage": "No se pudo cargar la imagen. Prueba con otro archivo.",
   "assistant.attachedAlt": "Moneda adjunta",

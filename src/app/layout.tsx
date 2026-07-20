@@ -76,7 +76,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <div id="main-content" tabIndex={-1} className="container">
               {children}
             </div>
-            {user ? <AssistantWidget /> : null}
+            {user ? <AssistantWidget isDemo={user.isDemo} /> : null}
           </DemoProvider>
         </LocaleProvider>
       </body>

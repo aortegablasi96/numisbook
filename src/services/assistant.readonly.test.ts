@@ -24,6 +24,9 @@ vi.mock("@/services/valuation.service", () => ({
 }));
 vi.mock("@/services/analytics.service", () => ({ getPortfolioSummary: vi.fn() }));
 vi.mock("@/services/coinImage.service", () => ({ setCoinImage: vi.fn() }));
+// assistant.service records usage through this service, which reaches the
+// database — mock it so importing the module under test does not touch @/db.
+vi.mock("@/services/assistant-limits.service", () => ({ recordUsage: vi.fn() }));
 vi.mock("@/repositories/user.repository", () => ({
   userRepository: { findById: vi.fn() },
 }));

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_ASSISTANT_MESSAGES_PAYLOAD } from "@/lib/assistant-conversation";
 
 export const chatMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -6,7 +7,9 @@ export const chatMessageSchema = z.object({
 });
 
 export const assistantRequestSchema = z.object({
-  messages: z.array(chatMessageSchema).min(1).max(50),
+  // A structural abuse guard, not the conversation limit — that is enforced with
+  // a friendly message in the route, and must be the bound a normal user meets.
+  messages: z.array(chatMessageSchema).min(1).max(MAX_ASSISTANT_MESSAGES_PAYLOAD),
   attachedImage: z.string().startsWith("data:image/").nullish(),
 });
 

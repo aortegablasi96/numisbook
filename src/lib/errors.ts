@@ -35,3 +35,20 @@ export class ForbiddenError extends AppError {
     super(message, 403);
   }
 }
+
+/**
+ * The caller has exhausted a rate or spend budget (429).
+ *
+ * `retryAfter` is the moment the oldest request leaves the window — the point
+ * at which the caller genuinely regains room. Carried on the error so the API
+ * boundary can turn it into a `Retry-After` header and the UI can say *when*,
+ * not just *no*.
+ */
+export class RateLimitError extends AppError {
+  readonly retryAfter: Date;
+
+  constructor(message: string, retryAfter: Date) {
+    super(message, 429);
+    this.retryAfter = retryAfter;
+  }
+}

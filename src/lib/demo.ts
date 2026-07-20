@@ -12,13 +12,9 @@ export const DEMO_EMAIL = "demo@numisbook.app";
 export const DEMO_NAME = "Demo Collector";
 /** Demo sessions are short-lived; visitors are not building anything to keep. */
 export const DEMO_SESSION_MAX_AGE_HOURS = 4;
-/**
- * Assistant turns a demo visitor may accumulate in one conversation. The demo is
- * reachable without signing in, so it is the one surface where an anonymous
- * stranger drives OpenAI spend; this bounds a single conversation. Full rate
- * limiting is the Assistant Hardening milestone's job.
- */
-export const DEMO_MAX_ASSISTANT_MESSAGES = 20;
+
+// The demo's assistant conversation cap now lives in `@/lib/assistant-conversation`
+// as one case of the general limit rather than a demo special case (ADR-018 §1).
 
 /** Minimal shape the guard needs — any user row satisfies it. */
 type MaybeDemoUser = { isDemo: boolean };

@@ -4,6 +4,7 @@ import { userRepository } from "@/repositories/user.repository";
 import { coinImageRepository } from "@/repositories/coinImage.repository";
 import { coinInvoiceRepository } from "@/repositories/coinInvoice.repository";
 import { objectStorage } from "@/lib/storage";
+import { forgetUserUsage } from "@/services/assistant-limits.service";
 import { logger } from "@/lib/logger";
 
 vi.mock("@/repositories/user.repository", () => ({
@@ -16,6 +17,9 @@ vi.mock("@/repositories/coinInvoice.repository", () => ({
   coinInvoiceRepository: { listStorageKeysForUser: vi.fn() },
 }));
 vi.mock("@/lib/storage", () => ({ objectStorage: { delete: vi.fn() } }));
+vi.mock("@/services/assistant-limits.service", () => ({
+  forgetUserUsage: vi.fn(),
+}));
 vi.mock("@/lib/logger", () => ({
   logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
@@ -25,6 +29,7 @@ const imageRepo = vi.mocked(coinImageRepository);
 const invoiceRepo = vi.mocked(coinInvoiceRepository);
 const storage = vi.mocked(objectStorage);
 const log = vi.mocked(logger);
+const forgetUsage = vi.mocked(forgetUserUsage);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -32,6 +37,7 @@ beforeEach(() => {
   imageRepo.listStorageKeysForUser.mockResolvedValue([]);
   invoiceRepo.listStorageKeysForUser.mockResolvedValue([]);
   storage.delete.mockResolvedValue(undefined);
+  forgetUsage.mockResolvedValue(undefined);
 });
 
 describe("deleteAccount", () => {
@@ -84,5 +90,20 @@ describe("deleteAccount", () => {
     await deleteAccount("user-1");
     expect(storage.delete).not.toHaveBeenCalled();
     expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  // assistant_usage has no foreign key, so the DB cascade cannot reach it
+  // (ADR-018 §5). Without this the deleted user's id survives deletion.
+  it("forgets the user's assistant usage", async () => {
+    await deleteAccount("user-1");
+    expect(forgetUsage).toHaveBeenCalledWith("user-1");
+  });
+
+  // Deliberately unlike the best-effort storage purge above: an orphaned blob is
+  // invisible and re-sweepable, an orphaned usage row is a privacy defect. It
+  // must fail loudly rather than be swallowed for consistency.
+  it("propagates a usage-purge failure instead of swallowing it", async () => {
+    forgetUsage.mockRejectedValue(new Error("db down"));
+    await expect(deleteAccount("user-1")).rejects.toThrow("db down");
   });
 });
