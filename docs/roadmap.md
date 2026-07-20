@@ -83,14 +83,13 @@ collections, coins, valuations, plus image and invoice bytes) as a dependency-fr
 zip, restoring additively into any account (see `history.md` Phase 22 and the
 ADR-017 archive addendum). With that, the **Collector Experience** milestone is
 complete: a collector can get their data fully in and out. The active milestone
-is now **Assistant Hardening** — making the collection assistant production-grade
-now that the platform is deployed. Its four hardening features have shipped: the
-assistant streams its replies over SSE, and the platform's one per-request money
-cost is now bounded on every surface — rate limits and a token budget per metered
-subject, a per-request ceiling, bounded conversations, and a usage row behind all
-of them that makes the feature's real spend answerable (see `history.md` Phase 23
-and ADR-018). One item remains: **Markdown-formatted answers**, so replies render
-as formatted text rather than raw `**` and `-` characters.
+is now **Assistant Hardening**, and it is **complete**: the assistant streams its
+replies over SSE and renders them as formatted Markdown, and the platform's one
+per-request money cost is bounded on every surface — rate limits and a token
+budget per metered subject, a per-request ceiling, bounded conversations, and a
+usage row behind all of them that makes the feature's real spend answerable (see
+`history.md` Phase 23 and ADR-018). The next milestone is **Hosted Error
+Monitoring & Accessibility Checks in CI**, deferred twice and unchanged below.
 
 Primary objective:
 
@@ -113,8 +112,8 @@ Current priorities:
 - Mobile-responsive UI — ✅ complete
 - Public demo account — ✅ complete
 - Collector experience — ✅ complete (CSV export + import, full-account archive)
-- Assistant hardening — active (streaming, rate limiting, cost controls and
-  conversation limits ✅; Markdown-formatted answers remaining)
+- Assistant hardening — ✅ complete (streaming, rate limiting, cost controls,
+  conversation limits, Markdown-formatted answers)
 - (then) hosted error monitoring & accessibility checks in CI
 
 ---
@@ -160,14 +159,15 @@ invented alongside it.
 
 ---
 
-# Active Milestone — Assistant Hardening
+# Completed Milestone — Assistant Hardening
+
+✅ Complete — see `history.md` Phase 23 and
+`docs/decisions/ADR-018-assistant-hardening.md`. Retained here for the design
+rationale; the next active milestone follows below.
 
 Goal:
 
 Make the collection assistant production-grade now that the platform is deployed.
-
-The four hardening features have shipped (see `history.md` Phase 23 and
-`docs/decisions/ADR-018-assistant-hardening.md`); one presentation item remains.
 
 ## Features
 
@@ -185,26 +185,26 @@ The four hardening features have shipped (see `history.md` Phase 23 and
       crash, so spend is never unaccounted.
 - [x] Conversation limits — shipped (#194). Signed-in conversations are bounded
       as the demo already was, enforced at the route and mirrored in the widget.
-- [ ] **Markdown-formatted answers.** The assistant already writes Markdown, but
-      the widget renders it literally, so collectors see `**bold**` and `- item`
-      as raw characters. Steer the system prompt to a known subset and render it.
+- [x] **Markdown-formatted answers** — shipped (#198). The system prompt names a
+      small subset (bold, italic, inline code, lists, links) and `src/lib/markdown.ts`
+      parses it; `MarkdownText` renders the result.
 
-      **Renderer: written in-house, not a dependency.** The design system is
-      dependency-free by decision (DDR-001) and CLAUDE.md requires justification
-      for any new package; `csv.ts` and `zip.ts` are the precedent for writing the
-      small thing rather than importing the general one. Support only what the
-      assistant actually emits — bold, italic, inline code, lists, links,
-      paragraphs — and reject the rest.
+      **Parses to data, never to an HTML string.** The renderer returns nodes that
+      React renders as elements, so text is escaped by React and no
+      `dangerouslySetInnerHTML` exists in the path — this is the one place in the
+      app where model-generated text (which may quote whatever the user typed)
+      becomes markup, so the injection question is removed rather than answered.
+      Links are restricted to `http`/`https`/`mailto`, tested against
+      whitespace- and control-character-obfuscated `javascript:`.
 
-      Worth deciding at planning time: assistant output is **model-generated text
-      rendered as markup**, so escaping is a security boundary, not a detail. It
-      must escape HTML before formatting, and links need constraining (no
-      `javascript:`). This also interacts with streaming — a delta can split a
-      `**` mid-token, so the renderer runs over accumulated text, not per chunk.
+      Written in-house rather than imported, per DDR-001 and the `csv.ts` /
+      `zip.ts` precedent; a Markdown library would have dragged a sanitizer in
+      with it. Parsing runs over the **accumulated** reply, not per streamed
+      delta, since a chunk boundary can split `**` mid-token.
 
 ---
 
-# Future Milestone — Hosted Error Monitoring & Accessibility Checks in CI
+# Active Milestone — Hosted Error Monitoring & Accessibility Checks in CI
 
 Goal:
 
@@ -212,8 +212,9 @@ Close the two gaps between a defect existing and anyone finding out: production
 errors that nobody is alerted to, and UI defects that no gate can see.
 
 > Was the active milestone; deferred behind **Collector Experience** and
-> **Assistant Hardening**. Deferred, not reconsidered — the case below stands,
-> and each milestone taken ahead of it is one more shipped without the gate.
+> **Assistant Hardening**, both now complete. Deferred, not reconsidered — the
+> case below stands, and each milestone taken ahead of it is one more shipped
+> without the gate. It is now active.
 
 ## Hosted error monitoring
 

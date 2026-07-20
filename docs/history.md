@@ -1301,6 +1301,10 @@ Milestone epic #192, five slices (#193–#197). Decision: **ADR-018**.
   framework-agnostic and the route remains the only layer that knows transport.
   `chat()` survives as a thin drain of that generator, so there is exactly **one**
   loop rather than two free to drift.
+- **Markdown-formatted replies** (#198, added to the milestone after planning) —
+  the assistant already wrote Markdown; the widget printed it literally, so
+  collectors saw `**bold**` and `- item` as raw characters. The system prompt now
+  names a small supported subset and `src/lib/markdown.ts` parses it.
 
 ## Notes
 
@@ -1331,8 +1335,20 @@ Milestone epic #192, five slices (#193–#197). Decision: **ADR-018**.
 - **Retention is deferred deliberately** (§8), not overlooked: ~400 MB/year at
   10k requests/day, and the window queries never scan beyond their range. A tested
   `deleteOlderThan` exists for when real growth is known.
+- **The Markdown renderer parses to data, never to an HTML string.** The widget
+  renders the returned nodes as React elements, so React escapes every leaf and
+  there is no `dangerouslySetInnerHTML` in the path — the injection question is
+  removed rather than answered. That matters here more than elsewhere: this is the
+  one place in NumisBook where model-generated text, which may quote whatever the
+  user typed, becomes markup. Links are restricted to `http`/`https`/`mailto`,
+  with the scheme tested *after* stripping whitespace and control characters,
+  because browsers treat `java\nscript:` as `javascript:`. Written in-house rather
+  than imported (DDR-001; the `csv.ts` / `zip.ts` precedent) — a Markdown library
+  would have brought a sanitizer with it. Anything outside the subset stays
+  literal text, so the failure mode is "shows the raw characters", never broken
+  markup.
 
-All three CI gates green (572 tests). The usage table, its CHECK constraints,
+All three CI gates green (594 tests). The usage table, its CHECK constraints,
 index, and every repository method were exercised against a real PostgreSQL
 instance — including the `SUM()`-over-empty-window case, which returns NULL in
 Postgres and would have made the cost guard silently never trip.
@@ -1341,7 +1357,10 @@ Postgres and would have made the cost guard silently never trip.
 deployment. Chunk shapes are written against the documented format, and Vercel
 response buffering — ADR-018's top recorded risk, which can look like success
 while delivering none of the benefit — remains open until confirmed on a preview
-deployment.
+deployment. The Markdown *parser* is covered by unit tests, but its rendered
+appearance (list spacing, code-span tint in both themes) has not been seen in a
+browser: the local database was unavailable, and a rendered reply needs a signed-in
+session.
 
 ---
 
