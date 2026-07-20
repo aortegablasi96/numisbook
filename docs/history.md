@@ -1351,16 +1351,21 @@ Milestone epic #192, five slices (#193–#197). Decision: **ADR-018**.
 All three CI gates green (594 tests). The usage table, its CHECK constraints,
 index, and every repository method were exercised against a real PostgreSQL
 instance — including the `SUM()`-over-empty-window case, which returns NULL in
-Postgres and would have made the cost guard silently never trip.
+Postgres and would have made the cost guard silently never trip, and
+`oldestSince`, whose ascending order decides the retry time a caller is told to
+wait for.
+
+The rendered Markdown was checked in a browser in **both themes**, with contrast
+measured rather than eyeballed: code spans read 5.14:1 (light) and 8.26:1 (dark)
+against the *composited* tint, and links 5.75:1 and 8.26:1 — all clear of WCAG AA.
+Compositing matters here for the reason DDR-005 §7 records: a translucent tint
+must be measured over the background it actually lands on, not the one assumed.
 
 **Not yet verified:** no request has run against a real OpenAI stream or a real
-deployment. Chunk shapes are written against the documented format, and Vercel
-response buffering — ADR-018's top recorded risk, which can look like success
-while delivering none of the benefit — remains open until confirmed on a preview
-deployment. The Markdown *parser* is covered by unit tests, but its rendered
-appearance (list spacing, code-span tint in both themes) has not been seen in a
-browser: the local database was unavailable, and a rendered reply needs a signed-in
-session.
+deployment. Streamed chunk shapes are written against the documented format
+rather than an observed one, and Vercel response buffering — ADR-018's top
+recorded risk, which can look like success while delivering none of the benefit —
+remains open until confirmed on a preview deployment with `OPENAI_API_KEY` set.
 
 ---
 
