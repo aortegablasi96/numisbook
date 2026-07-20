@@ -297,6 +297,7 @@ export const es: Partial<Messages> = {
     "Has alcanzado el límite de uso del asistente. Inténtalo de nuevo en {minutes} min.",
   "assistant.rateLimitedSoon":
     "Has alcanzado el límite de uso del asistente. Inténtalo de nuevo en unos momentos.",
+  "assistant.errorTruncated": "La respuesta se interrumpió. Inténtalo de nuevo.",
   "assistant.errorGeneric": "Algo salió mal",
   "assistant.errorImage": "No se pudo cargar la imagen. Prueba con otro archivo.",
   "assistant.attachedAlt": "Moneda adjunta",

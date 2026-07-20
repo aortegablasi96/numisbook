@@ -301,6 +301,7 @@ export const fr: Partial<Messages> = {
     "Vous avez atteint la limite d’utilisation de l’assistant. Réessayez dans {minutes} min.",
   "assistant.rateLimitedSoon":
     "Vous avez atteint la limite d’utilisation de l’assistant. Réessayez dans un instant.",
+  "assistant.errorTruncated": "La réponse a été interrompue. Veuillez réessayer.",
   "assistant.errorGeneric": "Une erreur s’est produite",
   "assistant.errorImage":
     "Impossible de charger l’image. Essayez un autre fichier.",

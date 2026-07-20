@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { minutesUntil, sentMessageCount } from "./AssistantWidget";
+import { minutesUntil, parseSseBuffer, sentMessageCount } from "./AssistantWidget";
 
 // The widget itself is never rendered (`environment: "node"`, no DOM), so its
 // logic is tested through the pure helpers it is built from.
@@ -34,5 +34,50 @@ describe("sentMessageCount", () => {
 
   it("counts an empty conversation as zero", () => {
     expect(sentMessageCount([])).toBe(0);
+  });
+});
+
+describe("parseSseBuffer", () => {
+  it("parses complete events", () => {
+    const { events, rest } = parseSseBuffer(
+      'data: {"type":"text","delta":"hi"}\n\ndata: {"type":"done"}\n\n',
+    );
+    expect(events).toEqual([
+      { type: "text", delta: "hi" },
+      { type: "done" },
+    ]);
+    expect(rest).toBe("");
+  });
+
+  // A network chunk can split an event anywhere. Parsing the tail eagerly would
+  // drop or corrupt whatever straddles the boundary.
+  it("keeps a partial trailing event in the buffer", () => {
+    const { events, rest } = parseSseBuffer(
+      'data: {"type":"text","delta":"a"}\n\ndata: {"type":"te',
+    );
+    expect(events).toEqual([{ type: "text", delta: "a" }]);
+    expect(rest).toBe('data: {"type":"te');
+  });
+
+  it("reassembles across two reads", () => {
+    const first = parseSseBuffer('data: {"type":"text","del');
+    expect(first.events).toEqual([]);
+
+    const second = parseSseBuffer(first.rest + 'ta":"ok"}\n\n');
+    expect(second.events).toEqual([{ type: "text", delta: "ok" }]);
+  });
+
+  it("preserves delta text containing blank lines", () => {
+    const { events } = parseSseBuffer(
+      `data: ${JSON.stringify({ type: "text", delta: "a\n\nb" })}\n\n`,
+    );
+    expect(events).toEqual([{ type: "text", delta: "a\n\nb" }]);
+  });
+
+  it("skips a malformed record without killing the stream", () => {
+    const { events } = parseSseBuffer(
+      'data: {oops\n\ndata: {"type":"done"}\n\n',
+    );
+    expect(events).toEqual([{ type: "done" }]);
   });
 });

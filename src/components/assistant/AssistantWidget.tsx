@@ -31,6 +31,43 @@ async function readError(response: Response, fallback: string): Promise<string> 
   }
 }
 
+/** One event from the assistant stream (mirrors the service's `ChatEvent`). */
+export type StreamEvent =
+  | { type: "text"; delta: string }
+  | { type: "action"; action: string }
+  | { type: "error"; message: string }
+  | { type: "done" };
+
+/**
+ * Split an SSE buffer into complete events, returning the unconsumed remainder.
+ *
+ * A network chunk can split an event anywhere — mid-JSON, mid-delimiter — so
+ * only whole `data: …\n\n` records are parsed and the tail is carried forward.
+ * Pure and exported because the widget itself is never rendered under
+ * `environment: "node"`.
+ */
+export function parseSseBuffer(buffer: string): {
+  events: StreamEvent[];
+  rest: string;
+} {
+  const events: StreamEvent[] = [];
+  const parts = buffer.split("\n\n");
+  // The final part is whatever came after the last delimiter: possibly a
+  // partial event, so it stays in the buffer.
+  const rest = parts.pop() ?? "";
+
+  for (const part of parts) {
+    const line = part.trim();
+    if (!line.startsWith("data:")) continue;
+    try {
+      events.push(JSON.parse(line.slice(5).trim()) as StreamEvent);
+    } catch {
+      // A malformed record is skipped rather than killing the stream.
+    }
+  }
+  return { events, rest };
+}
+
 /**
  * Whole minutes until `iso`, at least 1.
  *
@@ -185,17 +222,61 @@ export function AssistantWidget({ isDemo = false }: { isDemo?: boolean }) {
         );
         return;
       }
-      if (!response.ok) {
+      if (!response.ok || !response.body) {
         setError(await readError(response, t("assistant.errorGeneric")));
         return;
       }
-      const { reply, actions } = (await response.json()) as {
-        reply: string;
-        actions: string[];
-      };
-      // Once the assistant confirms the photo was saved, stop re-sending it.
-      if (actions.includes("Saved coin photo")) setHeldImage(null);
-      setTurns((prev) => [...prev, { role: "assistant", text: reply, actions }]);
+
+      // The assistant turn is appended empty and then grown in place as deltas
+      // arrive, so the reply appears as it is written.
+      let index = -1;
+      setTurns((prev) => {
+        index = prev.length;
+        return [...prev, { role: "assistant", text: "", actions: [] }];
+      });
+
+      const update = (fn: (turn: Turn) => Turn) =>
+        setTurns((prev) =>
+          prev.map((turn, i) => (i === index ? fn(turn) : turn)),
+        );
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finished = false;
+      let failed = false;
+
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const { events, rest } = parseSseBuffer(buffer);
+        buffer = rest;
+
+        for (const event of events) {
+          if (event.type === "text") {
+            update((turn) => ({ ...turn, text: turn.text + event.delta }));
+          } else if (event.type === "action") {
+            // Once the assistant confirms the photo was saved, stop re-sending it.
+            if (event.action === "Saved coin photo") setHeldImage(null);
+            update((turn) => ({
+              ...turn,
+              actions: [...(turn.actions ?? []), event.action],
+            }));
+          } else if (event.type === "error") {
+            failed = true;
+            setError(t("assistant.errorGeneric"));
+          } else if (event.type === "done") {
+            finished = true;
+          }
+        }
+      }
+
+      // No terminator means the connection died mid-reply. Say so, rather than
+      // leaving a truncated answer looking like a complete one.
+      if (!finished && !failed) setError(t("assistant.errorTruncated"));
+
       setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } finally {
       setBusy(false);

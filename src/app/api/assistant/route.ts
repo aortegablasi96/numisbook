@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { assistantRequestSchema } from "@/lib/validation/assistant";
-import { chat } from "@/services/assistant.service";
+import { chatStream, type ChatEvent } from "@/services/assistant.service";
 import { assertWithinLimits } from "@/services/assistant-limits.service";
+import { captureException } from "@/lib/observability";
 import {
   subjectKeyForUser,
   subjectKeyForDemoSession,
@@ -16,6 +17,51 @@ import { currentUser, errorResponse, unauthorized } from "../_lib";
 // exempt in write-guard.test.ts): it stays open to demo visitors and enforces the
 // read-only rule by handing the model a read-only tool set, so it never reaches a
 // mutating service (ADR-016).
+
+/**
+ * Serialize the service's events as Server-Sent Events.
+ *
+ * This is the only place that knows the wire format — the service yields plain
+ * objects and never learns about HTTP (ADR-018 §9).
+ *
+ * `X-Accel-Buffering: no` asks intermediaries not to buffer. Streaming can
+ * otherwise work locally and arrive all-at-once in production, which looks like
+ * success while delivering none of the benefit.
+ */
+function sseResponse(events: AsyncGenerator<ChatEvent>): Response {
+  const encoder = new TextEncoder();
+
+  const body = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        for await (const event of events) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        }
+      } catch (error) {
+        // The generator handles its own failures; anything reaching here is
+        // unexpected. Report it rather than closing the stream silently, which
+        // the client would be unable to distinguish from a truncated reply.
+        const errorId = captureException(error, { kind: "assistantStreamError" });
+        const message = JSON.stringify({
+          type: "error",
+          message: `Something went wrong (${errorId}).`,
+        });
+        controller.enqueue(encoder.encode(`data: ${message}\n\n`));
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(body, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
 
 /**
  * Who to meter this request against (ADR-018 §3).
@@ -66,12 +112,13 @@ export async function POST(request: Request) {
     // must run ahead of the OpenAI request, not alongside it.
     await assertWithinLimits(subjectKey, user.isDemo);
 
-    const result = await chat(user.id, messages, attachedImage, {
+    const events = chatStream(user.id, messages, attachedImage, {
       readOnly: user.isDemo,
       subjectKey,
       signal: request.signal,
     });
-    return NextResponse.json(result);
+
+    return sseResponse(events);
   } catch (error) {
     // A rate-limited caller gets the standard header plus the exact moment in
     // the body, so the widget can say *when* rather than just refusing.

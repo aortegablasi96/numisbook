@@ -299,6 +299,7 @@ export const it: Partial<Messages> = {
     "Hai raggiunto il limite di utilizzo dell’assistente. Riprova tra {minutes} min.",
   "assistant.rateLimitedSoon":
     "Hai raggiunto il limite di utilizzo dell’assistente. Riprova tra poco.",
+  "assistant.errorTruncated": "La risposta è stata interrotta. Riprova.",
   "assistant.errorGeneric": "Qualcosa è andato storto",
   "assistant.errorImage":
     "Impossibile caricare l’immagine. Prova con un altro file.",

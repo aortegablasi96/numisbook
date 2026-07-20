@@ -36,17 +36,96 @@ export const MAX_REQUEST_TOKENS = 100_000;
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 export type ChatResult = { reply: string; actions: string[] };
 
+/**
+ * What the loop emits as it runs.
+ *
+ * `done` is explicit and load-bearing: without a terminator, a complete reply
+ * and a connection that died mid-stream are indistinguishable, and a truncated
+ * answer reads as a finished one (ADR-018 §9).
+ */
+export type ChatEvent =
+  | { type: "text"; delta: string }
+  | { type: "action"; action: string }
+  | { type: "error"; message: string }
+  | { type: "done" };
+
 /** The slice of the OpenAI client this service actually uses. */
 type CompletionsClient = {
   chat: {
     completions: {
       create: (
-        body: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
+        body: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
         options?: { signal?: AbortSignal },
-      ) => Promise<OpenAI.Chat.Completions.ChatCompletion>;
+      ) => Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>>;
     };
   };
 };
+
+/** A tool call assembled from streamed fragments. */
+type AssembledToolCall = {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+};
+
+/**
+ * Reassembles one streamed assistant turn.
+ *
+ * A streamed tool call arrives in pieces — the id and name in one chunk, the
+ * JSON arguments split across many — keyed only by `index`. Nothing can be
+ * executed until the stream ends, so calls are accumulated here while text is
+ * forwarded immediately.
+ */
+function createTurnCollector() {
+  const calls = new Map<number, AssembledToolCall>();
+  let content = "";
+  let promptTokens = 0;
+  let completionTokens = 0;
+
+  return {
+    /** Absorb a chunk; returns any text delta to forward. */
+    absorb(chunk: OpenAI.Chat.Completions.ChatCompletionChunk): string | null {
+      // The usage chunk carries no choices — it arrives last, after the content.
+      if (chunk.usage) {
+        promptTokens += chunk.usage.prompt_tokens ?? 0;
+        completionTokens += chunk.usage.completion_tokens ?? 0;
+      }
+
+      const delta = chunk.choices?.[0]?.delta;
+      if (!delta) return null;
+
+      for (const call of delta.tool_calls ?? []) {
+        const existing = calls.get(call.index) ?? {
+          id: "",
+          type: "function" as const,
+          function: { name: "", arguments: "" },
+        };
+        if (call.id) existing.id = call.id;
+        if (call.function?.name) existing.function.name = call.function.name;
+        // Arguments stream as fragments and must be concatenated, never replaced.
+        if (call.function?.arguments) {
+          existing.function.arguments += call.function.arguments;
+        }
+        calls.set(call.index, existing);
+      }
+
+      if (delta.content) {
+        content += delta.content;
+        return delta.content;
+      }
+      return null;
+    },
+
+    finish() {
+      return {
+        content,
+        toolCalls: [...calls.values()].filter((c) => c.function.name !== ""),
+        promptTokens,
+        completionTokens,
+      };
+    },
+  };
+}
 
 /** What the caller knows about who is spending, and when to stop. */
 export type ChatOptions = {
@@ -440,12 +519,37 @@ export function selectToolset(
   };
 }
 
-export async function chat(
+/**
+ * Run the agentic loop, yielding events as they happen (ADR-018 §9).
+ *
+ * Yields plain objects, never HTTP: the route adapts these to Server-Sent
+ * Events, so this service stays framework-agnostic and the route remains the
+ * only layer that knows about transport.
+ *
+ * `action` events are emitted **as the mutation happens**, not batched at the
+ * end. If the token ceiling cuts the loop short after three coins were added,
+ * the user has already seen those three confirmed — which is what makes the
+ * "stopped partway" message honest rather than reconstructed.
+ */
+export async function* chatStream(
   userId: string,
   messages: ChatMessage[],
   imageDataUrl?: string | null,
   options: ChatOptions = {},
-): Promise<ChatResult> {
+): AsyncGenerator<ChatEvent> {
+  // `done` is emitted here rather than inside the loop because an early
+  // `return` in `runChatLoop` would skip anything written after it — and a
+  // terminator that only fires on the happy path is worse than none.
+  yield* runChatLoop(userId, messages, imageDataUrl, options);
+  yield { type: "done" };
+}
+
+async function* runChatLoop(
+  userId: string,
+  messages: ChatMessage[],
+  imageDataUrl?: string | null,
+  options: ChatOptions = {},
+): AsyncGenerator<ChatEvent> {
   const client: CompletionsClient = options.client ?? new OpenAI();
   const actions: string[] = [];
   const { tools, handlers, systemPrompt } = selectToolset(
@@ -465,6 +569,15 @@ export async function chat(
   let promptTokens = 0;
   let completionTokens = 0;
   let outcome: AssistantUsageOutcome = "error";
+  // Actions already emitted; the handlers append to `actions` as they run.
+  let emitted = 0;
+
+  /** Emit any action a tool handler just appended. */
+  function* drainActions(): Generator<ChatEvent> {
+    while (emitted < actions.length) {
+      yield { type: "action", action: actions[emitted++] };
+    }
+  }
 
   try {
     for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
@@ -472,30 +585,48 @@ export async function chat(
       // reply nobody will read.
       if (options.signal?.aborted) {
         outcome = "aborted";
-        return { reply: "", actions };
+        return;
       }
 
-      const completion = await client.chat.completions.create(
-        { model: MODEL, messages: convo, tools },
+      const stream = await client.chat.completions.create(
+        {
+          model: MODEL,
+          messages: convo,
+          tools,
+          stream: true,
+          // Usage is omitted from a streamed response unless asked for; without
+          // this every request would record zero tokens and the guards would
+          // meter nothing.
+          stream_options: { include_usage: true },
+        },
         options.signal ? { signal: options.signal } : undefined,
       );
 
-      promptTokens += completion.usage?.prompt_tokens ?? 0;
-      completionTokens += completion.usage?.completion_tokens ?? 0;
+      // Forward text the moment it arrives — this is the whole point of the
+      // slice — while accumulating the tool calls the turn is also assembling.
+      const collected = createTurnCollector();
+      for await (const chunk of stream) {
+        const delta = collected.absorb(chunk);
+        if (delta) yield { type: "text", delta };
+      }
+      const turn = collected.finish();
 
-      const message = completion.choices[0]?.message;
-      if (!message) break;
+      promptTokens += turn.promptTokens;
+      completionTokens += turn.completionTokens;
 
-      if (!message.tool_calls || message.tool_calls.length === 0) {
+      if (turn.toolCalls.length === 0) {
         outcome = "completed";
-        return { reply: (message.content ?? "").trim(), actions };
+        return;
       }
 
       // Preserve the assistant turn (carrying the tool_calls) before answering them.
-      convo.push(message);
+      convo.push({
+        role: "assistant",
+        content: turn.content || null,
+        tool_calls: turn.toolCalls,
+      });
 
-      for (const call of message.tool_calls) {
-        if (call.type !== "function") continue;
+      for (const call of turn.toolCalls) {
         const handler = handlers[call.function.name];
         let content: string;
         try {
@@ -510,34 +641,41 @@ export async function chat(
           content = `Error: ${error instanceof Error ? error.message : String(error)}`;
         }
         convo.push({ role: "tool", tool_call_id: call.id, content });
+        // Surface the mutation immediately, before the next model round-trip.
+        yield* drainActions();
       }
 
       // Checked *after* the tool results are recorded, so the work already paid
-      // for is not thrown away — and `actions` still names every mutation that
-      // happened, which is what keeps the message below honest.
+      // for is not thrown away — and the actions above have already been sent,
+      // which is what keeps this message honest.
       if (promptTokens + completionTokens >= MAX_REQUEST_TOKENS) {
         outcome = "limit_exceeded";
-        return {
-          reply:
-            "This request grew too large to finish safely, so I stopped partway. Anything I already did is listed below — please try a smaller request.",
-          actions,
+        yield {
+          type: "text",
+          delta:
+            "\n\nThis request grew too large to finish safely, so I stopped partway. Anything I already did is listed above — please try a smaller request.",
         };
+        return;
       }
     }
 
     outcome = "limit_exceeded";
-    return {
-      reply:
-        "I wasn't able to finish that in a reasonable number of steps. Please try rephrasing or breaking it into smaller requests.",
-      actions,
+    yield {
+      type: "text",
+      delta:
+        "\n\nI wasn't able to finish that in a reasonable number of steps. Please try rephrasing or breaking it into smaller requests.",
     };
   } catch (error) {
     // An aborted request surfaces as an OpenAI abort error; it is not a fault.
     if (options.signal?.aborted) {
       outcome = "aborted";
-      return { reply: "", actions };
+      return;
     }
-    throw error;
+    outcome = "error";
+    yield {
+      type: "error",
+      message: error instanceof Error ? error.message : String(error),
+    };
   } finally {
     // In `finally` so a thrown error, an abort, or a limit still gets accounted
     // for: tokens spent are spent, and a request that consumed budget without
@@ -549,6 +687,32 @@ export async function chat(
       userId,
     });
   }
+}
+
+/**
+ * Drain the stream into a finished result.
+ *
+ * Kept so callers that genuinely want the whole answer (and the existing tests)
+ * do not each reimplement accumulation — and so there is exactly **one** loop:
+ * a second non-streaming implementation would be free to drift from this one in
+ * how it counts tokens or reports partial work.
+ */
+export async function chat(
+  userId: string,
+  messages: ChatMessage[],
+  imageDataUrl?: string | null,
+  options: ChatOptions = {},
+): Promise<ChatResult> {
+  const actions: string[] = [];
+  let reply = "";
+
+  for await (const event of chatStream(userId, messages, imageDataUrl, options)) {
+    if (event.type === "text") reply += event.delta;
+    else if (event.type === "action") actions.push(event.action);
+    else if (event.type === "error") throw new Error(event.message);
+  }
+
+  return { reply: reply.trim(), actions };
 }
 
 /**

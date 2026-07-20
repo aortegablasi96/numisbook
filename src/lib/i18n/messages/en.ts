@@ -246,6 +246,7 @@ export const en = {
     "You've reached the assistant's usage limit. Please try again in {minutes} min.",
   "assistant.rateLimitedSoon":
     "You've reached the assistant's usage limit. Please try again shortly.",
+  "assistant.errorTruncated": "The reply was cut off. Please try again.",
   "assistant.errorGeneric": "Something went wrong",
   "assistant.errorImage": "Could not load image. Please try a different file.",
   "assistant.attachedAlt": "Attached coin",

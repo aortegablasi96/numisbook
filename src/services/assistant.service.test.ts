@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { buildHandlers, chat, MAX_REQUEST_TOKENS } from "./assistant.service";
+import {
+  buildHandlers,
+  chat,
+  chatStream,
+  MAX_REQUEST_TOKENS,
+} from "./assistant.service";
 import { recordUsage } from "@/services/assistant-limits.service";
 import * as collectionService from "@/services/collection.service";
 import * as coinService from "@/services/coin.service";
@@ -214,33 +219,47 @@ describe("chat — token accounting and the request ceiling", () => {
     usageRecorded.mockResolvedValue(undefined);
   });
 
-  /** A completion with no tool calls — ends the loop. */
+  // The client now streams: `create` resolves to an iterable of chunks. A usage
+  // chunk carries no choices and arrives last, mirroring the real API.
+  const usageChunk = (prompt: number, completion: number) => ({
+    choices: [],
+    usage: { prompt_tokens: prompt, completion_tokens: completion },
+  });
+
+  /** A streamed reply with no tool calls — ends the loop. */
   function finalReply(text: string, prompt = 10, completion = 5) {
-    return {
-      choices: [{ message: { content: text, tool_calls: [] } }],
-      usage: { prompt_tokens: prompt, completion_tokens: completion },
-    };
+    return [
+      { choices: [{ delta: { content: text } }] },
+      usageChunk(prompt, completion),
+    ];
   }
 
-  /** A completion asking for one `list_collections` call — continues the loop. */
+  /** A streamed `list_collections` call — continues the loop. */
   function toolCall(prompt = 10, completion = 5) {
-    return {
-      choices: [
-        {
-          message: {
-            content: null,
-            tool_calls: [
-              {
-                id: "call-1",
-                type: "function",
-                function: { name: "list_collections", arguments: "{}" },
-              },
-            ],
+    return [
+      {
+        choices: [
+          {
+            delta: {
+              tool_calls: [
+                {
+                  index: 0,
+                  id: "call-1",
+                  function: { name: "list_collections", arguments: "" },
+                },
+              ],
+            },
           },
-        },
-      ],
-      usage: { prompt_tokens: prompt, completion_tokens: completion },
-    };
+        ],
+      },
+      // Arguments arrive as fragments and must be concatenated, not replaced.
+      {
+        choices: [
+          { delta: { tool_calls: [{ index: 0, function: { arguments: "{}" } }] } },
+        ],
+      },
+      usageChunk(prompt, completion),
+    ];
   }
 
   it("records one usage row per request, summed across iterations", async () => {
@@ -291,26 +310,27 @@ describe("chat — token accounting and the request ceiling", () => {
       name: "Rome",
       createdAt: new Date(),
     });
-    openAiCreate.mockResolvedValue({
-      choices: [
-        {
-          message: {
-            content: null,
-            tool_calls: [
-              {
-                id: "call-1",
-                type: "function",
-                function: {
-                  name: "create_collection",
-                  arguments: JSON.stringify({ name: "Rome" }),
+    openAiCreate.mockResolvedValue([
+      {
+        choices: [
+          {
+            delta: {
+              tool_calls: [
+                {
+                  index: 0,
+                  id: "call-1",
+                  function: {
+                    name: "create_collection",
+                    arguments: JSON.stringify({ name: "Rome" }),
+                  },
                 },
-              },
-            ],
+              ],
+            },
           },
-        },
-      ],
-      usage: { prompt_tokens: MAX_REQUEST_TOKENS, completion_tokens: 0 },
-    });
+        ],
+      },
+      usageChunk(MAX_REQUEST_TOKENS, 0),
+    ]);
 
     const result = await chat(USER, [{ role: "user", content: "add Rome" }], null, {
       subjectKey: "user:u1",
@@ -365,5 +385,158 @@ describe("chat — token accounting and the request ceiling", () => {
     });
 
     expect(result.reply).toBe("done");
+  });
+});
+
+// --- Streaming (#197, ADR-018 §9) -------------------------------------------
+
+describe("chatStream", () => {
+  beforeEach(() => {
+    openAiCreate.mockReset();
+    usageRecorded.mockReset();
+    usageRecorded.mockResolvedValue(undefined);
+  });
+
+  const usageChunk = (p: number, c: number) => ({
+    choices: [],
+    usage: { prompt_tokens: p, completion_tokens: c },
+  });
+
+  async function collect(options: Record<string, unknown> = {}) {
+    const events = [];
+    for await (const event of chatStream(USER, [{ role: "user", content: "hi" }], null, {
+      subjectKey: "user:u1",
+      client: fakeClient,
+      ...options,
+    })) {
+      events.push(event);
+    }
+    return events;
+  }
+
+  it("yields each text delta as it arrives, then a done terminator", async () => {
+    openAiCreate.mockResolvedValue([
+      { choices: [{ delta: { content: "Hel" } }] },
+      { choices: [{ delta: { content: "lo" } }] },
+      usageChunk(10, 5),
+    ]);
+
+    expect(await collect()).toEqual([
+      { type: "text", delta: "Hel" },
+      { type: "text", delta: "lo" },
+      { type: "done" },
+    ]);
+  });
+
+  // Without a terminator, a complete reply and a dead connection look identical.
+  it("emits done even when the loop ends on the token ceiling", async () => {
+    collections.listCollections.mockResolvedValue([]);
+    openAiCreate.mockResolvedValue([
+      {
+        choices: [
+          {
+            delta: {
+              tool_calls: [
+                { index: 0, id: "c1", function: { name: "list_collections", arguments: "{}" } },
+              ],
+            },
+          },
+        ],
+      },
+      usageChunk(MAX_REQUEST_TOKENS, 0),
+    ]);
+
+    const events = await collect();
+    expect(events.at(-1)).toEqual({ type: "done" });
+  });
+
+  it("emits done after an error event", async () => {
+    openAiCreate.mockRejectedValue(new Error("openai down"));
+
+    const events = await collect();
+    expect(events).toEqual([
+      { type: "error", message: "openai down" },
+      { type: "done" },
+    ]);
+  });
+
+  // The point of streaming actions: a mutation is confirmed to the user before
+  // the next model round-trip, so a later cut-off cannot hide it.
+  it("emits an action as soon as the mutation happens, before the ceiling message", async () => {
+    collections.createCollection.mockResolvedValue({
+      id: "c1",
+      userId: USER,
+      name: "Rome",
+      createdAt: new Date(),
+    });
+    openAiCreate.mockResolvedValue([
+      {
+        choices: [
+          {
+            delta: {
+              tool_calls: [
+                {
+                  index: 0,
+                  id: "c1",
+                  function: {
+                    name: "create_collection",
+                    arguments: JSON.stringify({ name: "Rome" }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      usageChunk(MAX_REQUEST_TOKENS, 0),
+    ]);
+
+    const events = await collect();
+    const actionAt = events.findIndex((e) => e.type === "action");
+    const ceilingAt = events.findIndex(
+      (e) => e.type === "text" && /stopped partway/i.test(e.delta),
+    );
+
+    expect(actionAt).toBeGreaterThanOrEqual(0);
+    expect(actionAt).toBeLessThan(ceilingAt);
+  });
+
+  // Arguments arrive split across chunks; concatenating wrongly would send the
+  // tool a truncated or doubled JSON payload.
+  it("reassembles tool-call arguments split across chunks", async () => {
+    collections.createCollection.mockResolvedValue({
+      id: "c1",
+      userId: USER,
+      name: "Rome",
+      createdAt: new Date(),
+    });
+    openAiCreate
+      .mockResolvedValueOnce([
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  { index: 0, id: "c1", function: { name: "create_collection", arguments: '{"na' } },
+                ],
+              },
+            },
+          ],
+        },
+        { choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: 'me":"Ro' } }] } }] },
+        { choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: 'me"}' } }] } }] },
+        usageChunk(10, 2),
+      ])
+      .mockResolvedValueOnce([{ choices: [{ delta: { content: "ok" } }] }, usageChunk(5, 1)]);
+
+    await collect();
+    expect(collections.createCollection).toHaveBeenCalledWith(USER, "Rome");
+  });
+
+  it("stops without a text event when the caller aborts", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    expect(await collect({ signal: controller.signal })).toEqual([{ type: "done" }]);
   });
 });
