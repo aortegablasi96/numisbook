@@ -135,15 +135,27 @@ function buildCoinConditions(filters: CoinCriteria): SQL[] {
   return conditions;
 }
 
-function buildCoinOrderBy(filters: CoinCriteria): SQL {
+/**
+ * The ORDER BY for both coin surfaces — always a **total** order. Every sort key
+ * is followed by `coins.id`, so rows that tie (a shared category, a NULL year, or
+ * the identical `created_at` a multi-row CSV import stamps on every coin) keep the
+ * same relative order across queries, and LIMIT/OFFSET paging can neither repeat
+ * nor skip a coin (#182). The tiebreaker follows `dir`, so `asc` is the exact
+ * reverse of `desc`.
+ */
+export function buildCoinOrderBy(filters: CoinCriteria): SQL[] {
   const dir = (filters.sortDir ?? "desc") === "asc" ? asc : desc;
-  switch (filters.sortBy) {
-    case "category":     return dir(coins.category);
-    case "metal":        return dir(coins.metal);
-    case "denomination": return dir(coins.denomination);
-    case "year":         return dir(coins.yearFrom);
-    default:             return desc(coins.createdAt);
-  }
+  const key = (() => {
+    switch (filters.sortBy) {
+      case "category":     return coins.category;
+      case "metal":        return coins.metal;
+      case "denomination": return coins.denomination;
+      case "year":         return coins.yearFrom;
+      case "createdAt":
+      case undefined:      return coins.createdAt;
+    }
+  })();
+  return [dir(key), dir(coins.id)];
 }
 
 /** Distinct non-null values of each faceted column, within an arbitrary scope. */
@@ -196,7 +208,7 @@ export const coinRepository = {
       .select()
       .from(coins)
       .where(where)
-      .orderBy(buildCoinOrderBy(filters))
+      .orderBy(...buildCoinOrderBy(filters))
       .limit(filters.limit)
       .offset(filters.offset);
 
@@ -232,7 +244,7 @@ export const coinRepository = {
       .from(coins)
       .innerJoin(collections, eq(coins.collectionId, collections.id))
       .where(where)
-      .orderBy(buildCoinOrderBy(filters))
+      .orderBy(...buildCoinOrderBy(filters))
       .limit(filters.limit)
       .offset(filters.offset);
 
@@ -266,7 +278,7 @@ export const coinRepository = {
       .where(
         and(eq(coins.collectionId, collectionId), ...buildCoinConditions(criteria)),
       )
-      .orderBy(buildCoinOrderBy(criteria));
+      .orderBy(...buildCoinOrderBy(criteria));
   },
 
   /**
@@ -286,7 +298,7 @@ export const coinRepository = {
       .from(coins)
       .innerJoin(collections, eq(coins.collectionId, collections.id))
       .where(and(eq(collections.userId, userId), ...buildCoinConditions(criteria)))
-      .orderBy(buildCoinOrderBy(criteria));
+      .orderBy(...buildCoinOrderBy(criteria));
   },
 
   /**
