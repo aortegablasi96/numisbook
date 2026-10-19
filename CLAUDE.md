@@ -197,7 +197,9 @@ and ignore `page`.
 **Import** is `POST /api/collections/[id]/coins/import` (multipart: `file`, plus
 `commit` — **defaults to false, so a request that omits it previews**). One
 route, two phases: preview reports counts + per-row errors and writes nothing;
-commit re-validates and inserts. Collection surface only.
+commit re-validates and inserts. Collection surface only. The preview panel is
+the reusable batch-mutation pattern — DDR-008 (restore deliberately uses a
+`<ConfirmButton>` instead, ADR-017 §24).
 
 Invariants worth knowing before touching either:
 
