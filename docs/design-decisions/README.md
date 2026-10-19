@@ -12,6 +12,7 @@ file for the decision and its rationale. Use `template.md` to start a new one.
 | DDR-005 | Filter bar pattern |
 | DDR-006 | Responsive layout |
 | DDR-007 | Demo mode UI |
+| DDR-008 | Batch-mutation preview (preview-then-commit panel) |
 
 ## Supersessions and amendments
 
