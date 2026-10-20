@@ -175,9 +175,9 @@ export function slugForFilename(name: string, fallback: string): string {
   return slug || fallback;
 }
 
-/** `numisbook-<stem>-YYYY-MM-DD.csv` — names both the source and the date. */
+/** `numisvault-<stem>-YYYY-MM-DD.csv` — names both the source and the date. */
 export function buildExportFilename(stem: string, on: Date): string {
-  return `numisbook-${stem}-${on.toISOString().slice(0, 10)}.csv`;
+  return `numisvault-${stem}-${on.toISOString().slice(0, 10)}.csv`;
 }
 
 // Rows → a named CSV document, via the one column contract (`@/lib/coin-export`).
@@ -277,12 +277,12 @@ function describeHeaderMismatch(
   recognised: number,
 ): string {
   if (recognised === 0) {
-    return "This file does not look like a NumisBook coin export. Export a collection to see the columns it expects.";
+    return "This file does not look like a NumisVault coin export. Export a collection to see the columns it expects.";
   }
   const parts: string[] = [];
   if (unexpected.length > 0) parts.push(`unexpected: ${nameList(unexpected)}`);
   if (missing.length > 0) parts.push(`missing: ${nameList(missing)}`);
-  return `This file's columns do not match a NumisBook export (${parts.join("; ")})`;
+  return `This file's columns do not match a NumisVault export (${parts.join("; ")})`;
 }
 
 /**

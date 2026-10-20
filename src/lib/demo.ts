@@ -8,7 +8,7 @@ import { ForbiddenError } from "@/lib/errors";
 // rows at the same time, so any write would be a write on everyone else's behalf.
 
 /** Identity of the seeded demo tenant. The seed script owns this row. */
-export const DEMO_EMAIL = "demo@numisbook.app";
+export const DEMO_EMAIL = "demo@numisvault.app";
 export const DEMO_NAME = "Demo Collector";
 /** Demo sessions are short-lived; visitors are not building anything to keep. */
 export const DEMO_SESSION_MAX_AGE_HOURS = 4;

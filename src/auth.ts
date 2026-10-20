@@ -15,8 +15,8 @@ const isProduction = process.env.NODE_ENV === "production";
  * rename underneath us.
  */
 export const SESSION_COOKIE_NAME = isProduction
-  ? "__Secure-numisbook.session-token"
-  : "numisbook.session-token";
+  ? "__Secure-numisvault.session-token"
+  : "numisvault.session-token";
 
 export const SESSION_COOKIE_OPTIONS = {
   httpOnly: true,

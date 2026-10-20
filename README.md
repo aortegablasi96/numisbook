@@ -1,4 +1,4 @@
-# NumisBook
+# NumisVault
 
 A SaaS platform for coin collectors: collection management, coin inventory
 (per-coin images + PDF invoices), valuation tracking, portfolio analytics, and

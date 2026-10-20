@@ -1,10 +1,10 @@
-# NumisBook — Product Requirements
+# NumisVault — Product Requirements
 
 > Status: **DRAFT / TODO** — this is a stub. Fill in as product decisions are made.
 
 ## Vision
 
-NumisBook is a SaaS platform for coin collectors that helps them manage,
+NumisVault is a SaaS platform for coin collectors that helps them manage,
 value, and research their collections.
 
 ## Target Users

@@ -11,7 +11,7 @@
 
 export const en = {
   // Global chrome
-  "app.name": "NumisBook",
+  "app.name": "NumisVault",
   "app.tagline": "Collection management for coin collectors.",
   "skip.toContent": "Skip to content",
 
@@ -233,7 +233,7 @@ export const en = {
   "assistant.suggestion.mostValuable": "What's my most valuable coin?",
   "assistant.suggestion.summary": "Show my collection summary",
   "assistant.suggestion.addCoin": "Add a coin to my collection",
-  "assistant.name": "NumisBook Assistant",
+  "assistant.name": "NumisVault Assistant",
   "assistant.online": "Online",
   "assistant.clearAria": "Clear conversation",
   "assistant.welcome":
@@ -331,11 +331,11 @@ export const en = {
     "Applied to your portfolio analytics. “Auto” uses the currency of your largest holding.",
   "settings.language.label": "Language",
   "settings.language.systemDefault": "System default",
-  "settings.language.help": "The language NumisBook’s interface is shown in.",
+  "settings.language.help": "The language NumisVault’s interface is shown in.",
   "settings.theme.label": "Theme",
   "settings.theme.light": "Light",
   "settings.theme.dark": "Dark",
-  "settings.theme.help": "The colour scheme NumisBook uses.",
+  "settings.theme.help": "The colour scheme NumisVault uses.",
   "settings.danger.heading": "Danger zone",
   "settings.danger.body":
     "Deleting your account permanently removes your collections, coins, images, invoices, and valuations. This cannot be undone.",

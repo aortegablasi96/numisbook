@@ -72,7 +72,7 @@ describe("parseCsv", () => {
 
   it("strips a leading BOM", () => {
     // Our own writer emits one; without this the first header reads "﻿title"
-    // and every file NumisBook produced would fail its own header check.
+    // and every file NumisVault produced would fail its own header check.
     expect(parseCsv(`${UTF8_BOM}title,mint\r\n`)).toEqual([["title", "mint"]]);
   });
 

@@ -1,4 +1,4 @@
-# NumisBook — Database Design
+# NumisVault — Database Design
 
 > Status: **Implemented.** This documents the live schema. The Drizzle
 > definitions in `src/db/schema` are the source of truth; migrations are

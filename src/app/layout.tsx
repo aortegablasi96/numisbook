@@ -39,7 +39,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NumisBook",
+  title: "NumisVault",
   description: "Collection management for coin collectors.",
 };
 

@@ -21,7 +21,7 @@ describe("interpolate", () => {
 
 describe("getMessages", () => {
   it("returns the English catalog for en", () => {
-    expect(getMessages("en")["app.name"]).toBe("NumisBook");
+    expect(getMessages("en")["app.name"]).toBe("NumisVault");
   });
 
   it("returns locale strings for a translated locale", () => {
@@ -42,6 +42,6 @@ describe("t", () => {
   });
 
   it("interpolates params", () => {
-    expect(interpolate(t("en", "app.name"))).toBe("NumisBook");
+    expect(interpolate(t("en", "app.name"))).toBe("NumisVault");
   });
 });

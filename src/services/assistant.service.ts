@@ -10,7 +10,7 @@ import { recordUsage } from "@/services/assistant-limits.service";
 import { formatCoinTitle } from "@/lib/coin-format";
 import { logger } from "@/lib/logger";
 
-// NumisBook's collection assistant: OpenAI gpt-4o-mini with function calling over
+// NumisVault's collection assistant: OpenAI gpt-4o-mini with function calling over
 // the domain services, driven by a manual agentic loop. Tenant isolation is
 // structural — the acting user's id is captured server-side and injected into
 // every tool handler, so the model can never act on another user's data (it is
@@ -144,7 +144,7 @@ export type ChatOptions = {
   client?: CompletionsClient;
 };
 
-const SYSTEM_PROMPT = `You are NumisBook's collection assistant. You help a single signed-in coin collector manage their own collection using the provided tools.
+const SYSTEM_PROMPT = `You are NumisVault's collection assistant. You help a single signed-in coin collector manage their own collection using the provided tools.
 
 Guidelines:
 - Use the tools to read and modify the user's data. Never invent collection names, coin ids, amounts, or values — look them up with the read tools first.

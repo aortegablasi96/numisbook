@@ -74,7 +74,7 @@ export function buildInvoicePdf(invoice: {
     "BT",
     "/F1 8 Tf",
     `1 0 0 1 60 90 Tm`,
-    "(Sample document generated for the NumisBook demo collection. Not a real invoice.) Tj",
+    "(Sample document generated for the NumisVault demo collection. Not a real invoice.) Tj",
     "ET",
   );
 

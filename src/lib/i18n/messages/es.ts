@@ -3,7 +3,7 @@ import type { Messages } from "./en";
 // Spanish (es). MVP-quality translation of the app shell; native review advised
 // before marketing use. Missing keys fall back to English (ADR-014).
 export const es: Partial<Messages> = {
-  "app.name": "NumisBook",
+  "app.name": "NumisVault",
   "app.tagline": "Gestión de colecciones para coleccionistas de monedas.",
   "skip.toContent": "Saltar al contenido",
 
@@ -63,11 +63,11 @@ export const es: Partial<Messages> = {
   "settings.language.label": "Idioma",
   "settings.language.systemDefault": "Predeterminado del sistema",
   "settings.language.help":
-    "El idioma en el que se muestra la interfaz de NumisBook.",
+    "El idioma en el que se muestra la interfaz de NumisVault.",
   "settings.theme.label": "Tema",
   "settings.theme.light": "Claro",
   "settings.theme.dark": "Oscuro",
-  "settings.theme.help": "El esquema de color que usa NumisBook.",
+  "settings.theme.help": "El esquema de color que usa NumisVault.",
   "settings.danger.heading": "Zona de peligro",
   "settings.danger.body":
     "Eliminar tu cuenta borra permanentemente tus colecciones, monedas, imágenes, facturas y valoraciones. Esto no se puede deshacer.",
@@ -284,7 +284,7 @@ export const es: Partial<Messages> = {
   "assistant.suggestion.mostValuable": "¿Cuál es mi moneda más valiosa?",
   "assistant.suggestion.summary": "Muestra el resumen de mi colección",
   "assistant.suggestion.addCoin": "Añade una moneda a mi colección",
-  "assistant.name": "Asistente de NumisBook",
+  "assistant.name": "Asistente de NumisVault",
   "assistant.online": "En línea",
   "assistant.clearAria": "Borrar conversación",
   "assistant.welcome":

@@ -20,7 +20,7 @@ export default function GlobalError({
       <body>
         <div className="container">
           <main className="stack">
-            <h1>NumisBook is temporarily unavailable</h1>
+            <h1>NumisVault is temporarily unavailable</h1>
             <div className="card stack">
               <p className="muted" style={{ margin: 0 }}>
                 Your collection is safe — we&rsquo;re having trouble reaching our

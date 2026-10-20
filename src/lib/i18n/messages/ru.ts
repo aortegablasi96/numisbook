@@ -3,7 +3,7 @@ import type { Messages } from "./en";
 // Russian (ru). MVP-quality translation of the app shell; native review advised
 // before marketing use. Missing keys fall back to English (ADR-014).
 export const ru: Partial<Messages> = {
-  "app.name": "NumisBook",
+  "app.name": "NumisVault",
   "app.tagline": "Управление коллекцией для нумизматов.",
   "skip.toContent": "Перейти к содержимому",
 
@@ -64,11 +64,11 @@ export const ru: Partial<Messages> = {
   "settings.language.label": "Язык",
   "settings.language.systemDefault": "Системный по умолчанию",
   "settings.language.help":
-    "Язык, на котором отображается интерфейс NumisBook.",
+    "Язык, на котором отображается интерфейс NumisVault.",
   "settings.theme.label": "Тема",
   "settings.theme.light": "Светлая",
   "settings.theme.dark": "Тёмная",
-  "settings.theme.help": "Цветовая схема NumisBook.",
+  "settings.theme.help": "Цветовая схема NumisVault.",
   "settings.danger.heading": "Опасная зона",
   "settings.danger.body":
     "Удаление аккаунта безвозвратно удалит ваши коллекции, монеты, изображения, счета и оценки. Это действие нельзя отменить.",
@@ -284,7 +284,7 @@ export const ru: Partial<Messages> = {
   "assistant.suggestion.mostValuable": "Какая моя самая ценная монета?",
   "assistant.suggestion.summary": "Покажи сводку по моей коллекции",
   "assistant.suggestion.addCoin": "Добавь монету в мою коллекцию",
-  "assistant.name": "Ассистент NumisBook",
+  "assistant.name": "Ассистент NumisVault",
   "assistant.online": "В сети",
   "assistant.clearAria": "Очистить переписку",
   "assistant.welcome":

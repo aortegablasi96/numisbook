@@ -66,7 +66,7 @@ export async function exportArchive(userId: string): Promise<ArchiveExport> {
 
   const manifest: ArchiveManifest = {
     version: ARCHIVE_VERSION,
-    app: "numisbook",
+    app: "numisvault",
     exportedAt: new Date().toISOString(),
     collections: snapshot.collections.map((c) => ({
       id: c.id,

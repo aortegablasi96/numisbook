@@ -1,4 +1,4 @@
-# NumisBook — Roadmap
+# NumisVault — Roadmap
 
 > Guiding principle (from `CLAUDE.md`):
 >
@@ -8,7 +8,7 @@
 
 # Vision
 
-NumisBook aims to become a collector-focused operating system for managing, researching, valuing, and tracking coin collections.
+NumisVault aims to become a collector-focused operating system for managing, researching, valuing, and tracking coin collections.
 
 Core pillars:
 
@@ -44,7 +44,7 @@ cover, centred info panel), a scrollable ~5-coin cost-breakdown chart with the
 per-segment split in a hover tooltip, hover tooltips + expand controls on both
 portfolio charts, and per-coin **invoices** (PDF receipts) (see `history.md` Phase 9
 and `docs/decisions/ADR-009-ux-and-feature-refinement.md`). **Production
-Readiness** has now shipped: NumisBook is **live in production** — deployed on
+Readiness** has now shipped: NumisVault is **live in production** — deployed on
 Vercel against Neon, schema applied via the gated `migrate` job, Google sign-in
 working and `/api/health` green, with CI/CD, observability, and auth resilience
 in place (see `history.md` Phases 10–11 and ADR-010/011/012). The **Additional
@@ -61,7 +61,7 @@ fields) over a widened field set, the same filter bar serves a new cross-collect
 **All coins** view at `/coins`, and validation of it corrected a WCAG AA contrast
 failure in the light theme's gold text token (see `history.md` Phase 17, ADR-015,
 DDR-005, and `docs/testing/rework-filters-testing-report.md`). And the
-**Mobile-Responsive UI** milestone has shipped: NumisBook is usable on a phone —
+**Mobile-Responsive UI** milestone has shipped: NumisVault is usable on a phone —
 one three-stop breakpoint scale replaces eight ad-hoc ones, the 75% display density
 is now desktop-only, the coin list reads as cards, and the filter bar works on
 touch (see `history.md` Phase 18, DDR-006, and
@@ -220,7 +220,7 @@ Help collectors understand market value and opportunities.
 
 Goal:
 
-Transform NumisBook into an intelligent collecting assistant.
+Transform NumisVault into an intelligent collecting assistant.
 
 ## Features
 

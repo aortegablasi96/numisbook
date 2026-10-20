@@ -46,7 +46,7 @@ describe("GET /api/account/archive", () => {
   it("streams the zip with download headers, scoped to the session user", async () => {
     signedIn();
     vi.mocked(exportArchive).mockResolvedValue({
-      filename: "numisbook-archive-2026-07-17.zip",
+      filename: "numisvault-archive-2026-07-17.zip",
       zip: Buffer.from("PK-zip-bytes"),
     });
 
@@ -55,7 +55,7 @@ describe("GET /api/account/archive", () => {
     expect(res.status).toBe(200);
     expect(exportArchive).toHaveBeenCalledWith("u1");
     expect(res.headers.get("Content-Type")).toBe("application/zip");
-    expect(res.headers.get("Content-Disposition")).toContain("numisbook-archive-2026-07-17.zip");
+    expect(res.headers.get("Content-Disposition")).toContain("numisvault-archive-2026-07-17.zip");
     expect(res.headers.get("Cache-Control")).toBe("private, no-cache");
     expect(Buffer.from(await res.arrayBuffer()).toString()).toBe("PK-zip-bytes");
   });
@@ -63,7 +63,7 @@ describe("GET /api/account/archive", () => {
   it("lets the read-only demo tenant export (a read, no write guard)", async () => {
     signedIn({ isDemo: true });
     vi.mocked(exportArchive).mockResolvedValue({
-      filename: "numisbook-archive-2026-07-17.zip",
+      filename: "numisvault-archive-2026-07-17.zip",
       zip: Buffer.from("demo"),
     });
     const res = await GET();

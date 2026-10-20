@@ -130,7 +130,7 @@ export type ExportedField = (typeof COIN_EXPORT_COLUMNS)[number]["field"];
  * Coin columns deliberately absent from the file: surrogate identity and the FK
  * (`collection` carries the human-readable owner instead), plus the server-owned
  * `created_at`. Import derives all three; letting a collector edit them in a
- * spreadsheet would mean editing NumisBook's bookkeeping, not their coin.
+ * spreadsheet would mean editing NumisVault's bookkeeping, not their coin.
  */
 export const COIN_EXPORT_OMITTED = ["id", "collectionId", "createdAt"] as const;
 

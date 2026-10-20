@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NumisBook is a SaaS platform for coin collectors: collection management, coin
+NumisVault is a SaaS platform for coin collectors: collection management, coin
 inventory (per-coin images + PDF invoices), valuation tracking, portfolio
 analytics, and an OpenAI-backed collection assistant.
 
@@ -280,7 +280,7 @@ violations) in both schemes.
 
 **UI state persistence**: client preferences use `localStorage` under a
 **versioned** key. The two coin tables keep **separate** keys
-(`numisbook:coin-columns-v4`, `numisbook:all-coin-columns-v1`) — their column
+(`numisvault:coin-columns-v4`, `numisvault:all-coin-columns-v1`) — their column
 sets differ, so sharing one would let each corrupt the other's layout (DDR-005).
 
 Component conventions (managers, icons, `<ConfirmButton>`) are in
@@ -332,7 +332,7 @@ Per-layer patterns (route tests, service mocking) are in the layer READMEs.
 
 ## Development Workflow
 
-NumisBook is artifact-driven: planning, implementation, and verification are
+NumisVault is artifact-driven: planning, implementation, and verification are
 separate, and each workflow skill produces an artifact that feeds the next.
 
 **For any non-trivial feature, produce the planning artifacts and get an approved

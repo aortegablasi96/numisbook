@@ -1,5 +1,5 @@
 // The full-account archive contract (ADR-017 addendum, slice 3 of 3) — the single
-// source of truth for what a NumisBook archive contains and how it is shaped.
+// source of truth for what a NumisVault archive contains and how it is shaped.
 //
 // An archive is a STORE zip (see `zip.ts`) of a JSON `manifest.json` plus the raw
 // image and invoice bytes. Unlike the CSV column contract (`coin-export.ts`),
@@ -34,9 +34,9 @@ export const MAX_RESTORE_BYTES = 100 * 1024 * 1024; // 100 MB
 export const imageEntryName = (id: string): string => `${IMAGE_PREFIX}${id}`;
 export const invoiceEntryName = (id: string): string => `${INVOICE_PREFIX}${id}`;
 
-/** `numisbook-archive-YYYY-MM-DD.zip` — dated, no user text, so header-safe. */
+/** `numisvault-archive-YYYY-MM-DD.zip` — dated, no user text, so header-safe. */
 export const buildArchiveFilename = (on: Date): string =>
-  `numisbook-archive-${on.toISOString().slice(0, 10)}.zip`;
+  `numisvault-archive-${on.toISOString().slice(0, 10)}.zip`;
 
 // A fixed-scale numeric column as Drizzle returns it: a string, or null.
 const numeric = z.string().nullable();

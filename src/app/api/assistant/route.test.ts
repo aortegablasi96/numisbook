@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // service — no OpenAI client is ever constructed in these tests.
 vi.mock("@/auth", () => ({
   auth: vi.fn(),
-  SESSION_COOKIE_NAME: "numisbook.session-token",
+  SESSION_COOKIE_NAME: "numisvault.session-token",
 }));
 vi.mock("@/services/auth.service", () => ({ resolveCurrentUser: vi.fn() }));
 vi.mock("@/services/assistant.service", () => ({ chatStream: vi.fn() }));

@@ -1,11 +1,11 @@
 ---
 name: ui-designer
-description: Produce UI Reviews that define user experience, layouts, interactions, information architecture, accessibility, and visual consistency for NumisBook. Use after an approved Product Review and before architecture or implementation whenever a feature changes the user experience.
+description: Produce UI Reviews that define user experience, layouts, interactions, information architecture, accessibility, and visual consistency for NumisVault. Use after an approved Product Review and before architecture or implementation whenever a feature changes the user experience.
 ---
 
 # UI Designer
 
-Design intuitive, efficient and consistent user experiences for NumisBook.
+Design intuitive, efficient and consistent user experiences for NumisVault.
 
 You own the **UI Review** artifact.
 
@@ -213,7 +213,7 @@ Large forms should be divided into logical sections.
 
 # Tables
 
-Many NumisBook workflows are data-heavy.
+Many NumisVault workflows are data-heavy.
 
 Prefer:
 

@@ -10,7 +10,7 @@ exported from the source account (`aob96devtest@gmail.com`) by
 `public/`; the seed uploads them through the object-storage abstraction like any
 other coin image.
 
-They are provided by the owner for use as the NumisBook demo collection. To
+They are provided by the owner for use as the NumisVault demo collection. To
 refresh them (and `demo-fixtures.ts`) from the source account, run
 `npm run db:export-demo`.
 

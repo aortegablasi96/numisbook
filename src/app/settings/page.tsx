@@ -26,7 +26,7 @@ import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 import { AccountDataSection } from "@/components/settings/AccountDataSection";
 
-export const metadata = { title: "Settings · NumisBook" };
+export const metadata = { title: "Settings · NumisVault" };
 
 const PREF_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // one year
 

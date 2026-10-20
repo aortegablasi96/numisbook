@@ -88,7 +88,7 @@ describe("exportArchive", () => {
     const { filename, zip } = await exportArchive("u1");
 
     expect(readSnapshot).toHaveBeenCalledWith("u1");
-    expect(filename).toMatch(/^numisbook-archive-\d{4}-\d{2}-\d{2}\.zip$/);
+    expect(filename).toMatch(/^numisvault-archive-\d{4}-\d{2}-\d{2}\.zip$/);
 
     // Round-trip the zip through the real reader.
     const { unzip } = await import("@/lib/zip");

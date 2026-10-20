@@ -4,7 +4,7 @@ import type { Messages } from "./en";
 // review advised before marketing use. Glyphs render via system CJK fonts (no
 // bundled CJK web font). Missing keys fall back to English (ADR-014).
 export const zh: Partial<Messages> = {
-  "app.name": "NumisBook",
+  "app.name": "NumisVault",
   "app.tagline": "面向钱币收藏者的收藏管理工具。",
   "skip.toContent": "跳到内容",
 
@@ -59,11 +59,11 @@ export const zh: Partial<Messages> = {
     "应用于你的投资组合分析。“自动”会使用你最大持仓的货币。",
   "settings.language.label": "语言",
   "settings.language.systemDefault": "系统默认",
-  "settings.language.help": "NumisBook 界面显示所用的语言。",
+  "settings.language.help": "NumisVault 界面显示所用的语言。",
   "settings.theme.label": "主题",
   "settings.theme.light": "浅色",
   "settings.theme.dark": "深色",
-  "settings.theme.help": "NumisBook 使用的配色方案。",
+  "settings.theme.help": "NumisVault 使用的配色方案。",
   "settings.danger.heading": "危险区域",
   "settings.danger.body":
     "删除账户将永久移除你的收藏集、钱币、图片、发票和估值。此操作无法撤销。",
@@ -272,7 +272,7 @@ export const zh: Partial<Messages> = {
   "assistant.suggestion.mostValuable": "我最有价值的硬币是哪一枚？",
   "assistant.suggestion.summary": "显示我的收藏摘要",
   "assistant.suggestion.addCoin": "向我的收藏添加一枚硬币",
-  "assistant.name": "NumisBook 助手",
+  "assistant.name": "NumisVault 助手",
   "assistant.online": "在线",
   "assistant.clearAria": "清除对话",
   "assistant.welcome": "你好！我可以帮你管理你的硬币收藏。你想做什么？",

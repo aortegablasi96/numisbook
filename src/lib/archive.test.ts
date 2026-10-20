@@ -9,7 +9,7 @@ import {
 
 const validManifest = {
   version: ARCHIVE_VERSION,
-  app: "numisbook",
+  app: "numisvault",
   exportedAt: "2026-07-17T12:00:00.000Z",
   collections: [{ id: "c1", name: "Roman", createdAt: "2026-01-01T00:00:00.000Z" }],
   coins: [
@@ -91,7 +91,7 @@ describe("archive manifest contract", () => {
 
   it("builds a dated, header-safe filename", () => {
     expect(buildArchiveFilename(new Date("2026-07-17T12:00:00Z"))).toBe(
-      "numisbook-archive-2026-07-17.zip",
+      "numisvault-archive-2026-07-17.zip",
     );
   });
 

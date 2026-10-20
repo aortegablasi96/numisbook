@@ -4,7 +4,7 @@
 // nodes as React elements, so text is escaped by React itself and there is no
 // `dangerouslySetInnerHTML` anywhere in the path. That removes the injection
 // question rather than answering it — which matters here more than elsewhere,
-// because this is the one place in NumisBook where model-generated text (which
+// because this is the one place in NumisVault where model-generated text (which
 // may quote whatever the user typed) becomes markup.
 //
 // Written in-house rather than imported: the design system is dependency-free by

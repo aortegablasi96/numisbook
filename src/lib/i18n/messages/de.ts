@@ -3,7 +3,7 @@ import type { Messages } from "./en";
 // German (de). MVP-quality translation of the app shell; native review advised
 // before marketing use. Missing keys fall back to English (ADR-014).
 export const de: Partial<Messages> = {
-  "app.name": "NumisBook",
+  "app.name": "NumisVault",
   "app.tagline": "Sammlungsverwaltung für Münzsammler.",
   "skip.toContent": "Zum Inhalt springen",
 
@@ -65,11 +65,11 @@ export const de: Partial<Messages> = {
   "settings.language.label": "Sprache",
   "settings.language.systemDefault": "Systemstandard",
   "settings.language.help":
-    "Die Sprache, in der die NumisBook-Oberfläche angezeigt wird.",
+    "Die Sprache, in der die NumisVault-Oberfläche angezeigt wird.",
   "settings.theme.label": "Design",
   "settings.theme.light": "Hell",
   "settings.theme.dark": "Dunkel",
-  "settings.theme.help": "Das Farbschema von NumisBook.",
+  "settings.theme.help": "Das Farbschema von NumisVault.",
   "settings.danger.heading": "Gefahrenzone",
   "settings.danger.body":
     "Das Löschen deines Kontos entfernt dauerhaft deine Sammlungen, Münzen, Bilder, Rechnungen und Bewertungen. Dies kann nicht rückgängig gemacht werden.",
@@ -288,7 +288,7 @@ export const de: Partial<Messages> = {
   "assistant.suggestion.mostValuable": "Was ist meine wertvollste Münze?",
   "assistant.suggestion.summary": "Zeige die Zusammenfassung meiner Sammlung",
   "assistant.suggestion.addCoin": "Füge meiner Sammlung eine Münze hinzu",
-  "assistant.name": "NumisBook-Assistent",
+  "assistant.name": "NumisVault-Assistent",
   "assistant.online": "Online",
   "assistant.clearAria": "Unterhaltung löschen",
   "assistant.welcome":

@@ -1,6 +1,6 @@
 ---
 name: repository-builder
-description: Implement or modify repository classes that encapsulate database access for NumisBook. Use when adding or changing persistence logic after the database design has been approved.
+description: Implement or modify repository classes that encapsulate database access for NumisVault. Use when adding or changing persistence logic after the database design has been approved.
 ---
 
 # Repository Builder

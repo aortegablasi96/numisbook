@@ -560,7 +560,7 @@ describe("coin.service", () => {
   describe("buildExportFilename", () => {
     it("names the source and the date", () => {
       expect(buildExportFilename("coins", new Date("2026-07-16T10:00:00Z"))).toBe(
-        "numisbook-coins-2026-07-16.csv",
+        "numisvault-coins-2026-07-16.csv",
       );
     });
   });
@@ -572,7 +572,7 @@ describe("coin.service", () => {
 
       const result = await exportCoins("user-1", "col-1", {});
 
-      expect(result.filename).toMatch(/^numisbook-ancient-rome-\d{4}-\d{2}-\d{2}\.csv$/);
+      expect(result.filename).toMatch(/^numisvault-ancient-rome-\d{4}-\d{2}-\d{2}\.csv$/);
       expect(headerRow(result.csv).startsWith("title,collection,")).toBe(true);
       expect(dataRows(result.csv)).toHaveLength(1);
     });
@@ -632,7 +632,7 @@ describe("coin.service", () => {
 
       const result = await exportAllCoins("user-1", {});
 
-      expect(result.filename).toMatch(/^numisbook-coins-\d{4}-\d{2}-\d{2}\.csv$/);
+      expect(result.filename).toMatch(/^numisvault-coins-\d{4}-\d{2}-\d{2}\.csv$/);
       expect(dataRows(result.csv)).toHaveLength(2);
       // Each row names its own collection — the file is self-describing.
       expect(result.csv).toContain("Ancient Rome");
@@ -775,7 +775,7 @@ describe("coin.service", () => {
       // every header it lacks.
       const bogus = toCsv(["name", "price"], [["Denarius", "10"]]);
       await expect(importCoins("user-1", "col-1", bogus, false)).rejects.toThrow(
-        /does not look like a NumisBook coin export/,
+        /does not look like a NumisVault coin export/,
       );
       expect(coins.createManyInCollection).not.toHaveBeenCalled();
     });

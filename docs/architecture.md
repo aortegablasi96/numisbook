@@ -1,4 +1,4 @@
-# NumisBook — Architecture
+# NumisVault — Architecture
 
 > Status: **Implemented.** Phases 0–4 of the [roadmap](./roadmap.md) are
 > complete. The layering and conventions below are enforced in code (the

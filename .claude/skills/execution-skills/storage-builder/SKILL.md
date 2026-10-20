@@ -1,6 +1,6 @@
 ---
 name: storage-builder
-description: Implement storage-backed features using NumisBook's object storage abstraction. Use when adding or modifying functionality that stores, retrieves, transforms, or deletes binary objects such as images or documents.
+description: Implement storage-backed features using NumisVault's object storage abstraction. Use when adding or modifying functionality that stores, retrieves, transforms, or deletes binary objects such as images or documents.
 ---
 
 # Storage Builder

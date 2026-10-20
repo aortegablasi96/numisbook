@@ -1,6 +1,6 @@
-# NumisBook — Deployment Runbook
+# NumisVault — Deployment Runbook
 
-How to deploy NumisBook to production: **Vercel** (hosting) + **Neon** (managed
+How to deploy NumisVault to production: **Vercel** (hosting) + **Neon** (managed
 PostgreSQL), with database migrations applied from **GitHub Actions**. The
 architecture and the reasoning behind these choices are in
 [`docs/decisions/ADR-012-production-deployment.md`](./decisions/ADR-012-production-deployment.md).

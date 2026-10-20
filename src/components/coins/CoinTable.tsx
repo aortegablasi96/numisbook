@@ -76,7 +76,7 @@ const BASE_COLUMNS: ColumnDef[] = [
 
 /** Columns of the coin table inside one collection. */
 export const COIN_COLUMNS: ColumnDef[] = BASE_COLUMNS;
-export const COIN_COLUMNS_KEY = "numisbook:coin-columns-v4";
+export const COIN_COLUMNS_KEY = "numisvault:coin-columns-v4";
 
 /**
  * Columns of the cross-collection listing — the same set plus the owning
@@ -88,7 +88,7 @@ export const ALL_COIN_COLUMNS: ColumnDef[] = [
   { key: "collection", labelKey: "field.collection", sortable: false, required: false, defaultVisible: true },
   ...BASE_COLUMNS.slice(1),
 ];
-export const ALL_COIN_COLUMNS_KEY = "numisbook:all-coin-columns-v1";
+export const ALL_COIN_COLUMNS_KEY = "numisvault:all-coin-columns-v1";
 
 function defFor(columns: ColumnDef[], key: ColumnKey): ColumnDef {
   return columns.find((d) => d.key === key)!;

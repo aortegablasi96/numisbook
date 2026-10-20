@@ -37,7 +37,7 @@ function signedOut() {
 const request = (query = "") =>
   new Request(`http://test/api/coins/export${query}`);
 
-const anExport = { filename: "numisbook-coins-2026-07-16.csv", csv: "title\r\n" };
+const anExport = { filename: "numisvault-coins-2026-07-16.csv", csv: "title\r\n" };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -60,7 +60,7 @@ describe("GET /api/coins/export", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("text/csv; charset=utf-8");
     expect(res.headers.get("Content-Disposition")).toBe(
-      'attachment; filename="numisbook-coins-2026-07-16.csv"',
+      'attachment; filename="numisvault-coins-2026-07-16.csv"',
     );
     expect(await res.text()).toBe(anExport.csv);
   });

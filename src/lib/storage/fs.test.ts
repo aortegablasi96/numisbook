@@ -8,7 +8,7 @@ let root: string;
 let storage: FsStorage;
 
 beforeEach(async () => {
-  root = await fs.mkdtemp(path.join(os.tmpdir(), "numisbook-fsstorage-"));
+  root = await fs.mkdtemp(path.join(os.tmpdir(), "numisvault-fsstorage-"));
   storage = new FsStorage(root);
 });
 

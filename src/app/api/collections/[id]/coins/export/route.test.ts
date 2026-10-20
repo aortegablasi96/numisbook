@@ -37,7 +37,7 @@ const request = (query = "") =>
 const params = { params: Promise.resolve({ id: "col-1" }) };
 
 const anExport = {
-  filename: "numisbook-ancient-rome-2026-07-16.csv",
+  filename: "numisvault-ancient-rome-2026-07-16.csv",
   csv: "title\r\n",
 };
 
@@ -62,7 +62,7 @@ describe("GET /api/collections/[id]/coins/export", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("text/csv; charset=utf-8");
     expect(res.headers.get("Content-Disposition")).toBe(
-      'attachment; filename="numisbook-ancient-rome-2026-07-16.csv"',
+      'attachment; filename="numisvault-ancient-rome-2026-07-16.csv"',
     );
     expect(exportCoins).toHaveBeenCalledWith("u1", "col-1", expect.anything());
   });
